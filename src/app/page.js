@@ -276,7 +276,7 @@ const translations = {
         "signInWithEmail": "Mit E-Mail anmelden",
         "signUpWithEmail": "Mit E-Mail registrieren",
         "or": "ODER",
-        "menu": "Meniu",
+        "menu": "Menü",
         "exportData": "Daten exportieren",
         "importData": "Daten importieren",
         "exportSuccessful": "Tapas-Daten erfolgreich exportiert!",
@@ -3169,7 +3169,7 @@ const HomePage = () => {
 
     return (
         <AppContext.Provider value={{ db, auth, userId, userDisplayName, t, locale, setLocale }}>
-            <div className="min-h-screen bg-gray-100 font-sans antialiased flex flex-col">
+            <div className="min-h-screen bg-gray-100 opacity-97 font-sans antialiased flex flex-col">
                 {/* Global Styles for body, etc. - in a real Next.js app, these would be in styles/globals.css or _app.js */}
                 <style>{`
                     body {

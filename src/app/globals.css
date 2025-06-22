@@ -20,7 +20,8 @@
 }
 
 body {
-  background: var(--background);
+  background-image: url("background.jpg");
+  background-repeat: repeat;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
