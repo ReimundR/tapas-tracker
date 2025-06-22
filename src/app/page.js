@@ -6,7 +6,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc } from 'firebase/firestore'; // Added setDoc import
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
 
 const __app_id = "1:136005099339:web:28b6186333d3ae2ef792ce"; // Directly assign provided appId
 
@@ -23,15 +23,15 @@ const translations = {
         "addNew": "Add New",
         "noTapasFound": "No Tapas found in this category.",
         "startDate": "Start Date",
-        "endDate": "End Date", // New translation
+        "endDate": "End Date",
         "duration": "Duration",
         "days": "days",
         "daysRemaining": "Days Remaining",
         "status": "Status",
         "successful": "Successful",
         "failed": "Failed",
-        "todayFinished": "Today finished", // Renamed from "Check Today"
-        "yesterdayFinished": "Yesterday finished", // New
+        "todayFinished": "Today finished",
+        "yesterdayFinished": "Yesterday finished",
         "markAsFailed": "Mark as Failed",
         "editTapas": "Edit Tapas",
         "deleteTapas": "Delete Tapas",
@@ -65,7 +65,7 @@ const translations = {
         "editTapasTitle": "Edit Tapas",
         "name": "Name",
         "descriptionAndGoal": "Description and goal (optional)",
-        "goals0n": "Goals 0..n (optional, one per line)", // New
+        "goals0n": "Goals 0..n (optional, one per line)",
         "parts0n": "Parts 0..n (optional, one per line)",
         "crystallizationTime": "Crystallisation and awareness time [days] (optional)",
         "updateTapas": "Update Tapas",
@@ -100,8 +100,8 @@ const translations = {
         "description": "Description",
         "parts": "Parts",
         "noPartsDefinedYet": "No parts defined yet",
-        "goals": "Goals", // New
-        "noGoalsDefinedYet": "No goals defined yet", // New
+        "goals": "Goals",
+        "noGoalsDefinedYet": "No goals defined yet",
         "causeOfFailure": "Cause of Failure",
         "daysChecked": "days checked",
         "checkedDates": "Checked Dates",
@@ -138,34 +138,43 @@ const translations = {
         "2years": "2 Years",
         "yesterdayNotApplicable": "Yesterday check not applicable. Tapas either started today or yesterday was already checked.",
         "yesterdayCheckedSuccessfully": "Yesterday checked successfully!",
-        "allowRecuperation": "Allow recuperation", // New
-        "recuperatedDays": "Recuperated Days", // New
-        "advancedDays": "Advanced Days", // New
-        "yesterdayRecuperated": "Yesterday recuperated", // New
-        "todayTomorrowFinishedInAdvance": "Today & Tomorrow finished in advance", // New
-        "notApplicableAlreadyCheckedOrOutsideDuration": "Not applicable. Date already checked or outside tapas duration.", // New
-        "dayRecuperatedSuccessfully": "Day recuperated successfully!", // New
-        "daysAdvancedSuccessfully": "Days advanced successfully!", // New
-        "daysLeftOut": "days left out", // New
-        "yesterdayPending": "yesterday pending", // New
-        "todayPending": "today pending", // New
-        "addResults": "Add Results", // New translation
-        "updateResults": "Update Results", // New translation
-        "results": "Results", // New translation
-        "noResultsDefinedYet": "No results defined yet.", // New translation
-        "clearLastDay": "Clear Last Day", // New translation
-        "noDayToClear": "No recent day to clear.", // New translation
-        "dayClearedSuccessfully": "Day cleared successfully!", // New translation
-        "cannotClearFutureDay": "Cannot clear a future day.", // New translation
-        "tapasAutoMarkedActive": "Tapas automatically marked as active after review.", // New translation
-        "errorClearingDay": "Error clearing day:", // New translation
-        "gdpr": "GDPR", // New translation
-        "legalNotice": "Legal Notice", // New translation
-        "disclaimer": "Disclaimer", // New translation
-        "about": "About", // New translation
-        "appVersion": "App Version", // New translation
-        "tapasWebsite": "Tapas Tracker Website", // New translation
-        "aboutDescription": "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently.  Tapas is a form of Yogic practice and part of the ten Yamas and Niyamas.  The application allows you to track your Tapas success or failure, sepcify flexibly the parts of the Tapas, its goals and add results after the end of the Tapas or in case of a Tapas failure the cause for it.  History and Statistics help analysing your Tapasya and plan repetitions of failed or successful Tapas, respectively."
+        "allowRecuperation": "Allow recuperation",
+        "recuperatedDays": "Recuperated Days",
+        "advancedDays": "Advanced Days",
+        "yesterdayRecuperated": "Yesterday recuperated",
+        "todayTomorrowFinishedInAdvance": "Today & Tomorrow finished in advance",
+        "notApplicableAlreadyCheckedOrOutsideDuration": "Not applicable. Date already checked or outside tapas duration.",
+        "dayRecuperatedSuccessfully": "Day recuperated successfully!",
+        "daysAdvancedSuccessfully": "Days advanced successfully!",
+        "daysLeftOut": "days left out",
+        "yesterdayPending": "yesterday pending",
+        "todayPending": "today pending",
+        "addResults": "Add Results",
+        "updateResults": "Update Results",
+        "results": "Results",
+        "noResultsDefinedYet": "No results defined yet.",
+        "clearLastDay": "Clear Last Day",
+        "noDayToClear": "No recent day to clear.",
+        "dayClearedSuccessfully": "Day cleared successfully!",
+        "cannotClearFutureDay": "Cannot clear a future day.",
+        "tapasAutoMarkedActive": "Tapas automatically marked as active after review.",
+        "errorClearingDay": "Error clearing day:",
+        "gdpr": "GDPR",
+        "legalNotice": "Legal Notice",
+        "disclaimer": "Disclaimer",
+        "about": "About",
+        "appVersion": "App Version",
+        "tapasWebsite": "Tapas Tracker Website",
+        "aboutDescription": "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently.  Tapas is a form of Yogic practice and part of the ten Yamas and Niyamas.  The application allows you to track your Tapas success or failure, sepcify flexibly the parts of the Tapas, its goals and add results after the end of the Tapas or in case of a Tapas failure the cause for it.  History and Statistics help analysing your Tapasya and plan repetitions of failed or successful Tapas, respectively.",
+        "data": "Data",
+        "cleanData": "Clean Data",
+        "cleanDataConfirmation": "Are you sure you want to delete all Tapas with an end date older than the selected timeframe?",
+        "cleaningDataSuccessful": "Data cleaning successful! %s Tapas deleted.",
+        "cleaningDataFailed": "Data cleaning failed:",
+        "selectTimeframe": "Select Timeframe",
+        "5years": "5 Years",
+        "cleaningOldTapas": "Cleaning Old Tapas",
+        "clean": "Clean"
     },
     de: {
         "appName": "Tapas-Verfolger",
@@ -178,15 +187,15 @@ const translations = {
         "addNew": "Neu hinzufügen",
         "noTapasFound": "Keine Tapas in dieser Kategorie gefunden.",
         "startDate": "Startdatum",
-        "endDate": "Enddatum", // New translation
+        "endDate": "Enddatum",
         "duration": "Dauer",
         "days": "Tage",
         "daysRemaining": "Verbleibende Tage",
         "status": "Status",
         "successful": "Erfolgreich",
         "failed": "Fehlgeschlagen",
-        "todayFinished": "Heute beendet", // Renamed from "Heute überprüfen"
-        "yesterdayFinished": "Gestern beendet", // New
+        "todayFinished": "Heute beendet",
+        "yesterdayFinished": "Gestern beendet",
         "markAsFailed": "Als fehlgeschlagen markieren",
         "editTapas": "Tapas bearbeiten",
         "deleteTapas": "Tapas löschen",
@@ -220,7 +229,7 @@ const translations = {
         "editTapasTitle": "Tapas bearbeiten",
         "name": "Name",
         "descriptionAndGoal": "Beschreibung und Ziel (optional)",
-        "goals0n": "Ziele 0..n (optional, pro Zeile)", // New
+        "goals0n": "Ziele 0..n (optional, pro Zeile)",
         "parts0n": "Teile 0..n (optional, pro Zeile)",
         "crystallizationTime": "Kristallisations- und Bewusstseinszeit [Tage] (optional)",
         "updateTapas": "Tapas aktualisieren",
@@ -255,8 +264,8 @@ const translations = {
         "description": "Beschreibung",
         "parts": "Teile",
         "noPartsDefinedYet": "Noch keine Teile definiert",
-        "goals": "Ziele", // New
-        "noGoalsDefinedYet": "Noch keine Ziele definiert", // New
+        "goals": "Ziele",
+        "noGoalsDefinedYet": "Noch keine Ziele definiert",
         "causeOfFailure": "Ursache des Fehlschlagens",
         "daysChecked": "Tage überprüft",
         "checkedDates": "Überprüfte Daten",
@@ -293,34 +302,43 @@ const translations = {
         "2years": "2 Jahre",
         "yesterdayNotApplicable": "Gestern überprüfen nicht anwendbar. Tapas entweder heute gestartet oder gestern wurde bereits überprüft.",
         "yesterdayCheckedSuccessfully": "Gestern erfolgreich überprüft!",
-        "allowRecuperation": "Wiedergutmachung erlauben", // New
-        "recuperatedDays": "Wiedergutgemachte Tage", // New
-        "advancedDays": "Vorgezogene Tage", // New
-        "yesterdayRecuperated": "Gestern wiedergutgemacht", // New
-        "todayTomorrowFinishedInAdvance": "Heute & Morgen vorgezogen beendet", // New
-        "notApplicableAlreadyCheckedOrOutsideDuration": "Nicht anwendbar. Datum bereits überprüft oder außerhalb der Tapas-Dauer.", // New
-        "dayRecuperatedSuccessfully": "Tag erfolgreich wiedergutgemacht!", // New
-        "daysAdvancedSuccessfully": "Tage erfolgreich vorgezogen!", // New
-        "daysLeftOut": "Tage ausgelassen", // New
-        "yesterdayPending": "gestern ausstehend", // New
-        "todayPending": "heute ausstehend", // New
-        "addResults": "Ergebnisse hinzufügen", // New translation
-        "updateResults": "Ergebnisse aktualisieren", // New translation
-        "results": "Ergebnisse", // New translation
-        "noResultsDefinedYet": "Noch keine Ergebnisse definiert.", // New translation
-        "clearLastDay": "Letzten Tag löschen", // New translation
-        "noDayToClear": "Kein aktueller Tag zum Löschen.", // New translation
-        "dayClearedSuccessfully": "Tag erfolgreich gelöscht!", // New translation
-        "cannotClearFutureDay": "Zukünftiger Tag kann nicht gelöscht werden.", // New translation
-        "tapasAutoMarkedActive": "Tapas nach Überprüfung automatisch als aktiv markiert.", // New translation
-        "errorClearingDay": "Fehler beim Löschen des Tages:", // New translation
-        "gdpr": "Datenschutz", // New translation
-        "legalNotice": "Impressum", // New translation
-        "disclaimer": "Haftungsausschluss", // New translation
-        "about": "Über uns", // New translation
-        "appVersion": "App-Version", // New translation
-        "tapasWebsite": "Tapas Tracker Webseite", // New translation
-        "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Ihnen hilft, Ihre Tapas oder Ziele konsequent zu verfolgen und zu erreichen.  Tapas ist eine Form der Yoga-Praxis und Teil der zehn Yamas und Niyamas.  Die Anwendung ermöglicht es Ihnen, Ihren Tapas-Erfolg oder -Misserfolg zu verfolgen, die einzelnen Tapas-Teile und Ziele flexibel zu spezifizieren und Ergebnisse nach dem Ende des Tapas oder im Falle eines Tapas-Misserfolgs die Ursache dafür hinzuzufügen.  Verlauf und Statistiken helfen Ihnen, Ihr Tapasya zu analysieren und Wiederholungen fehlgeschlagener bzw. erfolgreicher Tapas zu planen."
+        "allowRecuperation": "Wiedergutmachung erlauben",
+        "recuperatedDays": "Wiedergutgemachte Tage",
+        "advancedDays": "Vorgezogene Tage",
+        "yesterdayRecuperated": "Gestern wiedergutgemacht",
+        "todayTomorrowFinishedInAdvance": "Heute & Morgen vorgezogen beendet",
+        "notApplicableAlreadyCheckedOrOutsideDuration": "Nicht anwendbar. Datum bereits überprüft oder außerhalb der Tapas-Dauer.",
+        "dayRecuperatedSuccessfully": "Tag erfolgreich wiedergutgemacht!",
+        "daysAdvancedSuccessfully": "Tage erfolgreich vorgezogen!",
+        "daysLeftOut": "Tage ausgelassen",
+        "yesterdayPending": "gestern ausstehend",
+        "todayPending": "heute ausstehend",
+        "addResults": "Ergebnisse hinzufügen",
+        "updateResults": "Ergebnisse aktualisieren",
+        "results": "Ergebnisse",
+        "noResultsDefinedYet": "Noch keine Ergebnisse definiert.",
+        "clearLastDay": "Letzten Tag löschen",
+        "noDayToClear": "Kein aktueller Tag zum Löschen.",
+        "dayClearedSuccessfully": "Tag erfolgreich gelöscht!",
+        "cannotClearFutureDay": "Zukünftiger Tag kann nicht gelöscht werden.",
+        "tapasAutoMarkedActive": "Tapas nach Überprüfung automatisch als aktiv markiert.",
+        "errorClearingDay": "Fehler beim Löschen des Tages:",
+        "gdpr": "Datenschutz",
+        "legalNotice": "Impressum",
+        "disclaimer": "Haftungsausschluss",
+        "about": "Über uns",
+        "appVersion": "App-Version",
+        "tapasWebsite": "Tapas Tracker Webseite",
+        "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Ihnen hilft, Ihre Tapas oder Ziele konsequent zu verfolgen und zu erreichen.  Tapas ist eine Form der Yoga-Praxis und Teil der zehn Yamas und Niyamas.  Die Anwendung ermöglicht es Ihnen, Ihren Tapas-Erfolg oder -Misserfolg zu verfolgen, die einzelnen Tapas-Teile und Ziele flexibel zu spezifizieren und Ergebnisse nach dem Ende des Tapas oder im Falle eines Tapas-Misserfolgs die Ursache dafür hinzuzufügen.  Verlauf und Statistiken helfen Ihnen, Ihr Tapasya zu analysieren und Wiederholungen fehlgeschlagener bzw. erfolgreicher Tapas zu planen.",
+        "data": "Daten",
+        "cleanData": "Daten bereinigen",
+        "cleanDataConfirmation": "Möchten Sie wirklich alle Tapas löschen, deren Enddatum älter ist als der ausgewählte Zeitraum?",
+        "cleaningDataSuccessful": "Datenbereinigung erfolgreich! %s Tapas gelöscht.",
+        "cleaningDataFailed": "Datenbereinigung fehlgeschlagen:",
+        "selectTimeframe": "Zeitrahmen auswählen",
+        "5years": "5 Jahre",
+        "cleaningOldTapas": "Alte Tapas bereinigen",
+        "clean": "Bereinigen"
     },
     ro: {
         "appName": "Urmăritor Tapas",
@@ -333,15 +351,15 @@ const translations = {
         "addNew": "Adaugă Nou",
         "noTapasFound": "Nu s-au găsit Tapas în această categorie.",
         "startDate": "Data de început",
-        "endDate": "Data de sfârșit", // New translation
+        "endDate": "Data de sfârșit",
         "duration": "Durată",
         "days": "zile",
         "daysRemaining": "Zile rămase",
         "status": "Stare",
         "successful": "Succes",
         "failed": "Eșuat",
-        "todayFinished": "Azi terminat", // Renamed from "Verifică azi"
-        "yesterdayFinished": "Ieri terminat", // New
+        "todayFinished": "Azi terminat",
+        "yesterdayFinished": "Ieri terminat",
         "markAsFailed": "Marchează ca eșuat",
         "editTapas": "Editează Tapas",
         "deleteTapas": "Șterge Tapas",
@@ -375,7 +393,7 @@ const translations = {
         "editTapasTitle": "Editează Tapas",
         "name": "Nume",
         "descriptionAndGoal": "Descriere și scop (opțional)",
-        "goals0n": "Obiective 0..n (opțional, una pe linie)", // New
+        "goals0n": "Obiective 0..n (opțional, una pe linie)",
         "parts0n": "Părți 0..n (opțional, una pe linie)",
         "crystallizationTime": "Timp de cristalizare și conștientizare [zile] (opțional)",
         "updateTapas": "Actualizează Tapas",
@@ -410,8 +428,8 @@ const translations = {
         "description": "Descriere",
         "parts": "Părți",
         "noPartsDefinedYet": "Nu s-au definit încă părți",
-        "goals": "Obiective", // New
-        "noGoalsDefinedYet": "Nu s-au definit încă obiective", // New
+        "goals": "Obiective",
+        "noGoalsDefinedYet": "Nu s-au definit încă obiective",
         "causeOfFailure": "Cauza eșecului",
         "daysChecked": "zile verificate",
         "checkedDates": "Date verificate",
@@ -448,34 +466,43 @@ const translations = {
         "2years": "2 Ani",
         "yesterdayNotApplicable": "Verificarea de ieri nu este aplicabilă. Tapas a început astăzi sau ieri a fost deja verificat.",
         "yesterdayCheckedSuccessfully": "Ieri verificat cu succes!",
-        "allowRecuperation": "Permite recuperare", // New
-        "recuperatedDays": "Zile recuperate", // New
-        "advancedDays": "Zile avansate", // New
-        "yesterdayRecuperated": "Ieri recuperat", // New
-        "todayTomorrowFinishedInAdvance": "Azi & Mâine terminate în avans", // New
-        "notApplicableAlreadyCheckedOrOutsideDuration": "Nu se aplică. Data deja verificată sau în afara duratei tapasului.", // New
-        "dayRecuperatedSuccessfully": "Zi recuperată cu succes!", // New
-        "daysAdvancedSuccessfully": "Zile avansate cu succes!", // New
-        "daysLeftOut": "zile omise", // New
-        "yesterdayPending": "ieri în așteptare", // New
-        "todayPending": "azi în așteptare", // New
-        "addResults": "Adaugă Rezultate", // New translation
-        "updateResults": "Actualizează Rezultate", // New translation
-        "results": "Rezultate", // New translation
-        "noResultsDefinedYet": "Nu s-au definit încă rezultate.", // New translation
-        "clearLastDay": "Șterge ultima zi", // New translation
-        "noDayToClear": "Nicio zi recentă de șters.", // New translation
-        "dayClearedSuccessfully": "Zi ștearsă cu succes!", // New translation
-        "cannotClearFutureDay": "Nu se poate șterge o zi viitoare.", // New translation
-        "tapasAutoMarkedActive": "Tapas marcat automat ca activ după revizuire.", // New translation
-        "errorClearingDay": "Eroare la ștergerea zilei:", // New translation
-        "gdpr": "GDPR", // New translation
-        "legalNotice": "Notă legală", // New translation
-        "disclaimer": "Declinarea responsabilității", // New translation
-        "about": "Despre", // New translation
-        "appVersion": "Versiunea aplicației", // New translation
-        "tapasWebsite": "Site-ul Tapas Tracker", // New translation
-        "aboutDescription": "Tapas Tracker este un instrument de dezvoltare personală conceput pentru a te ajuta să urmărești și să-ți atingi Tapas-urile sau obiectivele în mod constant.  Tapas este o formă de practică yoghină și face parte din cele zece Yama și Niyama.  Aplicația îți permite să urmărești succesul sau eșecul Tapas-ului tău, să specifici flexibil părțile Tapas-ului, obiectivele acestuia și să adaugi rezultate după încheierea Tapas-ului sau, în cazul unui eșec Tapas, cauza acestuia.  Istoricul și statisticile ajută la analizarea Tapas-ului tău și la planificarea repetărilor Tapas-urilor eșuate sau de succes, respectiv."
+        "allowRecuperation": "Permite recuperare",
+        "recuperatedDays": "Zile recuperate",
+        "advancedDays": "Zile avansate",
+        "yesterdayRecuperated": "Ieri recuperat",
+        "todayTomorrowFinishedInAdvance": "Azi & Mâine terminate în avans",
+        "notApplicableAlreadyCheckedOrOutsideDuration": "Nu se aplică. Data deja verificată sau în afara duratei tapasului.",
+        "dayRecuperatedSuccessfully": "Zi recuperată cu succes!",
+        "daysAdvancedSuccessfully": "Zile avansate cu succes!",
+        "daysLeftOut": "zile omise",
+        "yesterdayPending": "ieri în așteptare",
+        "todayPending": "azi în așteptare",
+        "addResults": "Adaugă Rezultate",
+        "updateResults": "Actualizează Rezultate",
+        "results": "Rezultate",
+        "noResultsDefinedYet": "Nu s-au definit încă rezultate.",
+        "clearLastDay": "Șterge ultima zi",
+        "noDayToClear": "Nicio zi recentă de șters.",
+        "dayClearedSuccessfully": "Zi ștearsă cu succes!",
+        "cannotClearFutureDay": "Nu se poate șterge o zi viitoare.",
+        "tapasAutoMarkedActive": "Tapas marcat automat ca activ după revizuire.",
+        "errorClearingDay": "Eroare la ștergerea zilei:",
+        "gdpr": "GDPR",
+        "legalNotice": "Notă legală",
+        "disclaimer": "Declinarea responsabilității",
+        "about": "Despre",
+        "appVersion": "Versiunea aplicației",
+        "tapasWebsite": "Site-ul Tapas Tracker",
+        "aboutDescription": "Tapas Tracker este un instrument de dezvoltare personală conceput pentru a te ajuta să urmărești și să-ți atingi Tapas-urile sau obiectivele în mod constant.  Tapas este o formă de practică yoghină și face parte din cele zece Yama și Niyama.  Aplicația îți permite să urmărești succesul sau eșecul Tapas-ului tău, să specifici flexibil părțile Tapas-ului, obiectivele acestuia și să adaugi rezultate după încheierea Tapas-ului sau, în cazul unui eșec Tapas, cauza acestuia.  Istoricul și statisticile ajută la analizarea Tapas-ului tău și la planificarea repetărilor Tapas-urilor eșuate sau de succes, respectiv.",
+        "data": "Date",
+        "cleanData": "Curăță Date",
+        "cleanDataConfirmation": "Sunteți sigur că doriți să ștergeți toate Tapas-urile cu o dată de sfârșit mai veche decât perioada selectată?",
+        "cleaningDataSuccessful": "Curățare date reușită! %s Tapas șterse.",
+        "cleaningDataFailed": "Curățare date eșuată:",
+        "selectTimeframe": "Selectează intervalul de timp",
+        "5years": "5 Ani",
+        "cleaningOldTapas": "Curățarea Tapas-urilor vechi",
+        "clean": "Curăță"
     },
     it: {
         "appName": "Tapas Tracker",
@@ -488,15 +515,15 @@ const translations = {
         "addNew": "Aggiungi nuovo",
         "noTapasFound": "Nessuna Tapas trovata in questa categoria.",
         "startDate": "Data di inizio",
-        "endDate": "Data di fine", // New translation
+        "endDate": "Data di fine",
         "duration": "Durata",
         "days": "giorni",
         "daysRemaining": "Giorni rimanenti",
         "status": "Stato",
         "successful": "Riuscito",
         "failed": "Fallito",
-        "todayFinished": "Oggi finito", // Renamed from "Controlla oggi"
-        "yesterdayFinished": "Ieri finito", // New
+        "todayFinished": "Oggi finito",
+        "yesterdayFinished": "Ieri finito",
         "markAsFailed": "Segna come fallito",
         "editTapas": "Modifica Tapas",
         "deleteTapas": "Elimina Tapas",
@@ -530,7 +557,7 @@ const translations = {
         "editTapasTitle": "Modifica Tapas",
         "name": "Nome",
         "descriptionAndGoal": "Descrizione e obiettivo (opzionale)",
-        "goals0n": "Obiettivi 0..n (opzionali, una per riga)", // New
+        "goals0n": "Obiettivi 0..n (opzionali, una per riga)",
         "parts0n": "Părți 0..n (opzionali, una per riga)",
         "crystallizationTime": "Tempo di cristallizzazione e consapevolezza [giorni] (opzionale)",
         "updateTapas": "Aggiorna Tapas",
@@ -565,8 +592,8 @@ const translations = {
         "description": "Descriere",
         "parts": "Părți",
         "noPartsDefinedYet": "Nessuna parte definita ancora",
-        "goals": "Obiettivi", // New
-        "noGoalsDefinedYet": "Nessun obiettivo definito ancora.", // New
+        "goals": "Obiettivi",
+        "noGoalsDefinedYet": "Nessun obiettivo definito ancora.",
         "causeOfFailure": "Causa del fallimento",
         "daysChecked": "giorni controllati",
         "checkedDates": "Date controllate",
@@ -603,33 +630,33 @@ const translations = {
         "2years": "2 Anni",
         "yesterdayNotApplicable": "Controllo di ieri non applicabile. Tapas è iniziato oggi o ieri era stato già controllato.",
         "yesterdayCheckedSuccessfully": "Ieri controllato con successo!",
-        "allowRecuperation": "Consenti recupero", // New
-        "recuperatedDays": "Giorni recuperati", // New
-        "advancedDays": "Giorni avanzati", // New
-        "yesterdayRecuperated": "Ieri recuperato", // New
-        "todayTomorrowFinishedInAdvance": "Oggi e Domani terminati in anticipo", // New
-        "notApplicableAlreadyCheckedOrOutsideDuration": "Non applicabile. Data già verificată o al di fuori della durata del tapas.", // New
-        "dayRecuperatedSuccessfully": "Giorno recuperato con successo!", // New
-        "daysAdvancedSuccessfully": "Giorni avanzati con successo!", // New
-        "daysLeftOut": "giorni saltati", // New
-        "yesterdayPending": "ieri în sospenso", // New
-        "todayPending": "oggi in sospeso", // New
-        "addResults": "Aggiungi Risultati", // New translation
-        "updateResults": "Aggiorna Risultate", // New translation
-        "results": "Risultate", // New translation
-        "noResultsDefinedYet": "Nessun risultato definito ancora.", // New translation
-        "clearLastDay": "Cancella ultimo giorno", // New translation
-        "noDayToClear": "Nessun giorno recente da cancellare.", // New translation
-        "dayClearedSuccessfully": "Giorno cancellato con successo!", // New translation
-        "cannotClearFutureDay": "Non è possibile cancellare un giorno futuro.", // New translation
-        "tapasAutoMarkedActive": "Tapas automaticamente segnato come attivo dopo la revisione.", // New translation
-        "errorClearingDay": "Errore durante la cancellazione del giorno:", // New translation
-        "gdpr": "GDPR", // New translation
-        "legalNotice": "Note legali", // New translation
-        "disclaimer": "Dichiarazione di non responsabilità", // New translation
-        "about": "Informazioni", // New translation
-        "appVersion": "Versione dell'app", // New translation
-        "tapasWebsite": "Sito web di Tapas Tracker", // New translation
+        "allowRecuperation": "Consenti recupero",
+        "recuperatedDays": "Giorni recuperati",
+        "advancedDays": "Giorni avanzati",
+        "yesterdayRecuperated": "Ieri recuperato",
+        "todayTomorrowFinishedInAdvance": "Oggi e Domani terminati in anticipo",
+        "notApplicableAlreadyCheckedOrOutsideDuration": "Non applicabile. Data già verificată o al di fuori della durata del tapas.",
+        "dayRecuperatedSuccessfully": "Giorno recuperato con successo!",
+        "daysAdvancedSuccessfully": "Giorni avanzati con successo!",
+        "daysLeftOut": "giorni saltati",
+        "yesterdayPending": "ieri în sospenso",
+        "todayPending": "oggi in sospeso",
+        "addResults": "Aggiungi Risultati",
+        "updateResults": "Aggiorna Risultate",
+        "results": "Risultate",
+        "noResultsDefinedYet": "Nessun risultato definito ancora.",
+        "clearLastDay": "Cancella ultimo giorno",
+        "noDayToClear": "Nessun giorno recente da cancellare.",
+        "dayClearedSuccessfully": "Giorno cancellato con successo!",
+        "cannotClearFutureDay": "Non è possibile cancellare un giorno futuro.",
+        "tapasAutoMarkedActive": "Tapas automaticamente segnato come attivo dopo la revisione.",
+        "errorClearingDay": "Errore durante la cancellazione del giorno:",
+        "gdpr": "GDPR",
+        "legalNotice": "Note legali",
+        "disclaimer": "Dichiarazione di non responsabilità",
+        "about": "Informazioni",
+        "appVersion": "Versione dell'app",
+        "tapasWebsite": "Sito web di Tapas Tracker",
         "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente.  Tapas è una forma di pratica yoga e fa parte dei dieci Yama e Niyama.  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa.  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite."
     },
     ru: {
@@ -650,8 +677,8 @@ const translations = {
         "status": "Статус",
         "successful": "Успешно",
         "failed": "Неудача",
-        "todayFinished": "Сегодня завершено", // Renamed from "Проверить сегодня"
-        "yesterdayFinished": "Вчера завершено", // New
+        "todayFinished": "Сегодня завершено",
+        "yesterdayFinished": "Вчера завершено",
         "markAsFailed": "Пометить как проваленное",
         "editTapas": "Редактировать Тапас",
         "deleteTapas": "Удалить Тапас",
@@ -685,7 +712,7 @@ const translations = {
         "editTapasTitle": "Редактировать Тапас",
         "name": "Имя",
         "descriptionAndGoal": "Описание и цель (необязательно)",
-        "goals0n": "Цели 0..n (необязательно, одна на строку)", // New
+        "goals0n": "Цели 0..n (необязательно, одна на строку)",
         "parts0n": "Части 0..n (необязательно, одна на строку)",
         "crystallizationTime": "Время кристаллизации и осознания [дней] (необязательно)",
         "updateTapas": "Обновить Тапас",
@@ -720,8 +747,8 @@ const translations = {
         "description": "Описание",
         "parts": "Части",
         "noPartsDefinedYet": "Части еще не определены",
-        "goals": "Цели", // New
-        "noGoalsDefinedYet": "Цели еще не определены", // New
+        "goals": "Цели",
+        "noGoalsDefinedYet": "Цели еще не определены",
         "causeOfFailure": "Причина неудачи",
         "daysChecked": "дней отмечено",
         "checkedDates": "Отмеченные даты",
@@ -758,34 +785,43 @@ const translations = {
         "2years": "2 года",
         "yesterdayNotApplicable": "Вчерашняя проверка неприменима. Тапас либо начался сегодня, либо вчера уже был проверен.",
         "yesterdayCheckedSuccessfully": "Вчера успешно проверено!",
-        "allowRecuperation": "Разрешить восстановление", // New
-        "recuperatedDays": "Восстановленные дни", // New
-        "advancedDays": "Продвинутые дни", // New
-        "yesterdayRecuperated": "Вчера восстановлено", // New
-        "todayTomorrowFinishedInAdvance": "Сегодня и завтра завершено заранее", // New
-        "notApplicableAlreadyCheckedOrOutsideDuration": "Неприменимо. Дата уже проверена или выходит за рамки продолжительности тапас.", // New
-        "dayRecuperatedSuccessfully": "День успешно восстановлен!", // New
-        "daysAdvancedSuccessfully": "Дни успешно продвинуты!", // New
-        "daysLeftOut": "пропущенных дней", // New
-        "yesterdayPending": "вчера в ожидании", // New
-        "todayPending": "сегодня в ожидании", // New
-        "addResults": "Добавить результаты", // New translation
-        "updateResults": "Обновить результаты", // New translation
-        "results": "Результаты", // New translation
-        "noResultsDefinedYet": "Результаты еще не определены.", // New translation
-        "clearLastDay": "Очистить последний день", // New translation
-        "noDayToClear": "Нет недавнего дня для очистки.", // New translation
-        "dayClearedSuccessfully": "День успешно очищен!", // New translation
-        "cannotClearFutureDay": "Нельзя очистить будущий день.", // New translation
-        "tapasAutoMarkedActive": "Тапас автоматически помечен как активный после проверки.", // New translation
-        "errorClearingDay": "Ошибка при очистке дня:", // New translation
-        "gdpr": "GDPR", // New translation
-        "legalNotice": "Юридическое уведомление", // New translation
-        "disclaimer": "Отказ от ответственности", // New translation
-        "about": "О программе", // New translation
-        "appVersion": "Версия приложения", // New translation
-        "tapasWebsite": "Веб-сайт Tapas Tracker", // New translation
-        "aboutDescription": "Tapas Tracker — это инструмент для личного развития, призванный помочь вам отслеживать и последовательно достигать ваших тапасов или целей.  Тапас — это форма йогической практики и часть десяти Ям и Ниям.  Приложение позволяет вам отслеживать успехи или неудачи в тапасах, гибко определять части тапаса, его цели и добавлять результаты после окончания тапаса или, в случае неудачи тапаса, причину ее возникновения.  История и статистика помогают анализировать вашу тапасью и планировать повторения неудачных или успешных тапасов соответственно."
+        "allowRecuperation": "Разрешить восстановление",
+        "recuperatedDays": "Восстановленные дни",
+        "advancedDays": "Продвинутые дни",
+        "yesterdayRecuperated": "Вчера восстановлено",
+        "todayTomorrowFinishedInAdvance": "Сегодня и завтра завершено заранее",
+        "notApplicableAlreadyCheckedOrOutsideDuration": "Неприменимо. Дата уже проверена или выходит за рамки продолжительности тапас.",
+        "dayRecuperatedSuccessfully": "День успешно восстановлен!",
+        "daysAdvancedSuccessfully": "Дни успешно продвинуты!",
+        "daysLeftOut": "пропущенных дней",
+        "yesterdayPending": "вчера в ожидании",
+        "todayPending": "сегодня в ожидании",
+        "addResults": "Добавить результаты",
+        "updateResults": "Обновить результаты",
+        "results": "Результаты",
+        "noResultsDefinedYet": "Результаты еще не определены.",
+        "clearLastDay": "Очистить последний день",
+        "noDayToClear": "Нет недавнего дня для очистки.",
+        "dayClearedSuccessfully": "День успешно очищен!",
+        "cannotClearFutureDay": "Нельзя очистить будущий день.",
+        "tapasAutoMarkedActive": "Тапас автоматически помечен как активный после проверки.",
+        "errorClearingDay": "Ошибка при очистке дня:",
+        "gdpr": "GDPR",
+        "legalNotice": "Юридическое уведомление",
+        "disclaimer": "Отказ от ответственности",
+        "about": "О программе",
+        "appVersion": "Версия приложения",
+        "tapasWebsite": "Веб-сайт Tapas Tracker",
+        "aboutDescription": "Tapas Tracker — это инструмент для личного развития, призванный помочь вам отслеживать и последовательно достигать ваших тапасов или целей.  Тапас — это форма йогической практики и часть десяти Ям и Ниям.  Приложение позволяет вам отслеживать успехи или неудачи в тапасах, гибко определять части тапаса, его цели и добавлять результаты после окончания тапаса или, в случае неудачи тапаса, причину ее возникновения.  История и статистика помогают анализировать вашу тапасью и планировать повторения неудачных или успешных тапасов соответственно.",
+        "data": "Данные",
+        "cleanData": "Очистить данные",
+        "cleanDataConfirmation": "Вы уверены, что хотите удалить все Тапасы с датой окончания, старше выбранного периода?",
+        "cleaningDataSuccessful": "Очистка данных прошла успешно! %s Тапасов удалено.",
+        "cleaningDataFailed": "Ошибка очистки данных:",
+        "selectTimeframe": "Выбрать период",
+        "5years": "5 лет",
+        "cleaningOldTapas": "Очистка старых Тапасов",
+        "clean": "Очистить"
     }
 };
 
@@ -878,6 +914,9 @@ const formatDateNoTimeToISO = (date) => {
 };
 
 const isTapasDateChecked = (checkedDays, date) => checkedDays && checkedDays.some(timestamp => {
+    if (timestamp && timestamp.seconds) {
+        timestamp = new Timestamp(timestamp.seconds, timestamp.nanoseconds);
+    }
     const checkedDate = timestamp.toDate();
     return formatDateNoTimeToISO(checkedDate) === formatDateToISO(date);
 });
@@ -2525,6 +2564,55 @@ const AboutModal = ({ onClose }) => {
     );
 };
 
+// New Clean Data Modal Component
+const CleanDataModal = ({ onClose, onCleanConfirmed }) => {
+    const { t } = useContext(AppContext);
+    const [selectedTimeframe, setSelectedTimeframe] = useState('5years'); // Default to 5 years
+
+    const handleConfirm = () => {
+        onCleanConfirmed(selectedTimeframe);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">{t('cleaningOldTapas')}</h3>
+                <p className="text-gray-700 mb-4 text-center">{t('cleanDataConfirmation')}</p>
+
+                <label htmlFor="timeframeSelect" className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('selectTimeframe')}:
+                </label>
+                <select
+                    id="timeframeSelect"
+                    value={selectedTimeframe}
+                    onChange={(e) => setSelectedTimeframe(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-6"
+                >
+                    <option value="all">{t('all')}</option>
+                    <option value="1year">{t('1year')}</option>
+                    <option value="2years">{t('2years')}</option>
+                    <option value="5years">{t('5years')}</option>
+                </select>
+
+                <div className="flex justify-around space-x-4">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
+                    >
+                        {t('cancel')}
+                    </button>
+                    <button
+                        onClick={handleConfirm}
+                        className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors duration-200"
+                    >
+                        {t('clean')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // Main App Component (now the default export for pages/index.js)
 const HomePage = () => {
@@ -2533,7 +2621,7 @@ const HomePage = () => {
     const [selectedTapas, setSelectedTapas] = useState(null);
     const [editingTapas, setEditingTapas] = useState(null);
     const [showMenu, setShowMenu] = useState(false); // State for menu visibility
-    const menuRef = useRef(null); // Ref for the menu div
+    const [showDataMenu, setShowDataMenu] = useState(false); // State for Data submenu visibility
     const fileInputRef = useRef(null); // Ref for the hidden file input
 
     // Firebase state
@@ -2556,6 +2644,7 @@ const HomePage = () => {
     const [password, setPassword] = useState('');
     const [showEmailLoginForm, setShowEmailLoginForm] = useState(false); // Toggle email/password form
     const [showAboutModal, setShowAboutModal] = useState(false); // State for About modal
+    const [showCleanDataModal, setShowCleanDataModal] = useState(false); // State for Clean Data modal
 
 
     const { locale, setLocale, t } = useContext(LocaleContext);
@@ -2631,6 +2720,7 @@ const HomePage = () => {
             // Close menu if it's open and the click is outside the menu itself
             if (showMenu && !event.target.parentElement.classList.contains('absolute')) {
                 setShowMenu(false);
+                setShowDataMenu(false); // Close submenu too
             }
             setStatusMessage('');
         };
@@ -2749,7 +2839,15 @@ const HomePage = () => {
                 const exportableData = {};
                 for (const key in data) {
                     if (key !== 'id' && key !== 'userId') { // Exclude 'id' and 'userId'
-                        if (data[key] instanceof Timestamp) {
+                        if (key === 'checkedDays') {
+                            exportableData[key] = data[key].map((timestamp) => {
+                                if (timestamp && timestamp.seconds) {
+                                    timestamp = new Timestamp(timestamp.seconds, timestamp.nanoseconds);
+                                }
+                                const checkedDate = timestamp.toDate();
+                                return formatDateNoTimeToISO(checkedDate);
+                            });
+                        } else if (data[key] instanceof Timestamp) {
                             exportableData[key] = data[key].toDate().toISOString();
                         } else if (data[key] instanceof Date) {
                              exportableData[key] = data[key].toISOString();
@@ -2773,7 +2871,8 @@ const HomePage = () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             setStatusMessage(t('exportSuccessful'));
-            setShowMenu(false); // Close menu after action
+            setShowMenu(false); // Close main menu
+            setShowDataMenu(false); // Close data submenu
         } catch (error) {
             console.error("Error exporting data:", error);
             setStatusMessage(`${t('exportFailed')} ${error.message}`);
@@ -2789,12 +2888,14 @@ const HomePage = () => {
         const file = event.target.files[0];
         if (!file) {
             setShowMenu(false); // Close menu if file selection is cancelled
+            setShowDataMenu(false); // Close submenu too
             return;
         }
 
         if (!db || !userId) {
             setStatusMessage("No user or database initialized for import.");
             setShowMenu(false); // Close menu
+            setShowDataMenu(false); // Close submenu too
             return;
         }
 
@@ -2831,7 +2932,7 @@ const HomePage = () => {
                             dataToSave.checkedDays = dataToSave.checkedDays.map(ts => {
                                 if (typeof ts === 'string') return new Date(ts);
                                 // If it's already a Firebase Timestamp, keep it
-                                if (ts && ts.seconds && ts.nanoseconds) return new Timestamp(ts.seconds, ts.nanoseconds);
+                                if (ts && ts.seconds) return new Timestamp(ts.seconds, ts.nanoseconds);
                                 return ts;
                             });
                         }
@@ -2886,7 +2987,8 @@ const HomePage = () => {
                     console.error("Error parsing JSON or saving data:", parseError);
                     setStatusMessage(`${t('invalidJsonFile')} ${parseError.message}`);
                 } finally {
-                    setShowMenu(false); // Close menu after processing
+                    setShowMenu(false); // Close main menu after processing
+                    setShowDataMenu(false); // Close data submenu
                 }
             };
             reader.readAsText(file);
@@ -2894,8 +2996,72 @@ const HomePage = () => {
             console.error("Error importing data:", error);
             setStatusMessage(`${t('importFailed')} ${error.message}`);
             setShowMenu(false); // Close menu on error
+            setShowDataMenu(false); // Close submenu on error
         } finally {
             event.target.value = ''; // Clear the input so the same file can be selected again
+        }
+    };
+
+    const handleCleanData = () => {
+        setShowCleanDataModal(true);
+        setShowMenu(false); // Close main menu
+        setShowDataMenu(false); // Close data submenu
+    };
+
+    const handleCleanDataConfirmed = async (timeframe) => {
+        if (!db || !userId) {
+            setStatusMessage("No user or database initialized for cleaning.");
+            setShowCleanDataModal(false);
+            return;
+        }
+
+        try {
+            let cutoffDate = new Date();
+            cutoffDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+            if (timeframe !== 'all') {
+                const years = parseInt(timeframe.replace('years', '').replace('year', ''));
+                cutoffDate.setFullYear(cutoffDate.getFullYear() - years);
+            } else {
+                // If 'all', set a very old date so all tapas will be considered for deletion
+                cutoffDate = null;
+            }
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const tapasCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/tapas`);
+            const q = query(tapasCollectionRef);
+            const querySnapshot = await getDocs(q);
+
+            let deletedCount = 0;
+            const batch = writeBatch(db); // Use a batch for efficient deletion
+
+            querySnapshot.docs.forEach(docSnapshot => {
+                const tapasData = docSnapshot.data();
+                const startDate = tapasData.startDate.toDate();
+                startDate.setHours(0, 0, 0, 0); // Normalize
+
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + tapasData.duration - 1); // Calculate end date
+                endDate.setHours(0, 0, 0, 0);
+
+                if (!cutoffDate || endDate < cutoffDate) {
+                    batch.delete(doc(tapasCollectionRef, docSnapshot.id));
+                    deletedCount++;
+                }
+            });
+
+            if (deletedCount > 0) {
+                await batch.commit();
+                setStatusMessage(t('cleaningDataSuccessful', deletedCount));
+            } else {
+                setStatusMessage("No old Tapas found to clean.");
+            }
+
+        } catch (error) {
+            console.error("Error cleaning data:", error);
+            setStatusMessage(`${t('cleaningDataFailed')} ${error.message}`);
+        } finally {
+            setShowCleanDataModal(false);
         }
     };
 
@@ -3049,13 +3215,20 @@ const HomePage = () => {
                                 </span>
                             )}
                             
-                            <div className="relative"> {/* Added flex and space-x for buttons */}
+                            <div className="relative">
                                 <button
                                     onClick={() => setShowMenu(!showMenu)}
                                     className="bg-white text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold hover:bg-indigo-100 transition-colors duration-200"
                                 >
                                     {t('menu')}
                                 </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    accept=".json"
+                                    style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}
+                                />
                                 {showMenu && (
                                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
                                         {auth && auth.currentUser && !auth.currentUser.isAnonymous ? (
@@ -3067,34 +3240,45 @@ const HomePage = () => {
                                             </button>
                                         ) : (
                                             <button
-                                                onClick={() => { setShowLoginPrompt(true); setShowMenu(false); }} // Close menu after showing prompt
+                                                onClick={() => { setShowLoginPrompt(true); setShowMenu(false); }}
                                                 className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
                                             >
                                                 {t('signIn')}
                                             </button>
                                         )}
+                                        <div className="border-t border-gray-200 my-1"></div> {/* Separator */}
                                         <button
-                                            onClick={handleImportDataClick}
-                                            className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                            onClick={() => setShowDataMenu(!showDataMenu)}
+                                            className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 flex justify-between items-center"
                                         >
-                                            {t('importData')}
+                                            {t('data')}
+                                            <svg className={`w-4 h-4 transform transition-transform ${showDataMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                         </button>
+                                        {showDataMenu && (
+                                            <div className="pl-4"> {/* Indent submenu items */}
+                                                <button
+                                                    onClick={handleImportDataClick}
+                                                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                >
+                                                    {t('importData')}
+                                                </button>
+                                                <button
+                                                    onClick={handleExportData}
+                                                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                >
+                                                    {t('exportData')}
+                                                </button>
+                                                <button
+                                                    onClick={handleCleanData}
+                                                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                >
+                                                    {t('cleanData')}
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="border-t border-gray-200 my-1"></div> {/* Separator */}
                                         <button
-                                            onClick={handleExportData}
-                                            className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-                                        >
-                                            {t('exportData')}
-                                        </button>
-                                        {/* Hidden file input for import */}
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleFileChange}
-                                            accept=".json"
-                                            style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}
-                                        />
-                                        <button
-                                            onClick={() => setShowAboutModal(true)}
+                                            onClick={() => { setShowAboutModal(true); setShowMenu(false); }}
                                             className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
                                         >
                                             {t('about')}
@@ -3107,7 +3291,7 @@ const HomePage = () => {
                 </header>
 
                 {statusMessage && (
-                    <div className={`p-3 text-center ${statusMessage.includes('successfully') || statusMessage.includes('erfolgreich') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-md mx-auto mt-4 max-w-lg`}>
+                    <div className={`p-3 text-center ${statusMessage.includes('successfully') || statusMessage.includes('erfolgreich') || statusMessage.includes('reușită') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-md mx-auto mt-4 max-w-lg`}>
                         {statusMessage}
                     </div>
                 )}
@@ -3192,6 +3376,7 @@ const HomePage = () => {
 
                 {/* Modals/Overlays */}
                 {showAboutModal && <AboutModal onClose={() => setShowAboutModal(false)} />}
+                {showCleanDataModal && <CleanDataModal onClose={() => setShowCleanDataModal(false)} onCleanConfirmed={handleCleanDataConfirmed} />}
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
             </div>
         </AppContext.Provider>
