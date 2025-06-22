@@ -7,6 +7,7 @@ import React, { useState, useEffect, createContext, useContext, useCallback, use
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { Suspense, use } from 'react'
 
 const __app_id = "1:136005099339:web:28b6186333d3ae2ef792ce"; // Directly assign provided appId
 
@@ -161,7 +162,7 @@ const translations = {
         "errorClearingDay": "Error clearing day:",
         "gdpr": "GDPR",
         "legalNotice": "Legal Notice",
-        "disclaimer": "Disclaimer",
+        "license": "License",
         "about": "About",
         "appVersion": "App Version",
         "tapasWebsite": "Tapas Tracker Website",
@@ -325,7 +326,7 @@ const translations = {
         "errorClearingDay": "Fehler beim Löschen des Tages:",
         "gdpr": "Datenschutz",
         "legalNotice": "Impressum",
-        "disclaimer": "Haftungsausschluss",
+        "license": "Lizenz",
         "about": "Über uns",
         "appVersion": "App-Version",
         "tapasWebsite": "Tapas Tracker Webseite",
@@ -489,7 +490,7 @@ const translations = {
         "errorClearingDay": "Eroare la ștergerea zilei:",
         "gdpr": "GDPR",
         "legalNotice": "Notă legală",
-        "disclaimer": "Declinarea responsabilității",
+        "license": "licenţă",
         "about": "Despre",
         "appVersion": "Versiunea aplicației",
         "tapasWebsite": "Site-ul Tapas Tracker",
@@ -653,7 +654,7 @@ const translations = {
         "errorClearingDay": "Errore durante la cancellazione del giorno:",
         "gdpr": "GDPR",
         "legalNotice": "Note legali",
-        "disclaimer": "Dichiarazione di non responsabilità",
+        "license": "licenza",
         "about": "Informazioni",
         "appVersion": "Versione dell'app",
         "tapasWebsite": "Sito web di Tapas Tracker",
@@ -808,7 +809,7 @@ const translations = {
         "errorClearingDay": "Ошибка при очистке дня:",
         "gdpr": "GDPR",
         "legalNotice": "Юридическое уведомление",
-        "disclaimer": "Отказ от ответственности",
+        "license": "лицензия",
         "about": "О программе",
         "appVersion": "Версия приложения",
         "tapasWebsite": "Веб-сайт Tapas Tracker",
@@ -1357,7 +1358,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
         } else if (todayPending) {
             return { statusText: t('todayPending'), statusClass: 'text-orange-600' }; // Changed to orange
         } else if (leftOutDaysCount > 0) {
-            return { statusText: `${leftOutDaysCount} ${t('daysLeftOut')}`, statusClass: 'text-red-600' };
+            return { statusText: `${leftOutDaysCount} ${t('daysLeftOut')}`, statusClass: 'text-gray-600' };
         } else {
             return { statusText: '', statusClass: '' }; // No special pending status
         }
@@ -2613,6 +2614,42 @@ const CleanDataModal = ({ onClose, onCleanConfirmed }) => {
     );
 };
 
+const License = ({ onClose }) => {
+  const [data, setData] = useState(null)
+  const [isLoading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('https://raw.githubusercontent.com/ReimundR/tapas-tracker/refs/heads/main/LICENSE')
+    .then(response => {
+        return response.text()
+    })
+    .then((data) => {
+        //setData(data.replace('\n\n', '[@2]').replace('\n ', '[@1]').replace('\n', ' ').replace('[@2]', '\n\n').replace('[@1]', '\n '))
+        setData(data.replace(/\n[^\s]/g, ' '))
+        setLoading(false)
+    })
+  }, [])
+ 
+  //if (isLoading) return <p>Loading...</p>
+  //if (!data) return <p>No profile data</p>
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full mx-auto my-auto">
+                <div className="flex justify-between items-center mb-6">
+                    <div className="text-gray-700 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
+                        <Suspense fallback={<div>Loading...</div>}>
+                        {data}
+                        </Suspense>
+                    </div>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                        &times;
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // Main App Component (now the default export for pages/index.js)
 const HomePage = () => {
@@ -2622,6 +2659,7 @@ const HomePage = () => {
     const [editingTapas, setEditingTapas] = useState(null);
     const [showMenu, setShowMenu] = useState(false); // State for menu visibility
     const [showDataMenu, setShowDataMenu] = useState(false); // State for Data submenu visibility
+    const [selectedLicense, setSelectedLicense] = useState(null);
     const fileInputRef = useRef(null); // Ref for the hidden file input
 
     // Firebase state
@@ -2742,6 +2780,10 @@ const HomePage = () => {
     const handleCloseTapasDetail = () => {
         setSelectedTapas(null);
         setCurrentPage(pageBeforeDetail); // Go back to the page that was active before
+    };
+
+    const handleCloseLicense = () => {
+        setSelectedLicense(null);
     };
 
     const handleEditTapas = (tapasItem) => {
@@ -3359,6 +3401,9 @@ const HomePage = () => {
                     {selectedTapas && currentPage === 'detail' && (
                         <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas} setSelectedTapas={setSelectedTapas} />
                     )}
+                    {selectedLicense && (
+                        <License onClose={handleCloseLicense} />
+                    )}
                 </main>
 
                 {/* Footer */}
@@ -3370,7 +3415,13 @@ const HomePage = () => {
                         <span className="text-gray-500">|</span>
                         <a href="#" className="hover:underline text-gray-300">{t('legalNotice')}</a>
                         <span className="text-gray-500">|</span>
-                        <a href="#" className="hover:underline text-gray-300">{t('disclaimer')}</a>
+                        <button
+                            onClick={() => { setSelectedLicense('on'); }}
+                            className="px-4 py-1 rounded-md text-sm font-medium transition-colors duration-200 text-lightblue-700 hover:bg-blue-100"
+                        >
+                            {t('license')}
+                        </button>
+                        <a href="#" className="hover:underline text-gray-300">{t('license')}</a>
                     </div>
                 </footer>
 
