@@ -175,7 +175,8 @@ const translations = {
         "selectTimeframe": "Select Timeframe",
         "5years": "5 Years",
         "cleaningOldTapas": "Cleaning Old Tapas",
-        "clean": "Clean"
+        "clean": "Clean",
+        "close": "Close"
     },
     de: {
         "appName": "Tapas-Verfolger",
@@ -339,7 +340,8 @@ const translations = {
         "selectTimeframe": "Zeitrahmen auswählen",
         "5years": "5 Jahre",
         "cleaningOldTapas": "Alte Tapas bereinigen",
-        "clean": "Bereinigen"
+        "clean": "Bereinigen",
+        "close": "Schließen"
     },
     ro: {
         "appName": "Urmăritor Tapas",
@@ -503,7 +505,8 @@ const translations = {
         "selectTimeframe": "Selectează intervalul de timp",
         "5years": "5 Ani",
         "cleaningOldTapas": "Curățarea Tapas-urilor vechi",
-        "clean": "Curăță"
+        "clean": "Curăță",
+        "close": "Închide"
     },
     it: {
         "appName": "Tapas Tracker",
@@ -658,7 +661,8 @@ const translations = {
         "about": "Informazioni",
         "appVersion": "Versione dell'app",
         "tapasWebsite": "Sito web di Tapas Tracker",
-        "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente.  Tapas è una forma di pratica yoga e fa parte dei dieci Yama e Niyama.  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa.  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite."
+        "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente.  Tapas è una forma di pratica yoga e fa parte dei dieci Yama e Niyama.  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa.  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite.",
+        "close": "Chiudere"
     },
     ru: {
         "appName": "Трекер Тапас",
@@ -822,7 +826,8 @@ const translations = {
         "selectTimeframe": "Выбрать период",
         "5years": "5 лет",
         "cleaningOldTapas": "Очистка старых Тапасов",
-        "clean": "Очистить"
+        "clean": "Очистить",
+        "close": "закрывать"
     }
 };
 
@@ -2615,37 +2620,91 @@ const CleanDataModal = ({ onClose, onCleanConfirmed }) => {
 };
 
 const License = ({ onClose }) => {
-  const [data, setData] = useState(null)
-  const [isLoading, setLoading] = useState(true)
+    const { t } = useContext(AppContext);
+    const [data, setData] = useState(null)
+    const [isLoading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetch('https://raw.githubusercontent.com/ReimundR/tapas-tracker/refs/heads/main/LICENSE')
-    .then(response => {
-        return response.text()
-    })
-    .then((data) => {
-        //setData(data.replace('\n\n', '[@2]').replace('\n ', '[@1]').replace('\n', ' ').replace('[@2]', '\n\n').replace('[@1]', '\n '))
-        setData(data.replace(/\n[^\s]/g, ' '))
-        setLoading(false)
-    })
-  }, [])
+    useEffect(() => {
+        fetch('https://raw.githubusercontent.com/ReimundR/tapas-tracker/refs/heads/main/LICENSE')
+        .then(response => {
+            return response.text()
+        })
+        .then((data) => {
+            //setData(data.replace('\n\n', '[@2]').replace('\n ', '[@1]').replace('\n', ' ').replace('[@2]', '\n\n').replace('[@1]', '\n '))
+            //setData(data.replace(/\n[^\s]/g, ' '))
+            setData(data)
+            setLoading(false)
+        })
+    }, [])
  
-  //if (isLoading) return <p>Loading...</p>
-  //if (!data) return <p>No profile data</p>
+    //if (isLoading) return <p>Loading...</p>
+    //if (!data) return <p>No profile data</p>
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full mx-auto my-auto">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                    &times;
+                </button>
                 <div className="flex justify-between items-center mb-6">
                     <div className="text-gray-700 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
                         <Suspense fallback={<div>Loading...</div>}>
                         {data}
                         </Suspense>
                     </div>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-3xl font-bold">
-                        &times;
-                    </button>
                 </div>
+                <button onClick={onClose} className="w-full text-white shadow-lg border-2 border-blue-800 bg-blue-600 px-4 py-2 rounded-md font-medium transition-colors duration-200 hover:bg-blue-500 text-xl font-bold">
+                    {t('close')}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const LegalNotice = ({ onClose }) => {
+    const { t } = useContext(AppContext);
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                    &times;
+                </button>
+                <h2 className="text-3xl font-bold text-gray-800 mb-6">{t('legalNotice')}</h2>
+                <div className="flex justify-between items-center mb-6">
+                    <div className="text-gray-700 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
+                        <p>Reimund Renner</p>
+                        <p>Zum Baumgarten 7</p>
+                        <p>79249 Merzhausen</p>
+                        <p className="py-2">Kontakt E-Mail: reimund.renner@gmail.com</p>
+                        <p className="py-2">Inhaltlicher Verantwortlicher: wie oben</p>
+                        <p className="py-2">Allgemeine Informationspflichten zur alternativen Streitbeilegung nach Art. 14 Abs. 1 ODR-VO und § 36 VSBG (Verbraucherstreitbeilegungsgesetz)</p>
+                        <p className="py-2">Die europäische Kommission stellt eine Plattform zur Online-Streitbelegung (OS) zur Verfügung, die Sie unter dieser Adresse finden: http://ec.europa.eu/consumers/odr/. Zur Teilnahme an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle sind wir nicht verpflichtet und auch nicht bereit.</p>
+                    </div>
+                </div>
+                <button onClick={onClose} className="text-white shadow-lg border-2 border-blue-800 bg-blue-600 px-4 py-2 rounded-md font-medium transition-colors duration-200 hover:bg-blue-500 text-xl font-bold">
+                    {t('close')}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const GDPR = ({ onClose }) => {
+    const { t } = useContext(AppContext);
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                    &times;
+                </button>
+                <h2 className="text-3xl font-bold text-gray-800 mb-6">{t('gdpr')}</h2>
+                <div className="flex justify-between items-center mb-6">
+                    <div className="text-gray-700 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
+                    </div>
+                </div>
+                <button onClick={onClose} className="w-full text-white shadow-lg border-2 border-blue-800 bg-blue-600 px-4 py-2 rounded-md font-medium transition-colors duration-200 hover:bg-blue-500 text-xl font-bold">
+                    {t('close')}
+                </button>
             </div>
         </div>
     );
@@ -2659,7 +2718,9 @@ const HomePage = () => {
     const [editingTapas, setEditingTapas] = useState(null);
     const [showMenu, setShowMenu] = useState(false); // State for menu visibility
     const [showDataMenu, setShowDataMenu] = useState(false); // State for Data submenu visibility
-    const [selectedLicense, setSelectedLicense] = useState(null);
+    const [selectedLicense, setSelectedLicense] = useState(false);
+    const [selectedLegalNotice, setSelectedLegalNotice] = useState(false);
+    const [selectedGDPR, setSelectedGDPR] = useState(false);
     const fileInputRef = useRef(null); // Ref for the hidden file input
 
     // Firebase state
@@ -2784,6 +2845,14 @@ const HomePage = () => {
 
     const handleCloseLicense = () => {
         setSelectedLicense(null);
+    };
+
+    const handleCloseLegalNotice = () => {
+        setSelectedLegalNotice(null);
+    };
+    
+    const handleCloseGDPR = () => {
+        setSelectedGDPR(null);
     };
 
     const handleEditTapas = (tapasItem) => {
@@ -3404,6 +3473,12 @@ const HomePage = () => {
                     {selectedLicense && (
                         <License onClose={handleCloseLicense} />
                     )}
+                    {selectedLegalNotice && (
+                        <LegalNotice onClose={handleCloseLegalNotice} />
+                    )}
+                    {selectedGDPR && (
+                        <GDPR onClose={handleCloseGDPR} />
+                    )}
                 </main>
 
                 {/* Footer */}
@@ -3411,17 +3486,26 @@ const HomePage = () => {
                     <p>&copy; {new Date().getFullYear()} {t('appName')}</p>
                     <p>Created by Reimund Renner</p>
                     <div className="flex justify-center space-x-4 mt-2">
-                        <a href="#" className="hover:underline text-gray-300">{t('gdpr')}</a>
-                        <span className="text-gray-500">|</span>
-                        <a href="#" className="hover:underline text-gray-300">{t('legalNotice')}</a>
-                        <span className="text-gray-500">|</span>
                         <button
-                            onClick={() => { setSelectedLicense('on'); }}
-                            className="px-4 py-1 rounded-md text-sm font-medium transition-colors duration-200 text-lightblue-700 hover:bg-blue-100"
+                            onClick={() => { setSelectedGDPR(true); }}
+                            className="px-4 py-1 rounded-md text-sm font-medium transition-colors duration-200 text-lightblue-700 hover:text-blue-700 hover:bg-blue-100"
+                        >
+                            {t('gdpr')}
+                        </button>
+                        <span className="text-gray-500 py-1">|</span>
+                        <button
+                            onClick={() => { setSelectedLegalNotice(true); }}
+                            className="px-4 py-1 rounded-md text-sm font-medium transition-colors duration-200 text-lightblue-700 hover:text-blue-700 hover:bg-blue-100"
+                        >
+                            {t('legalNotice')}
+                        </button>
+                        <span className="text-gray-500 py-1">|</span>
+                        <button
+                            onClick={() => { setSelectedLicense(true); }}
+                            className="px-4 py-1 rounded-md text-sm font-medium transition-colors duration-200 text-lightblue-700 hover:text-blue-700 hover:bg-blue-100"
                         >
                             {t('license')}
                         </button>
-                        <a href="#" className="hover:underline text-gray-300">{t('license')}</a>
                     </div>
                 </footer>
 
