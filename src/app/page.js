@@ -7,9 +7,12 @@ import React, { useState, useEffect, createContext, useContext, useCallback, use
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
-import { Suspense, use } from 'react'
+import { Suspense } from 'react'
+import GdprEN from "@/content/privacy-policy-en.mdx";
+import GdprDE from "@/content/privacy-policy-de.mdx";
 
 const __app_id = "1:136005099339:web:28b6186333d3ae2ef792ce"; // Directly assign provided appId
+const appVersion = process.env.version
 
 // Define translations for different languages
 const translations = {
@@ -179,7 +182,7 @@ const translations = {
         "close": "Close"
     },
     de: {
-        "appName": "Tapas-Verfolger",
+        "appName": "Tapas Tracker",
         "hello": "Hallo",
         "userId": "Benutzer-ID",
         "logout": "Abmelden",
@@ -921,7 +924,7 @@ const formatDateNoTimeToISO = (date) => {
 
 const isTapasDateChecked = (checkedDays, date) => checkedDays && checkedDays.some(timestamp => {
     if (timestamp && timestamp.seconds) {
-        timestamp = new Timestamp(timestamp.seconds, timestamp.nanoseconds);
+        timestamp = new Timestamp(timestamp.seconds, 0);
     }
     const checkedDate = timestamp.toDate();
     return formatDateNoTimeToISO(checkedDate) === formatDateToISO(date);
@@ -2549,7 +2552,7 @@ const AboutModal = ({ onClose }) => {
             <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto">
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">{t('about')}</h3>
                 <p className="text-lg text-gray-700 mb-2"><strong>{t('appName')}</strong></p>
-                <p className="text-md text-gray-600 mb-4">{t('appVersion')}: 1.0.0</p> {/* Hardcoded version */}
+                <p className="text-md text-gray-600 mb-4">{t('appVersion')}: {appVersion}</p>
                 <a
                     href="#" // Placeholder link
                     target="_blank"
@@ -2690,18 +2693,21 @@ const LegalNotice = ({ onClose }) => {
 };
 
 const GDPR = ({ onClose }) => {
-    const { t } = useContext(AppContext);
+    const { locale, setLocale, t } = useContext(LocaleContext);
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
-                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-3xl mx-auto my-auto">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-5xl font-bold">
                     &times;
                 </button>
-                <h2 className="text-3xl font-bold text-gray-800 mb-6">{t('gdpr')}</h2>
-                <div className="flex justify-between items-center mb-6">
-                    <div className="text-gray-700 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
-                    </div>
-                </div>
+                <div className="prose lg:prose-lg mx-auto p-4 sm:p-6 md:p-8 bg-white rounded-xl shadow-lg">
+                    {(locale=='de') && (
+                        <GdprDE />
+                    )}
+                    {(locale!='de') && (
+                        <GdprEN />
+                    )}
+                </div>                        
                 <button onClick={onClose} className="w-full text-white shadow-lg border-2 border-blue-800 bg-blue-600 px-4 py-2 rounded-md font-medium transition-colors duration-200 hover:bg-blue-500 text-xl font-bold">
                     {t('close')}
                 </button>
@@ -2953,7 +2959,7 @@ const HomePage = () => {
                         if (key === 'checkedDays') {
                             exportableData[key] = data[key].map((timestamp) => {
                                 if (timestamp && timestamp.seconds) {
-                                    timestamp = new Timestamp(timestamp.seconds, timestamp.nanoseconds);
+                                    timestamp = new Timestamp(timestamp.seconds, 0);
                                 }
                                 const checkedDate = timestamp.toDate();
                                 return formatDateNoTimeToISO(checkedDate);
@@ -3043,7 +3049,7 @@ const HomePage = () => {
                             dataToSave.checkedDays = dataToSave.checkedDays.map(ts => {
                                 if (typeof ts === 'string') return new Date(ts);
                                 // If it's already a Firebase Timestamp, keep it
-                                if (ts && ts.seconds) return new Timestamp(ts.seconds, ts.nanoseconds);
+                                if (ts && ts.seconds) return new Timestamp(ts.seconds, 0);
                                 return ts;
                             });
                         }
@@ -3062,7 +3068,7 @@ const HomePage = () => {
                         } else if (Array.isArray(dataToSave.recuperatedDays)) {
                             dataToSave.recuperatedDays = dataToSave.recuperatedDays.map(ts => {
                                 if (typeof ts === 'string') return new Date(ts);
-                                if (ts && ts.seconds && ts.nanoseconds) return new Timestamp(ts.seconds, ts.nanoseconds);
+                                if (ts && ts.seconds) return new Timestamp(ts.seconds, 0);
                                 return ts;
                             });
                         }
@@ -3071,7 +3077,7 @@ const HomePage = () => {
                         } else if (Array.isArray(dataToSave.advancedDays)) {
                             dataToSave.advancedDays = dataToSave.advancedDays.map(ts => {
                                 if (typeof ts === 'string') return new Date(ts);
-                                if (ts && ts.seconds && ts.nanoseconds) return new Timestamp(ts.seconds, ts.nanoseconds);
+                                if (ts && ts.seconds) return new Timestamp(ts.seconds, 0);
                                 return ts;
                             });
                         }
