@@ -9,6 +9,7 @@ const translations = {
   en: {
     message1: 'We use cookies to ensure the basic functionality of our app and to enhance your experience.',
     message2: 'By continuing to use our app, you agree to our use of these essential cookies.',
+    moreDetailsPhrase: 'You can find more details in our',
     policyLink: 'Privacy Policy',
     buttonText: 'I Understand',
     showMore: 'Show more details',
@@ -26,6 +27,7 @@ const translations = {
   de: {
     message1: 'Wir verwenden Cookies, um die grundlegende Funktionalität unserer App zu gewährleisten und Ihre Nutzungserfahrung zu verbessern.',
     message2: 'Durch die weitere Nutzung unserer App stimmen Sie der Verwendung dieser notwendigen Cookies zu.',
+    moreDetailsPhrase: 'Weitere Details finden Sie in unserer',
     policyLink: 'Datenschutzerklärung',
     buttonText: 'Ich verstehe',
     showMore: 'Details anzeigen',
@@ -43,6 +45,7 @@ const translations = {
   ro: {
     message1: 'Folosim cookie-uri pentru a asigura funcționalitatea de bază a aplicației noastre și pentru a vă îmbunătăți experiența.',
     message2: 'Continuând să utilizați aplicația noastră, sunteți de acord cu utilizarea acestor cookie-uri esențiale.',
+    moreDetailsPhrase: 'Puteți găsi mai multe detalii în',
     policyLink: 'Politica de confidențialitate',
     buttonText: 'Am înțeles',
     showMore: 'Afișează mai multe detalii',
@@ -60,6 +63,7 @@ const translations = {
   it: {
     message1: 'Utilizziamo i cookie per garantire la funzionalità di base della nostra app e per migliorare la tua esperienza.',
     message2: 'Continuando a utilizzare la nostra app, accetti l\'utilizzo di questi cookie essenziali.',
+    moreDetailsPhrase: 'Puoi trovare maggiori dettagli nella nostra',
     policyLink: 'Informativa sulla privacy',
     buttonText: 'Ho capito',
     showMore: 'Mostra più dettagli',
@@ -77,6 +81,7 @@ const translations = {
   ru: {
     message1: 'Мы используем файлы cookie для обеспечения базовой функциональности нашего приложения и улучшения вашего опыта.',
     message2: 'Продолжая использовать наше приложение, вы соглашаетесь с использованием этих необходимых файлов cookie.',
+    moreDetailsPhrase: 'Вы можете найти более подробную информацию в нашей',
     policyLink: 'Политика конфиденциальности',
     buttonText: 'Я понимаю',
     showMore: 'Показать подробности',
@@ -162,7 +167,7 @@ const CookieConsentBanner = () => {
     <div
       className="fixed bottom-0 left-0 right-0 bg-gray-800 text-white p-4 shadow-lg z-50
                  flex flex-col gap-3 sm:flex-row items-center justify-between
-                 rounded-t-lg sm:rounded-none" // Add rounded top corners for mobile pop-up feel
+                 rounded-t-lg sm:rounded-none max-h-full overflow-y-auto" // Add rounded top corners for mobile pop-up feel
     >
       <div className="text-sm text-center sm:text-left flex-grow">
         <p>
@@ -171,7 +176,7 @@ const CookieConsentBanner = () => {
         <p className="mt-2">
           {text.message2}
           <br />
-          You can find more details in our{' '}
+          {text.moreDetailsPhrase}{' '}
           <Link href={`/privacy-policy-${policyLocale}`} className="text-blue-400 hover:underline">
             {text.policyLink}
           </Link>
