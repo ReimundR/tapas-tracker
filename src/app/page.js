@@ -3442,11 +3442,12 @@ const HomePage = () => {
                         </button>
                         <button
                             onClick={() => { setCurrentPage('add'); setSelectedTapas(null); }}
-                            className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
+                            aria-label={t('addNew')}
+                            className={`px-4 py-2 rounded-md text-2xl font-medium transition-colors duration-200 font-bold ${
                                 currentPage === 'add' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100'
                             }`}
                         >
-                            {t('addNew')}
+                            +
                         </button>
                     </div>
                 </nav>
