@@ -884,6 +884,60 @@ const LocaleProvider = ({ children }) => {
     );
 };
 
+// Theme Context
+const ThemeContext = createContext({
+    theme: 'light',
+    toggleTheme: () => {},
+});
+
+// Theme Provider component
+const ThemeProvider = ({ children }) => {
+    const [theme, setTheme] = useState('light');
+
+    useEffect(() => {
+        // On component mount, check for saved theme in local storage
+        const savedTheme = localStorage.getItem('tapas_theme');
+        if (savedTheme) {
+            setTheme(savedTheme); // Set theme state
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark'); // Add 'dark' class to html element
+            } else {
+                document.documentElement.classList.remove('dark'); // Ensure 'dark' class is removed
+            }
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            // If no saved theme, check system preference
+            setTheme('dark');
+            document.documentElement.classList.add('dark'); // Add 'dark' class for system preference
+        } else {
+            // Default to light mode if no saved theme and no system preference for dark
+            setTheme('light');
+            document.documentElement.classList.remove('dark'); // Ensure 'dark' class is removed
+        }
+    }, []); // Run only once on mount
+
+    // Function to toggle the theme
+    const toggleTheme = () => {
+        setTheme(prevTheme => {
+            const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('tapas_theme', newTheme); // Save the new theme to local storage
+
+            //document.querySelector("html").setAttribute("data-theme", newTheme);
+            // Apply/remove the 'dark' class directly to the html element
+            if (newTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            return newTheme; // Update the theme state
+        });
+    };
+
+    return (
+        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+            {children}
+        </ThemeContext.Provider>
+    );
+};
 
 // Define context for Firebase and user data
 const AppContext = createContext(null);
@@ -893,8 +947,8 @@ const AppContext = createContext(null);
 const ConfirmDialog = ({ message, onConfirm, onCancel, confirmText, cancelText }) => {
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto">
-                <p className="text-lg font-semibold text-gray-800 mb-6 text-center">{message}</p>
+            <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <p className="text-lg font-semibold mb-6 text-center">{message}</p>
                 <div className="flex justify-around space-x-4">
                     <button
                         onClick={onCancel}
@@ -933,6 +987,7 @@ const isTapasDateChecked = (checkedDays, date) => checkedDays && checkedDays.som
 // Component for adding/editing a Tapas
 const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const { db, userId, t } = useContext(AppContext);
+
     const [name, setName] = useState('');
     const [startDate, setStartDate] = useState('');
     const [startTime, setStartTime] = useState('');
@@ -1143,32 +1198,32 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
 
 
     return (
-        <div className="p-4 bg-white rounded-lg shadow-md mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">{editingTapas ? t('editTapasTitle') : t('addEditTapas')}</h2>
+        <div className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">{editingTapas ? t('editTapasTitle') : t('addEditTapas')}</h2>
             {errorMessage && <p className="text-red-600 mb-4 font-medium">{errorMessage}</p>}
             {successMessage && <p className="text-green-600 mb-4 font-medium">{successMessage}</p>}
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-1">
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">{t('name')}</label>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('name')}</label>
                     <input
                         type="text"
                         id="name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                         required
                     />
                 </div>
                 <div className="col-span-1">
-                    <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">{t('startDate')}</label>
+                    <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('startDate')}</label>
                     <div className="flex items-center mt-1">
                         <input
                             type="date"
                             id="startDate"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="block w-full px-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                             required
                         />
                         <button
@@ -1181,24 +1236,24 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     </div>
                 </div>
                 <div className="col-span-1">
-                    <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">{t('startTime')} ({t('causeOptional').split('(')[0].trim().toLowerCase()})</label>
+                    <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('startTime')} ({t('causeOptional').split('(')[0].trim().toLowerCase()})</label>
                     <input
                         type="time"
                         id="startTime"
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     />
                 </div>
                 <div className="col-span-1">
-                    <label htmlFor="duration" className="block text-sm font-medium text-gray-700">{t('duration')} [{t('days').toLowerCase()}]</label>
+                    <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('duration')} [{t('days').toLowerCase()}]</label>
                     <div className="flex items-center mt-1">
                         <input
                             type="number"
                             id="duration"
                             value={duration}
                             onChange={handleChangeDuration} // Use the new handler
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="block w-full px-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                             required
                             min="1"
                         />
@@ -1219,54 +1274,54 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     </div>
                 </div>
                 <div className="col-span-1">
-                    <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">{t('endDate')}</label>
+                    <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('endDate')}</label>
                     <input
                         type="date"
                         id="endDate"
                         value={endDate}
                         onChange={handleChangeEndDate} // Use the new handler
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     />
                 </div>
                 <div className="col-span-full">
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">{t('descriptionAndGoal')}</label>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
                     <textarea
                         id="description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         rows="3"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     ></textarea>
                 </div>
                 {/* New: Goals input */}
                 <div className="col-span-full">
-                    <label htmlFor="goals" className="block text-sm font-medium text-gray-700">{t('goals0n')}</label>
+                    <label htmlFor="goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('goals0n')}</label>
                     <textarea
                         id="goals"
                         value={goals}
                         onChange={(e) => setGoals(e.target.value)}
                         rows="3"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     ></textarea>
                 </div>
                 <div className="col-span-full">
-                    <label htmlFor="parts" className="block text-sm font-medium text-gray-700">{t('parts0n')}</label>
+                    <label htmlFor="parts" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('parts0n')}</label>
                     <textarea
                         id="parts"
                         value={parts}
                         onChange={(e) => setParts(e.target.value)}
                         rows="3"
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     ></textarea>
                 </div>
                 <div className="col-span-full">
-                    <label htmlFor="crystallizationTime" className="block text-sm font-medium text-gray-700">{t('crystallizationTime')}</label>
+                    <label htmlFor="crystallizationTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('crystallizationTime')}</label>
                     <input
                         type="number"
                         id="crystallizationTime"
                         value={crystallizationTime}
                         onChange={(e) => setCrystallizationTime(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                         min="0"
                     />
                 </div>
@@ -1279,7 +1334,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         onChange={(e) => setAllowRecuperation(e.target.checked)}
                         className="form-checkbox h-5 w-5 text-indigo-600 rounded"
                     />
-                    <label htmlFor="allowRecuperation" className="ml-2 block text-sm font-medium text-gray-700">
+                    <label htmlFor="allowRecuperation" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {t('allowRecuperation')}
                     </label>
                 </div>
@@ -1418,15 +1473,15 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
     return (
         <div className="space-y-4">
             {showFilters && (
-                <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+                <div className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
                     <div className="flex flex-col sm:flex-row justify-around items-center gap-4">
                         {/* Status Filter */}
                         <div className="flex items-center space-x-2">
-                            <span className="text-gray-700 font-medium">{t('filterBy')}:</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{t('filterBy')}:</span>
                             <select
                                 value={historyStatusFilter}
                                 onChange={(e) => setHistoryStatusFilter(e.target.value)}
-                                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                             >
                                 <option value="all">{t('all')}</option>
                                 <option value="successful">{t('successful')}</option>
@@ -1436,11 +1491,11 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
 
                         {/* Time Filter */}
                         <div className="flex items-center space-x-2">
-                            <span className="text-gray-700 font-medium">{t('timeframe')}:</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{t('timeframe')}:</span>
                             <select
                                 value={historyTimeFilter}
                                 onChange={(e) => setHistoryTimeFilter(e.target.value)}
-                                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                             >
                                 <option value="all">{t('all')}</option>
                                 <option value="1month">{t('1month')}</option>
@@ -1453,7 +1508,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                 </div>
             )}
             {displayedTapas.length === 0 ? (
-                <p className="text-gray-600 text-center py-8">{t('noTapasFound')}</p>
+                <p className="text-center py-8 text-gray-600 dark:text-gray-400">{t('noTapasFound')}</p>
             ) : (
                 displayedTapas.map((tapasItem) => {
                     const { endDate, daysRemaining } = getTapasDatesInfo(tapasItem);
@@ -1462,13 +1517,13 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                     return (
                         <div
                             key={tapasItem.id}
-                            className="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                            className="p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
                             onClick={() => onSelectTapas(tapasItem)}
                         >
                             <h3 className="text-xl font-semibold text-indigo-700 mb-2">{tapasItem.name}</h3>
-                            <p className="text-sm text-gray-600">{t('startDate')}: {tapasItem.startDate.toDate().toLocaleDateString()}</p>
-                            <p className="text-sm text-gray-600">{t('endDate')}: {endDate.toLocaleDateString()}</p>
-                            <p className="text-sm text-gray-600">{t('duration')}: {tapasItem.duration} {t('days').toLowerCase()}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{t('startDate')}: {tapasItem.startDate.toDate().toLocaleDateString()}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{t('endDate')}: {endDate.toLocaleDateString()}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{t('duration')}: {tapasItem.duration} {t('days').toLowerCase()}</p>
                             {tapasItem.status === 'active' && (
                                 <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
                             )}
@@ -1502,13 +1557,13 @@ const ResultsModal = ({ tapas, onClose, onSaveResults }) => {
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">{tapas.results ? t('updateResults') : t('addResults')}</h3>
+            <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <h3 className="text-xl font-bold mb-4">{tapas.results ? t('updateResults') : t('addResults')}</h3>
                 <textarea
                     value={resultsText}
                     onChange={(e) => setResultsText(e.target.value)}
                     rows="6"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-4"
+                    className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
                     placeholder={t('results')}
                 ></textarea>
                 <div className="flex justify-end space-x-4">
@@ -1534,6 +1589,7 @@ const ResultsModal = ({ tapas, onClose, onSaveResults }) => {
 // Component for a single Tapas detail view
 const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added setSelectedTapas prop
     const { db, userId, t } = useContext(AppContext);
+
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [confirmName, setConfirmName] = useState('');
     const [showFailDialog, setShowFailDialog] = useState(false);
@@ -1569,12 +1625,18 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
     // Check if a specific date has been recuperated
     const isDateRecuperated = (date) => tapas.recuperatedDays && tapas.recuperatedDays.some(timestamp => {
+        if (timestamp && timestamp.seconds) {
+            timestamp = new Timestamp(timestamp.seconds, 0);
+        }
         const recuperatedDate = timestamp.toDate();
         return formatDateToISO(recuperatedDate) === formatDateToISO(date);
     });
 
      // Check if a specific date has been advanced
     const isDateAdvanced = (date) => tapas.advancedDays && tapas.advancedDays.some(timestamp => {
+        if (timestamp && timestamp.seconds) {
+            timestamp = new Timestamp(timestamp.seconds, 0);
+        }
         const advancedDate = timestamp.toDate();
         return formatDateToISO(advancedDate) === formatDateToISO(date);
     });
@@ -2053,17 +2115,17 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
-            <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto">
+            <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-3xl font-bold text-gray-900">{tapas.name}</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{tapas.name}</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-3xl font-bold">
                         &times;
                     </button>
                 </div>
 
                 {message && <p className="mb-4 text-center text-green-600 font-medium">{message}</p>}
 
-                <div className="space-y-4 text-gray-700">
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
                     <p><strong className="font-semibold">{t('startDate')}:</strong> {tapas.startDate.toDate().toLocaleDateString()}</p>
                     {tapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {tapas.startTime}</p>}
                     <p><strong className="font-semibold">{t('duration')}:</strong> {tapas.duration} {t('days').toLowerCase()}</p>
@@ -2078,7 +2140,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                             </ul>
                         </div>
                     ) : (
-                        <p className="text-gray-500 italic">{t('noGoalsDefinedYet')}</p>
+                        <p className="italic text-gray-500 dark:text-gray-400">{t('noGoalsDefinedYet')}</p>
                     )}
                     {tapas.parts && tapas.parts.length > 0 ? (
                         <div>
@@ -2099,37 +2161,39 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                 ))}
                             </ul>
                             {!isSuccessful && !isFailed && (
-                                <div className="flex justify-start space-x-2 mt-4">
-                                    {!isTodayChecked && (
-                                        <button
-                                            onClick={handleTodayFinished} // Renamed
-                                            className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
-                                        >
-                                            {t('todayFinished')}
-                                        </button>
-                                    )}
-                                     {!isYesterdayChecked && (today.toDateString() !== startDateObj.toDateString()) && ( // Only show if yesterday wasn't checked and if tapas didn't start today
-                                        <button
-                                            onClick={handleYesterdayFinished}
-                                            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
-                                        >
-                                            {t('yesterdayFinished')}
-                                        </button>
-                                    )}
-                                    <div className="relative">
+                                <div className="flex justify-between space-x-2 mt-4"> {/* Use justify-between to push the "..." to the right */}
+                                    <div className="flex space-x-2">
+                                        {!isTodayChecked && (
+                                            <button
+                                                onClick={handleTodayFinished} // Renamed
+                                                className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
+                                            >
+                                                {t('todayFinished')}
+                                            </button>
+                                        )}
+                                        {!isYesterdayChecked && (today.toDateString() !== startDateObj.toDateString()) && ( // Only show if yesterday wasn't checked and if tapas didn't start today
+                                            <button
+                                                onClick={handleYesterdayFinished}
+                                                className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
+                                            >
+                                                {t('yesterdayFinished')}
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="relative"> {/* "..." button container */}
                                         <button
                                             onClick={() => setShowRecuperationAdvanceMenu(!showRecuperationAdvanceMenu)}
                                             className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-colors duration-200 text-lg font-medium"
                                         >
                                             ...
                                         </button>
-                                        {showRecuperationAdvanceMenu && ( // Moved Actions button here
-                                            <div className="absolute left-0 mt-2 w-max bg-white rounded-md shadow-lg py-1 z-20">
+                                        {showRecuperationAdvanceMenu && (
+                                            <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                                                 {/* Hide yesterdayRecuperated only if the date is already checked or outside duration */}
                                                 {(tapas.allowRecuperation && !isDateChecked(yesterday) && yesterday >= startDateObj && yesterday <= endDateObj) && (
                                                     <button
                                                         onClick={handleYesterdayRecuperated}
-                                                        className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                     >
                                                         {t('yesterdayRecuperated')}
                                                     </button>
@@ -2138,7 +2202,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                 {(!isDateChecked(today) && today >= startDateObj && today <= endDateObj) && (
                                                     <button
                                                         onClick={handleTodayTomorrowFinishedInAdvance}
-                                                        className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                     >
                                                         {t('todayTomorrowFinishedInAdvance')}
                                                     </button>
@@ -2146,7 +2210,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                 {/* New: Clear Last Day button */}
                                                 <button
                                                     onClick={handleClearLastDay}
-                                                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                 >
                                                     {t('clearLastDay')}
                                                 </button>
@@ -2157,15 +2221,15 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                             )}
                         </div>
                     ) : (
-                        <p className="text-gray-500 italic">{t('noPartsDefinedYet')}</p>
+                        <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
                     )}
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days').toLowerCase()}</p>}
                     <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${tapas.status === 'active' ? 'text-blue-600' : tapas.status === 'successful' ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
                     {tapas.results && <p><strong className="font-semibold">{t('results')}:</strong> {tapas.results}</p>}
-                    {!tapas.results && (isSuccessful || isFailed) && <p className="text-gray-500 italic">{t('noResultsDefinedYet')}</p>}
+                    {!tapas.results && (isSuccessful || isFailed) && <p className="italic text-gray-500 dark:text-gray-400">{t('noResultsDefinedYet')}</p>}
 
-                    <p className="text-lg mt-4"><strong className="font-semibold">{t('overallProgress')}:</strong> {checkedDaysCount} / {daysTotal} {t('daysChecked')}</p>
+                    <p className="text-lg mt-4 text-gray-700 dark:text-gray-200"><strong className="font-semibold">{t('overallProgress')}:</strong> {checkedDaysCount} / {daysTotal} {t('daysChecked')}</p>
                     {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                         <div>
                             <strong className="font-semibold">{t('checkedDates')}:</strong>
@@ -2227,13 +2291,13 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
 
                 {confirmDelete && (
-                    <div className="mt-6 p-4 border border-red-300 rounded-lg bg-red-50">
-                        <p className="text-red-800 text-center mb-3">{t('confirmDeletion')} "<strong className="font-semibold">{tapas.name}</strong>" {t('below')}:</p>
+                    <div className="mt-6 p-4 border rounded-lg bg-red-50 border-red-300 dark:bg-red-900 dark:border-red-700">
+                        <p className="text-center mb-3 text-red-800 dark:text-red-100">{t('confirmDeletion')} "<strong className="font-semibold">{tapas.name}</strong>" {t('below')}:</p>
                         <input
                             type="text"
                             value={confirmName}
                             onChange={(e) => setConfirmName(e.target.value)}
-                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 mb-4"
+                            className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-red-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-red-500 mb-4"
                             placeholder={t('typeTapasNameToConfirm')}
                         />
                         <div className="flex justify-around space-x-4">
@@ -2255,19 +2319,19 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
                 {showFailDialog && (
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-auto">
-                            <h3 className="text-xl font-bold text-gray-800 mb-4">{t('markTapasAsFailed')}</h3>
-                            <p className="text-gray-700 mb-4">{t('sureMarkFailed', tapas.name)}</p>
-                            <label htmlFor="failureCause" className="block text-sm font-medium text-gray-700 mb-2">{t('causeOptional')}</label>
+                        <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                            <h3 className="text-xl font-bold mb-4">{t('markTapasAsFailed')}</h3>
+                            <p className="mb-4 text-gray-700 dark:text-gray-300">{t('sureMarkFailed', tapas.name)}</p>
+                            <label htmlFor="failureCause" className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('causeOptional')}</label>
                             <textarea
                                 id="failureCause"
                                 value={failureCause}
                                 onChange={(e) => setFailureCause(e.target.value)}
                                 rows="2"
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-4"
+                                className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
                             ></textarea>
 
-                            <label className="block text-sm font-medium text-gray-700 mb-2">{t('repeatTapas')}</label>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('repeatTapas')}</label>
                             <div className="mb-4 space-y-2">
                                 {/* This option is for the FAIL dialog, where 'none' is relevant */}
                                 <label className="flex items-center">
@@ -2279,7 +2343,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                         onChange={(e) => setRepeatOption(e.target.value)}
                                         className="form-radio text-indigo-600"
                                     />
-                                    <span className="ml-2 text-gray-700">{t('noDoNotRepeat')}</span>
+                                    <span className="ml-2 text-gray-700 dark:text-gray-300">{t('noDoNotRepeat')}</span>
                                 </label>
                                 <label className="flex items-center">
                                     <input
@@ -2290,7 +2354,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                         onChange={(e) => setRepeatOption(e.target.value)}
                                         className="form-radio text-indigo-600"
                                     />
-                                    <span className="ml-2 text-gray-700">{t('repeatSameDuration', tapas.duration)}</span>
+                                    <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatSameDuration', tapas.duration)}</span>
                                 </label>
                                 <label className="flex items-center">
                                     <input
@@ -2301,17 +2365,17 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                         onChange={(e) => setNewRepeatDuration(e.target.value)}
                                         className="form-radio text-indigo-600"
                                     />
-                                    <span className="ml-2 text-gray-700">{t('repeatNewDuration')}</span>
+                                    <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatNewDuration')}</span>
                                     {repeatOption === 'newDuration' && (
                                         <input
                                             type="number"
                                             value={newRepeatDuration}
                                             onChange={(e) => setNewRepeatDuration(e.target.value)}
-                                            className="ml-2 w-24 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                            className="ml-2 w-24 px-2 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                                             min="1"
                                         />
                                     )}
-                                    <span className="ml-1 text-gray-700">{t('days')}</span>
+                                    <span className="ml-1 text-gray-700 dark:text-gray-300">{t('days')}</span>
                                 </label>
                                 {endDateObj > today && (
                                     <label className="flex items-center">
@@ -2323,7 +2387,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                             onChange={(e) => setRepeatOption(e.target.value)}
                                             className="form-radio text-indigo-600"
                                         />
-                                        <span className="ml-2 text-gray-700">{t('repeatUntilOriginalEndDate', endDateObj.toLocaleDateString())}</span>
+                                        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatUntilOriginalEndDate', endDateObj.toLocaleDateString())}</span>
                                     </label>
                                 )}
                             </div>
@@ -2348,11 +2412,11 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
                 {showRepeatDialog && (
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-auto">
-                            <h3 className="text-xl font-bold text-gray-800 mb-4">{t('repeatTapas')}</h3>
-                            <p className="text-gray-700 mb-4">{t('sureRepeat', tapas.name)}</p>
+                        <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                            <h3 className="text-xl font-bold mb-4">{t('repeatTapas')}</h3>
+                            <p className="mb-4 text-gray-700 dark:text-gray-300">{t('sureRepeat', tapas.name)}</p>
 
-                            <label className="block text-sm font-medium text-gray-700 mb-2">{t('repeatOptionLabel')}</label>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('repeatOptionLabel')}</label>
                             <div className="mb-4 space-y-2">
                                 {/* Hidden "noDoNotRepeat" option as per request */}
                                 <label className="flex items-center">
@@ -2364,7 +2428,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                         onChange={(e) => setRepeatOption(e.target.value)}
                                         className="form-radio text-indigo-600"
                                     />
-                                    <span className="ml-2 text-gray-700">{t('repeatSameDuration', tapas.duration)}</span>
+                                    <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatSameDuration', tapas.duration)}</span>
                                 </label>
                                 <label className="flex items-center">
                                     <input
@@ -2375,17 +2439,17 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                         onChange={(e) => setRepeatOption(e.target.value)}
                                         className="form-radio text-indigo-600"
                                     />
-                                    <span className="ml-2 text-gray-700">{t('repeatNewDuration')}</span>
+                                    <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatNewDuration')}</span>
                                     {repeatOption === 'newDuration' && (
                                         <input
                                             type="number"
                                             value={newRepeatDuration}
                                             onChange={(e) => setNewRepeatDuration(e.target.value)}
-                                            className="ml-2 w-24 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                            className="ml-2 w-24 px-2 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                                             min="1"
                                         />
                                     )}
-                                    <span className="ml-1 text-gray-700">{t('days')}</span>
+                                    <span className="ml-1 text-gray-700 dark:text-gray-300">{t('days')}</span>
                                 </label>
                                 {endDateObj > today && ( // Conditionally render if original end date is in the future
                                     <label className="flex items-center">
@@ -2397,7 +2461,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                             onChange={(e) => setRepeatOption(e.target.value)}
                                             className="form-radio text-indigo-600"
                                         />
-                                        <span className="ml-2 text-gray-700">{t('repeatUntilOriginalEndDate', endDateObj.toLocaleDateString())}</span>
+                                        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatUntilOriginalEndDate', endDateObj.toLocaleDateString())}</span>
                                     </label>
                                 )}
                             </div>
@@ -2499,16 +2563,16 @@ const Statistics = ({ allTapas }) => {
 
 
     return (
-        <div className="p-4 bg-white rounded-lg shadow-md mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('tapasStatistics')}</h2>
+        <div className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">{t('tapasStatistics')}</h2>
 
             <div className="mb-4 flex flex-col sm:flex-row justify-end items-center gap-4">
                 <div className="flex items-center space-x-2">
-                    <span className="text-gray-700 font-medium">{t('timeframe')}:</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{t('timeframe')}:</span>
                     <select
                         value={statisticsTimeFilter}
                         onChange={(e) => setStatisticsTimeFilter(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                     >
                         <option value="all">{t('all')}</option>
                         <option value="1month">{t('1month')}</option>
@@ -2521,23 +2585,23 @@ const Statistics = ({ allTapas }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Active Tapas Statistics */}
-                <div className="bg-green-50 p-4 rounded-lg shadow">
-                    <h3 className="text-xl font-semibold text-green-800 mb-2">{t('activeTapasCount')}</h3>
-                    <p className="text-gray-700">{t('count')}: <span className="font-bold text-green-900">{activeTapas.length}</span></p>
-                    <p className="text-gray-700">{t('avgDuration')}: <span className="font-bold text-green-900">{avgActiveDuration} {t('days').toLowerCase()}</span></p>
+                <div className="p-4 rounded-lg shadow bg-green-50 text-green-800 dark:bg-green-900 dark:text-green-100">
+                    <h3 className="text-xl font-semibold mb-2">{t('activeTapasCount')}</h3>
+                    <p>{t('count')}: <span className="font-bold">{activeTapas.length}</span></p>
+                    <p>{t('avgDuration')}: <span className="font-bold">{avgActiveDuration} {t('days').toLowerCase()}</span></p>
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg shadow">
-                    <h3 className="text-xl font-semibold text-blue-800 mb-2">{t('successfulTapasCount')}</h3>
-                    <p className="text-gray-700">{t('count')}: <span className="font-bold text-blue-900">{successfulTapas.length}</span></p>
-                    <p className="text-gray-700">{t('avgDuration')}: <span className="font-bold text-blue-900">{avgSuccessfulDuration} {t('days').toLowerCase()}</span></p>
+                <div className="p-4 rounded-lg shadow bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                    <h3 className="text-xl font-semibold mb-2">{t('successfulTapasCount')}</h3>
+                    <p>{t('count')}: <span className="font-bold">{successfulTapas.length}</span></p>
+                    <p>{t('avgDuration')}: <span className="font-bold">{avgSuccessfulDuration} {t('days').toLowerCase()}</span></p>
                 </div>
 
-                <div className="bg-red-50 p-4 rounded-lg shadow">
-                    <h3 className="text-xl font-semibold text-red-800 mb-2">{t('failedTapasCount')}</h3>
-                    <p className="text-gray-700">{t('count')}: <span className="font-bold text-red-900">{failedTapas.length}</span></p>
-                    <p className="text-gray-700">{t('avgDuration')}: <span className="font-bold text-red-900">{avgFailedDuration} {t('days').toLowerCase()}</span></p>
-                    <p className="text-gray-700">{t('avgDone')}: <span className="font-bold text-red-900">{avgFailedCompletionPercentage}%</span></p>
+                <div className="p-4 rounded-lg shadow bg-red-50 text-red-800 dark:bg-red-900 dark:text-red-100">
+                    <h3 className="text-xl font-semibold mb-2">{t('failedTapasCount')}</h3>
+                    <p>{t('count')}: <span className="font-bold">{failedTapas.length}</span></p>
+                    <p>{t('avgDuration')}: <span className="font-bold">{avgFailedDuration} {t('days').toLowerCase()}</span></p>
+                    <p>{t('avgDone')}: <span className="font-bold">{avgFailedCompletionPercentage}%</span></p>
                 </div>
             </div>
         </div>
@@ -2548,11 +2612,11 @@ const Statistics = ({ allTapas }) => {
 const AboutModal = ({ onClose }) => {
     const { t } = useContext(AppContext);
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto my-auto">
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">{t('about')}</h3>
-                <p className="text-lg text-gray-700 mb-2"><strong>{t('appName')}</strong></p>
-                <p className="text-md text-gray-600 mb-4">{t('appVersion')}: {appVersion}</p>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <h3 className="text-2xl font-bold mb-4">{t('about')}</h3>
+                <p className="text-lg mb-2"><strong>{t('appName')}</strong></p>
+                <p className="text-md mb-4 text-gray-600 dark:text-gray-300">{t('appVersion')}: 1.0.0</p> {/* Hardcoded version */}
                 <a
                     href="#" // Placeholder link
                     target="_blank"
@@ -2561,7 +2625,7 @@ const AboutModal = ({ onClose }) => {
                 >
                     {t('tapasWebsite')}
                 </a>
-                <div className="text-gray-700 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>{t('aboutDescription').split("  ").join("\n\n")}</div>
+                <div className="text-sm font-medium mb-6 text-gray-700 dark:text-gray-300" style={{ whiteSpace: 'pre-wrap' }}>{t('aboutDescription').split("  ").join("\n\n")}</div>
                 <button
                     onClick={onClose}
                     className="w-full bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
@@ -2584,18 +2648,18 @@ const CleanDataModal = ({ onClose, onCleanConfirmed }) => {
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">{t('cleaningOldTapas')}</h3>
-                <p className="text-gray-700 mb-4 text-center">{t('cleanDataConfirmation')}</p>
+            <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <h3 className="text-xl font-bold mb-4">{t('cleaningOldTapas')}</h3>
+                <p className="mb-4 text-center text-gray-700 dark:text-gray-300">{t('cleanDataConfirmation')}</p>
 
-                <label htmlFor="timeframeSelect" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="timeframeSelect" className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     {t('selectTimeframe')}:
                 </label>
                 <select
                     id="timeframeSelect"
                     value={selectedTimeframe}
                     onChange={(e) => setSelectedTimeframe(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 mb-6"
+                    className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-6"
                 >
                     <option value="all">{t('all')}</option>
                     <option value="1year">{t('1year')}</option>
@@ -2645,12 +2709,12 @@ const License = ({ onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
                 <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
                     &times;
                 </button>
                 <div className="flex justify-between items-center mb-6">
-                    <div className="text-gray-700 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
+                    <div className="text-gray-700 dark:text-gray-100 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
                         <Suspense fallback={<div>Loading...</div>}>
                         {data}
                         </Suspense>
@@ -2668,13 +2732,13 @@ const LegalNotice = ({ onClose }) => {
     const { t } = useContext(AppContext);
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
                 <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
                     &times;
                 </button>
-                <h2 className="text-3xl font-bold text-gray-800 mb-6">{t('legalNotice')}</h2>
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">{t('legalNotice')}</h2>
                 <div className="flex justify-between items-center mb-6">
-                    <div className="text-gray-700 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
+                    <div className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
                         <p>Reimund Renner</p>
                         <p>Zum Baumgarten 7</p>
                         <p>79249 Merzhausen</p>
@@ -2695,12 +2759,12 @@ const LegalNotice = ({ onClose }) => {
 const GDPR = ({ onClose }) => {
     const { locale, setLocale, t } = useContext(LocaleContext);
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-3xl mx-auto my-auto">
+        <div className="fixed bg-gray-600 inset-0 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
+            <div className="bg-white dark:bg-gray-800 dark:text-gray-100 p-6 rounded-lg shadow-xl w-full max-w-3xl mx-auto my-auto">
                 <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-5xl font-bold">
                     &times;
                 </button>
-                <div className="prose lg:prose-lg mx-auto p-4 sm:p-6 md:p-8 bg-white rounded-xl shadow-lg">
+                <div className="prose lg:prose-lg mx-auto p-4 sm:p-6 md:p-8 dark:text-gray-100">
                     {(locale=='de') && (
                         <GdprDE />
                     )}
@@ -2753,6 +2817,8 @@ const HomePage = () => {
 
 
     const { locale, setLocale, t } = useContext(LocaleContext);
+    const { toggleTheme } = useContext(ThemeContext);
+
 
     // Initialize Firebase and handle authentication
     useEffect(() => {
@@ -3205,9 +3271,9 @@ const HomePage = () => {
     if (showLoginPrompt && !loadingFirebase && (!userId || isGuestUser)) {
         return (
             <div className="fixed inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center p-4 z-50">
-                <div className="bg-white p-8 rounded-lg shadow-2xl text-center max-w-sm w-full mx-auto">
-                    <h2 className="text-3xl font-bold text-gray-800 mb-6">{t('welcomeTapasTracker')}</h2>
-                    <p className="text-gray-600 mb-6">{t('trackPersonalGoals')}</p>
+                <div className="p-8 rounded-lg shadow-2xl text-center max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                    <h2 className="text-3xl font-bold mb-6">{t('welcomeTapasTracker')}</h2>
+                    <p className="mb-6 text-gray-600 dark:text-gray-300">{t('trackPersonalGoals')}</p>
 
                     {/* Email/Password Login/Signup Form */}
                     {showEmailLoginForm ? (
@@ -3217,14 +3283,14 @@ const HomePage = () => {
                                 placeholder={t('email')}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-4 py-3 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-4 py-3 mb-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                             />
                             <input
                                 type="password"
                                 placeholder={t('password')}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-4 py-3 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                             />
                             <button
                                 onClick={handleEmailSignIn}
@@ -3238,7 +3304,7 @@ const HomePage = () => {
                             >
                                 {t('signUpWithEmail')}
                             </button>
-                            <p className="text-gray-500 text-sm mb-4">
+                            <p className="text-sm mb-4 text-gray-500 dark:text-gray-400">
                                 <button
                                     onClick={() => setShowEmailLoginForm(false)}
                                     className="text-indigo-600 hover:underline"
@@ -3261,7 +3327,7 @@ const HomePage = () => {
                                 </svg>
                                 {t('signInWithGoogle')}
                             </button>
-                            <p className="text-gray-500 text-sm mb-4">
+                            <p className="text-sm mb-4 text-gray-500 dark:text-gray-400">
                                 <button
                                     onClick={() => setShowEmailLoginForm(true)}
                                     className="text-indigo-600 hover:underline"
@@ -3274,7 +3340,7 @@ const HomePage = () => {
 
                     <button
                         onClick={handleGuestSignIn} // Call new guest sign-in function
-                        className="w-full bg-gray-300 text-gray-800 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-400 transition-colors duration-200 text-lg font-medium"
+                        className="w-full bg-gray-300 text-gray-800 px-6 py-3 rounded-lg shadow-lg hover:bg-gray-400 transition-colors duration-200"
                     >
                         {t('continueAsGuest')}
                     </button>
@@ -3286,7 +3352,7 @@ const HomePage = () => {
 
     return (
         <AppContext.Provider value={{ db, auth, userId, userDisplayName, t, locale, setLocale }}>
-            <div className="min-h-screen bg-gray-100 opacity-97 font-sans antialiased flex flex-col">
+            <div className="min-h-screen font-sans antialiased flex flex-col">
                 {/* Global Styles for body, etc. - in a real Next.js app, these would be in styles/globals.css or _app.js */}
                 <style>{`
                     body {
@@ -3296,16 +3362,31 @@ const HomePage = () => {
                     ::-webkit-scrollbar {
                         width: 8px;
                     }
+                    /* Base scrollbar track color */
                     ::-webkit-scrollbar-track {
                         background: #f1f1f1;
                         border-radius: 10px;
                     }
+                    /* Dark mode scrollbar track color */
+                    html.dark ::-webkit-scrollbar-track {
+                        background: #333;
+                    }
+                    /* Base scrollbar thumb color */
                     ::-webkit-scrollbar-thumb {
                         background: #888;
                         border-radius: 10px;
                     }
+                    /* Dark mode scrollbar thumb color */
+                    html.dark ::-webkit-scrollbar-thumb {
+                        background: #666;
+                    }
+                    /* Base scrollbar thumb hover color */
                     ::-webkit-scrollbar-thumb:hover {
                         background: #555;
+                    }
+                    /* Dark mode scrollbar thumb hover color */
+                    html.dark ::-webkit-scrollbar-thumb:hover {
+                        background: #888;
                     }
                 `}</style>
 
@@ -3314,6 +3395,25 @@ const HomePage = () => {
                     <div className="container mx-auto flex justify-between items-center relative">
                         <h1 className="text-3xl font-bold">{t('appName')}</h1>
                         <div className="flex items-center space-x-4">
+                            {/* Theme Toggle */}
+                            <button
+                                onClick={toggleTheme}
+                                className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors duration-200 text-white focus:outline-none focus:ring-2 focus:ring-white"
+                                aria-label="Toggle light/dark mode"
+                            >
+                                {/* The theme is managed by the parent ThemeProvider via document.documentElement.classList.add('dark') */}
+                                {/* This button's icon will reflect the *current* state of the 'dark' class on <html> */}
+                                {document.documentElement.classList.contains('dark') ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="black">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                    </svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="black">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h1M4 12H3m15.325 4.962l-.707.707M6.707 6.707l-.707-.707m12.793 0l-.707-.707M6.707 17.293l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                )}
+                            </button>
+
                             <select
                                 value={locale}
                                 onChange={(e) => setLocale(e.target.value)}
@@ -3332,7 +3432,7 @@ const HomePage = () => {
                                 </span>
                             )}
                             
-                            <div className="relative">
+                            <div className="relative" id="main-menu">
                                 <button
                                     onClick={() => setShowMenu(!showMenu)}
                                     className="bg-white text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold hover:bg-indigo-100 transition-colors duration-200"
@@ -3347,26 +3447,26 @@ const HomePage = () => {
                                     style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}
                                 />
                                 {showMenu && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
+                                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                                         {auth && auth.currentUser && !auth.currentUser.isAnonymous ? (
                                             <button
                                                 onClick={handleLogout}
-                                                className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                             >
                                                 {t('logout')}
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={() => { setShowLoginPrompt(true); setShowMenu(false); }}
-                                                className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                             >
                                                 {t('signIn')}
                                             </button>
                                         )}
-                                        <div className="border-t border-gray-200 my-1"></div> {/* Separator */}
+                                        <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
                                         <button
                                             onClick={() => setShowDataMenu(!showDataMenu)}
-                                            className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 flex justify-between items-center"
+                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
                                         >
                                             {t('data')}
                                             <svg className={`w-4 h-4 transform transition-transform ${showDataMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -3375,28 +3475,28 @@ const HomePage = () => {
                                             <div className="pl-4"> {/* Indent submenu items */}
                                                 <button
                                                     onClick={handleImportDataClick}
-                                                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                 >
                                                     {t('importData')}
                                                 </button>
                                                 <button
                                                     onClick={handleExportData}
-                                                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                 >
                                                     {t('exportData')}
                                                 </button>
                                                 <button
                                                     onClick={handleCleanData}
-                                                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                 >
                                                     {t('cleanData')}
                                                 </button>
                                             </div>
                                         )}
-                                        <div className="border-t border-gray-200 my-1"></div> {/* Separator */}
+                                        <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
                                         <button
                                             onClick={() => { setShowAboutModal(true); setShowMenu(false); }}
-                                            className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                         >
                                             {t('about')}
                                         </button>
@@ -3414,12 +3514,12 @@ const HomePage = () => {
                 )}
 
                 {/* Navigation Tabs */}
-                <nav className="bg-white shadow-sm p-3 sticky top-0 z-10">
+                <nav className="shadow-sm p-3 sticky top-0 z-10 bg-white dark:bg-gray-800">
                     <div className="container mx-auto flex justify-around">
                         <button
                             onClick={() => { setCurrentPage('active'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'active' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100'
+                                currentPage === 'active' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                         >
                             {t('active')}
@@ -3427,7 +3527,7 @@ const HomePage = () => {
                         <button
                             onClick={() => { setCurrentPage('history'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'history' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100'
+                                currentPage === 'history' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                         >
                             {t('history')}
@@ -3435,7 +3535,7 @@ const HomePage = () => {
                         <button
                             onClick={() => { setCurrentPage('statistics'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'statistics' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100'
+                                currentPage === 'statistics' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                         >
                             {t('statistics')}
@@ -3444,7 +3544,7 @@ const HomePage = () => {
                             onClick={() => { setCurrentPage('add'); setSelectedTapas(null); }}
                             aria-label={t('addNew')}
                             className={`px-4 py-2 rounded-md text-2xl font-medium transition-colors duration-200 font-bold ${
-                                currentPage === 'add' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100'
+                                currentPage === 'add' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                         >
                             +
@@ -3453,7 +3553,7 @@ const HomePage = () => {
                 </nav>
 
                 {/* Main Content Area */}
-                <main className="container mx-auto p-4 flex-grow">
+                <main className="container mx-auto p-4 flex-grow bg-gray-100 dark:bg-gray-900">
                     {currentPage === 'active' && (
                         <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} />
                     )}
@@ -3525,10 +3625,12 @@ const HomePage = () => {
     );
 };
 
-// Wrap HomePage with LocaleProvider
+// Wrap HomePage with LocaleProvider and ThemeProvider
 const WrappedHomePage = () => (
     <LocaleProvider>
-        <HomePage />
+        <ThemeProvider>
+            <HomePage />
+        </ThemeProvider>
     </LocaleProvider>
 );
 
