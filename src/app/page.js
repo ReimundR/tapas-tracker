@@ -180,7 +180,7 @@ const translations = {
         "cleaningOldTapas": "Cleaning Old Tapas",
         "clean": "Clean",
         "close": "Close",
-        "shareTapas": "Share Tapas",
+        "shareTapas": "Share",
         "shareLinkCopied": "Share link copied to clipboard!",
         "shareLinkError": "Failed to share link:",
         "adoptTapas": "Adopt Tapas",
@@ -354,7 +354,7 @@ const translations = {
         "cleaningOldTapas": "Alte Tapas bereinigen",
         "clean": "Bereinigen",
         "close": "Schließen",
-        "shareTapas": "Tapas teilen",
+        "shareTapas": "Teilen",
         "shareLinkCopied": "Teilen-Link in die Zwischenablage kopiert!",
         "shareLinkError": "Fehler beim Teilen des Links:",
         "adoptTapas": "Tapas übernehmen",
@@ -528,7 +528,7 @@ const translations = {
         "cleaningOldTapas": "Curățarea Tapas-urilor vechi",
         "clean": "Curăță",
         "close": "Închide",
-        "shareTapas": "Partajează Tapas",
+        "shareTapas": "Partajează",
         "shareLinkCopied": "Link de partajare copiat în clipboard!",
         "shareLinkError": "Eroare la partajarea link-ului:",
         "adoptTapas": "Adoptă Tapas",
@@ -693,7 +693,7 @@ const translations = {
         "tapasWebsite": "Sito web di Tapas Tracker",
         "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente.  Tapas è una forma di pratica yoga e fa parte dei dieci Yama e Niyama.  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa.  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite.",
         "close": "Chiudere",
-        "shareTapas": "Condividi Tapas",
+        "shareTapas": "Condividi",
         "shareLinkCopied": "Link di condivisione copiato negli appunti!",
         "shareLinkError": "Impossibile condividere il link:",
         "adoptTapas": "Adotta Tapas",
@@ -867,7 +867,7 @@ const translations = {
         "cleaningOldTapas": "Очистка старых Тапасов",
         "clean": "Очистить",
         "close": "Закрыть",
-        "shareTapas": "Поделиться Тапасом",
+        "shareTapas": "Поделиться",
         "shareLinkCopied": "Ссылка для обмена скопирована в буфер обмена!",
         "shareLinkError": "Не удалось поделиться ссылкой:",
         "adoptTapas": "Принять Тапас",
@@ -2401,9 +2401,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                     {/* New Share Button */}
                     <button
                         onClick={handleShareTapas}
-                        className="bg-indigo-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-indigo-600 transition-colors duration-200 text-lg font-medium"
+                        className="flex items-center justify-center bg-indigo-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-indigo-600 transition-colors duration-200 text-lg font-medium"
                     >
-                        {t('shareTapas')}
+                        <svg rpl="" aria-hidden="true" class="icon-share" fill="currentColor" height="16" icon-name="share-new-outline" viewBox="0 0 20 20" width="16" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2.239 18.723A1.235 1.235 0 0 1 1 17.488C1 11.5 4.821 6.91 10 6.505V3.616a1.646 1.646 0 0 1 2.812-1.16l6.9 6.952a.841.841 0 0 1 0 1.186l-6.9 6.852A1.645 1.645 0 0 1 10 16.284v-2.76c-2.573.243-3.961 1.738-5.547 3.445-.437.47-.881.949-1.356 1.407-.23.223-.538.348-.858.347ZM10.75 7.976c-4.509 0-7.954 3.762-8.228 8.855.285-.292.559-.59.832-.883C5.16 14 7.028 11.99 10.75 11.99h.75v4.294a.132.132 0 0 0 .09.134.136.136 0 0 0 .158-.032L18.186 10l-6.438-6.486a.135.135 0 0 0-.158-.032.134.134 0 0 0-.09.134v4.36h-.75Z"></path>
+                        </svg>
+                        &nbsp;{t('shareTapas')}
                     </button>
 
                     <button
