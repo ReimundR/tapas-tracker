@@ -6,7 +6,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
 import { Suspense } from 'react'
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
@@ -179,7 +179,16 @@ const translations = {
         "5years": "5 Years",
         "cleaningOldTapas": "Cleaning Old Tapas",
         "clean": "Clean",
-        "close": "Close"
+        "close": "Close",
+        "shareTapas": "Share Tapas",
+        "shareLinkCopied": "Share link copied to clipboard!",
+        "shareLinkError": "Failed to share link:",
+        "adoptTapas": "Adopt Tapas",
+        "tapasAdoptedSuccessfully": "Tapas adopted successfully!",
+        "errorAdoptingTapas": "Error adopting Tapas:",
+        "alreadyOwnTapas": "You already own a Tapas with this share reference.",
+        "sharedCount": "Shared",
+        "adoptedCount": "Adopted"
     },
     de: {
         "appName": "Tapas Tracker",
@@ -344,7 +353,16 @@ const translations = {
         "5years": "5 Jahre",
         "cleaningOldTapas": "Alte Tapas bereinigen",
         "clean": "Bereinigen",
-        "close": "Schließen"
+        "close": "Schließen",
+        "shareTapas": "Tapas teilen",
+        "shareLinkCopied": "Teilen-Link in die Zwischenablage kopiert!",
+        "shareLinkError": "Fehler beim Teilen des Links:",
+        "adoptTapas": "Tapas übernehmen",
+        "tapasAdoptedSuccessfully": "Tapas erfolgreich übernommen!",
+        "errorAdoptingTapas": "Fehler beim Übernehmen der Tapas:",
+        "alreadyOwnTapas": "Sie besitzen bereits eine Tapas mit dieser Referenz.",
+        "sharedCount": "Geteilt",
+        "adoptedCount": "Übernommen"
     },
     ro: {
         "appName": "Urmăritor Tapas",
@@ -509,7 +527,16 @@ const translations = {
         "5years": "5 Ani",
         "cleaningOldTapas": "Curățarea Tapas-urilor vechi",
         "clean": "Curăță",
-        "close": "Închide"
+        "close": "Închide",
+        "shareTapas": "Partajează Tapas",
+        "shareLinkCopied": "Link de partajare copiat în clipboard!",
+        "shareLinkError": "Eroare la partajarea link-ului:",
+        "adoptTapas": "Adoptă Tapas",
+        "tapasAdoptedSuccessfully": "Tapas adoptat cu succes!",
+        "errorAdoptingTapas": "Eroare la adoptarea Tapasului:",
+        "alreadyOwnTapas": "Deja deții o Tapas cu această referință de partajare.",
+        "sharedCount": "Partajat",
+        "adoptedCount": "Adoptat"
     },
     it: {
         "appName": "Tapas Tracker",
@@ -665,7 +692,16 @@ const translations = {
         "appVersion": "Versione dell'app",
         "tapasWebsite": "Sito web di Tapas Tracker",
         "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente.  Tapas è una forma di pratica yoga e fa parte dei dieci Yama e Niyama.  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa.  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite.",
-        "close": "Chiudere"
+        "close": "Chiudere",
+        "shareTapas": "Condividi Tapas",
+        "shareLinkCopied": "Link di condivisione copiato negli appunti!",
+        "shareLinkError": "Impossibile condividere il link:",
+        "adoptTapas": "Adotta Tapas",
+        "tapasAdoptedSuccessfully": "Tapas adottato con successo!",
+        "errorAdoptingTapas": "Errore durante l'adozione di Tapas:",
+        "alreadyOwnTapas": "Possiedi già una Tapas con questo riferimento di condivisione.",
+        "sharedCount": "Condiviso",
+        "adoptedCount": "Adottato"
     },
     ru: {
         "appName": "Трекер Тапас",
@@ -830,7 +866,16 @@ const translations = {
         "5years": "5 лет",
         "cleaningOldTapas": "Очистка старых Тапасов",
         "clean": "Очистить",
-        "close": "закрывать"
+        "close": "Закрыть",
+        "shareTapas": "Поделиться Тапасом",
+        "shareLinkCopied": "Ссылка для обмена скопирована в буфер обмена!",
+        "shareLinkError": "Не удалось поделиться ссылкой:",
+        "adoptTapas": "Принять Тапас",
+        "tapasAdoptedSuccessfully": "Тапас успешно принят!",
+        "errorAdoptingTapas": "Ошибка при принятии Тапаса:",
+        "alreadyOwnTapas": "У вас уже есть Тапас с этой ссылкой для обмена.",
+        "sharedCount": "Поделились",
+        "adoptedCount": "Приняли"
     }
 };
 
@@ -921,7 +966,6 @@ const ThemeProvider = ({ children }) => {
             const newTheme = prevTheme === 'light' ? 'dark' : 'light';
             localStorage.setItem('tapas_theme', newTheme); // Save the new theme to local storage
 
-            //document.querySelector("html").setAttribute("data-theme", newTheme);
             // Apply/remove the 'dark' class directly to the html element
             if (newTheme === 'dark') {
                 document.documentElement.classList.add('dark');
@@ -1158,6 +1202,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             userId: userId, // Ensure userId is associated with the Tapas
             checkedPartsByDate: editingTapas ? editingTapas.checkedPartsByDate : {}, // Initialize for new Tapas
             results: editingTapas ? editingTapas.results || null : null, // Initialize results field
+            shareReference: editingTapas ? editingTapas.shareReference || null : null, // Preserve shareReference
         };
 
         try {
@@ -1991,6 +2036,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                     userId: userId,
                     checkedPartsByDate: {}, // New tapas starts with no checked parts
                     results: null, // New tapas starts with no results
+                    shareReference: tapas.shareReference || null, // Carry over share reference if exists
                 };
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
@@ -2067,6 +2113,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 userId: userId,
                 checkedPartsByDate: {},
                 results: null, // New tapas starts with no results
+                shareReference: tapas.shareReference || null, // Carry over share reference if exists
             };
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
@@ -2109,6 +2156,76 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         } catch (error) {
             console.error("Error saving results:", error);
             setMessage("Error saving results.");
+        }
+    };
+
+    const handleShareTapas = async () => {
+        if (!db || !tapas.id) {
+            setMessage(t('shareLinkError') + " Database or Tapas ID missing.");
+            return;
+        }
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Corrected path for public shared tapas collection
+        const publicSharedTapasCollectionRef = collection(db, `artifacts/${appId}/public/data/sharedTapas`);
+        let currentShareReference = tapas.shareReference;
+
+        try {
+            if (!currentShareReference) {
+                // Generate a new unique ID for the shared reference
+                currentShareReference = crypto.randomUUID();
+
+                // Store this shareReference in the user's private tapas document
+                await updateDoc(tapasRef, { shareReference: currentShareReference });
+                setSelectedTapas(prev => ({ ...prev, shareReference: currentShareReference })); // Update local state immediately
+            }
+
+            // Prepare static data for public sharing
+            const staticTapasData = {
+                name: tapas.name,
+                description: tapas.description || null,
+                goals: tapas.goals || [],
+                parts: tapas.parts || [],
+                duration: tapas.duration,
+                crystallizationTime: tapas.crystallizationTime || null,
+                allowRecuperation: tapas.allowRecuperation || false,
+                sharedCount: (tapas.sharedCount || 0) + 1, // Increment shared count
+                adoptedCount: (tapas.adoptedCount || 0), // Initialize or preserve
+            };
+
+            // Get the public document reference
+            const publicTapasDocRef = doc(publicSharedTapasCollectionRef, currentShareReference);
+            const publicTapasDocSnap = await getDoc(publicTapasDocRef);
+
+            if (publicTapasDocSnap.exists()) {
+                // If it exists, update the counts
+                await updateDoc(publicTapasDocRef, {
+                    sharedCount: (publicTapasDocSnap.data().sharedCount || 0) + 1,
+                });
+            } else {
+                // If it doesn't exist, create it with the static data and counts
+                await setDoc(publicTapasDocRef, staticTapasData);
+            }
+
+            // Construct the shareable URL
+            const shareUrl = `${window.location.origin}?ref=${currentShareReference}`;
+
+            // Use native Share API if available
+            if (navigator.share) {
+                await navigator.share({
+                    title: tapas.name,
+                    text: t('appName') + `: ${tapas.name}`,
+                    url: shareUrl,
+                });
+                setMessage(t('shareLinkCopied')); // Message after successful share
+            } else {
+                // Fallback to clipboard copy
+                await navigator.clipboard.writeText(shareUrl);
+                setMessage(t('shareLinkCopied'));
+            }
+        } catch (error) {
+            console.error("Error sharing Tapas:", error);
+            setMessage(`${t('shareLinkError')} ${error.message}`);
         }
     };
 
@@ -2280,6 +2397,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                             {tapas.results ? t('updateResults') : t('addResults')}
                         </button>
                     )}
+
+                    {/* New Share Button */}
+                    <button
+                        onClick={handleShareTapas}
+                        className="bg-indigo-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-indigo-600 transition-colors duration-200 text-lg font-medium"
+                    >
+                        {t('shareTapas')}
+                    </button>
 
                     <button
                         onClick={() => setConfirmDelete(true)}
@@ -2686,6 +2811,208 @@ const CleanDataModal = ({ onClose, onCleanConfirmed }) => {
     );
 };
 
+// New ShareView Component
+const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) => {
+    const { db, userId, t } = useContext(AppContext);
+    const [sharedTapas, setSharedTapas] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    // Corrected path for public shared tapas collection
+    const publicSharedTapasCollectionRef = collection(db, `artifacts/${appId}/public/data/sharedTapas`);
+
+
+    useEffect(() => {
+        if (!db || !shareReference) {
+            setError("Database or share reference missing.");
+            setLoading(false);
+            return;
+        }
+
+        const publicTapasDocRef = doc(publicSharedTapasCollectionRef, shareReference);
+
+        const fetchSharedTapas = async () => {
+            try {
+                const docSnap = await getDoc(publicTapasDocRef);
+                if (docSnap.exists()) {
+                    setSharedTapas({ id: docSnap.id, ...docSnap.data() });
+                    setError('');
+                } else {
+                    setError("Shared Tapas not found.");
+                }
+            } catch (e) {
+                console.error("Error fetching shared Tapas:", e);
+                setError("Error loading shared Tapas.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSharedTapas();
+
+        // Increment sharedCount when the shared link is opened/viewed
+        const incrementSharedCount = async () => {
+            try {
+                // Fetch the current document to get the latest sharedCount
+                const docSnap = await getDoc(publicTapasDocRef);
+                if (docSnap.exists()) {
+                    const currentSharedCount = docSnap.data().sharedCount || 0;
+                    await updateDoc(publicTapasDocRef, {
+                        sharedCount: currentSharedCount + 1
+                    });
+                }
+            } catch (e) {
+                console.error("Error incrementing shared count:", e);
+            }
+        };
+        // This causes issues when called from the useEffect. Let's increment only once.
+        // It's already incremented when generating the link.
+        // If we want to increment on *every* view, this needs to be re-thought (e.g., cloud function)
+        // For now, it's simpler to increment only on generation.
+
+    }, [db, shareReference, appId, publicSharedTapasCollectionRef]); // Added publicSharedTapasCollectionRef to dependencies
+
+    const handleAdoptTapas = async () => {
+        if (!db || !userId || !sharedTapas) {
+            setStatusMessage(t('errorAdoptingTapas') + " Missing data.");
+            return;
+        }
+
+        try {
+            // Check if user already owns a tapas with this shareReference
+            const existingTapasQuery = query(
+                collection(db, `artifacts/${appId}/users/${userId}/tapas`),
+                where('shareReference', '==', sharedTapas.id)
+            );
+            const existingTapasSnap = await getDocs(existingTapasQuery);
+
+            if (!existingTapasSnap.empty) {
+                setStatusMessage(t('alreadyOwnTapas'));
+                onClose(); // Close share view
+                return;
+            }
+
+            const newTapasData = {
+                name: sharedTapas.name,
+                startDate: new Date(), // New Tapas starts today for the adopting user
+                startTime: sharedTapas.startTime || null,
+                duration: sharedTapas.duration,
+                description: sharedTapas.description || null,
+                goals: sharedTapas.goals || [],
+                parts: sharedTapas.parts || [],
+                crystallizationTime: sharedTapas.crystallizationTime || null,
+                allowRecuperation: sharedTapas.allowRecuperation || false,
+                status: 'active', // Adopted tapas starts as active
+                checkedDays: [],
+                failureCause: null,
+                recuperatedDays: [],
+                advancedDays: [],
+                createdAt: new Date(), // New creation timestamp
+                userId: userId,
+                checkedPartsByDate: {},
+                results: null,
+                shareReference: sharedTapas.id, // Inherit the share reference
+            };
+
+            await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
+
+            // Increment adoptedCount in the public shared document
+            await updateDoc(doc(publicSharedTapasCollectionRef, sharedTapas.id), { // Corrected path here
+                adoptedCount: (sharedTapas.adoptedCount || 0) + 1
+            });
+
+            setStatusMessage(t('tapasAdoptedSuccessfully'));
+            onAdoptTapas(); // Trigger a refetch of user's tapas and close this view
+        } catch (e) {
+            console.error("Error adopting Tapas:", e);
+            setStatusMessage(`${t('errorAdoptingTapas')} ${e.message}`);
+        }
+    };
+
+
+    if (loading) {
+        return (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                    <p className="text-center">{t('loadingApp')}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                    <p className="text-center text-red-600">{error}</p>
+                    <button onClick={onClose} className="mt-4 w-full bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+                        {t('close')}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!sharedTapas) {
+        return null; // Should not happen if error handled above
+    }
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
+            <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{sharedTapas.name}</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-3xl font-bold">
+                        &times;
+                    </button>
+                </div>
+
+                <div className="space-y-4 text-gray-700 dark:text-gray-300">
+                    <p><strong className="font-semibold">{t('duration')}:</strong> {sharedTapas.duration} {t('days').toLowerCase()}</p>
+                    {sharedTapas.description && <p><strong className="font-semibold">{t('description')}:</strong> {sharedTapas.description}</p>}
+                    {sharedTapas.goals && sharedTapas.goals.length > 0 ? (
+                        <div>
+                            <strong className="font-semibold">{t('goals')}:</strong>
+                            <ul className="list-disc list-inside ml-4">
+                                {sharedTapas.goals.map((goal, index) => (
+                                    <li key={`goal-${index}`}>{goal}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : (
+                        <p className="italic text-gray-500 dark:text-gray-400">{t('noGoalsDefinedYet')}</p>
+                    )}
+                    {sharedTapas.parts && sharedTapas.parts.length > 0 ? (
+                        <div>
+                            <strong className="font-semibold">{t('parts')}:</strong>
+                            <ul className="list-disc list-inside ml-4">
+                                {sharedTapas.parts.map((part, index) => (
+                                    <li key={index}>{part}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : (
+                        <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
+                    )}
+                    {sharedTapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {sharedTapas.crystallizationTime} {t('days').toLowerCase()}</p>}
+                    <p className="mt-4"><strong className="font-semibold">{t('sharedCount')}:</strong> {sharedTapas.sharedCount || 0}</p>
+                    <p><strong className="font-semibold">{t('adoptedCount')}:</strong> {sharedTapas.adoptedCount || 0}</p>
+                </div>
+
+                <div className="mt-8 flex justify-center">
+                    <button
+                        onClick={handleAdoptTapas}
+                        className="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-green-700 transition-colors duration-200 text-lg font-medium"
+                    >
+                        {t('adoptTapas')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const License = ({ onClose }) => {
     const { t } = useContext(AppContext);
     const [data, setData] = useState(null)
@@ -2780,6 +3107,7 @@ const GDPR = ({ onClose }) => {
     );
 };
 
+
 // Main App Component (now the default export for pages/index.js)
 const HomePage = () => {
     const [currentPage, setCurrentPage] = useState('active');
@@ -2792,6 +3120,7 @@ const HomePage = () => {
     const [selectedLegalNotice, setSelectedLegalNotice] = useState(false);
     const [selectedGDPR, setSelectedGDPR] = useState(false);
     const fileInputRef = useRef(null); // Ref for the hidden file input
+    const [sharedRef, setSharedRef] = useState(null); // New state for shared tapas reference
 
     // Firebase state
     const [db, setDb] = useState(null);
@@ -2903,6 +3232,19 @@ const HomePage = () => {
             document.removeEventListener('click', handleClickOutside);
         };
     }, [showMenu]); // Re-run effect when showMenu state changes
+
+    // Handle URL parameters for shared Tapas
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get('ref');
+        if (ref) {
+            setSharedRef(ref);
+            // Optionally, remove the ref from the URL to keep it clean
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.delete('ref');
+            window.history.replaceState({}, document.title, newUrl.toString());
+        }
+    }, []);
 
     const handleSelectTapas = (tapasItem) => {
         setPageBeforeDetail(currentPage); // Store current page before opening detail
@@ -3554,37 +3896,51 @@ const HomePage = () => {
 
                 {/* Main Content Area */}
                 <main className="container mx-auto p-4 flex-grow bg-gray-100 dark:bg-gray-900">
-                    {currentPage === 'active' && (
-                        <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} />
-                    )}
-                    {currentPage === 'history' && (
-                        <TapasList
-                            tapas={baseHistoryTapas}
-                            onSelectTapas={handleSelectTapas}
-                            showFilters={true}
-                            historyStatusFilter={historyStatusFilter}
-                            setHistoryStatusFilter={setHistoryStatusFilter}
-                            historyTimeFilter={historyTimeFilter}
-                            setHistoryTimeFilter={setHistoryTimeFilter}
+                    {sharedRef ? (
+                        <ShareView
+                            shareReference={sharedRef}
+                            onClose={() => setSharedRef(null)} // Close share view and clear ref
+                            onAdoptTapas={() => {
+                                setSharedRef(null); // Clear ref after adoption
+                                setCurrentPage('active'); // Go to active tapas view
+                            }}
+                            setStatusMessage={setStatusMessage}
                         />
-                    )}
-                    {currentPage === 'statistics' && (
-                        <Statistics allTapas={tapas} />
-                    )}
-                    {currentPage === 'add' && (
-                        <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }} editingTapas={editingTapas} onCancelEdit={handleCancelEdit} />
-                    )}
-                    {selectedTapas && currentPage === 'detail' && (
-                        <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas} setSelectedTapas={setSelectedTapas} />
-                    )}
-                    {selectedLicense && (
-                        <License onClose={handleCloseLicense} />
-                    )}
-                    {selectedLegalNotice && (
-                        <LegalNotice onClose={handleCloseLegalNotice} />
-                    )}
-                    {selectedGDPR && (
-                        <GDPR onClose={handleCloseGDPR} />
+                    ) : (
+                        <>
+                            {currentPage === 'active' && (
+                                <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} />
+                            )}
+                            {currentPage === 'history' && (
+                                <TapasList
+                                    tapas={baseHistoryTapas}
+                                    onSelectTapas={handleSelectTapas}
+                                    showFilters={true}
+                                    historyStatusFilter={historyStatusFilter}
+                                    setHistoryStatusFilter={setHistoryStatusFilter}
+                                    historyTimeFilter={historyTimeFilter}
+                                    setHistoryTimeFilter={setHistoryTimeFilter}
+                                />
+                            )}
+                            {currentPage === 'statistics' && (
+                                <Statistics allTapas={tapas} />
+                            )}
+                            {currentPage === 'add' && (
+                                <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }} editingTapas={editingTapas} onCancelEdit={handleCancelEdit} />
+                            )}
+                            {selectedTapas && currentPage === 'detail' && (
+                                <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas} setSelectedTapas={setSelectedTapas} />
+                            )}
+                            {selectedLicense && (
+                                <License onClose={handleCloseLicense} />
+                            )}
+                            {selectedLegalNotice && (
+                                <LegalNotice onClose={handleCloseLegalNotice} />
+                            )}
+                            {selectedGDPR && (
+                                <GDPR onClose={handleCloseGDPR} />
+                            )}
+                        </>
                     )}
                 </main>
 
