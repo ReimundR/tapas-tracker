@@ -7,6 +7,7 @@ import React, { useState, useEffect, createContext, useContext, useCallback, use
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
+import Head from 'next/head'; // Import Head from next/head for meta tags
 import { Suspense } from 'react'
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
@@ -2961,8 +2962,20 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
         return null; // Should not happen if error handled above
     }
 
+    const pageTitle = `${sharedTapas.name} - ${t('appName')}`;
+    const pageDescription = sharedTapas.description || `${t('appName')}: ${t('trackPersonalGoals')}`;
+    const pageUrl = `${window.location.origin}?ref=${sharedTapas.id}`;
+
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
+            <Head>
+                <title>{pageTitle}</title>
+                <meta property="og:title" content={pageTitle} />
+                <meta property="og:description" content={pageDescription} />
+                <meta property="og:url" content={pageUrl} />
+                <meta property="og:type" content="website" />
+                {/* Add more Open Graph tags if you have images, etc. */}
+            </Head>
             <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{sharedTapas.name}</h2>
