@@ -3229,7 +3229,7 @@ const AboutModal = ({ onClose }) => {
             <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <h3 className="text-2xl font-bold mb-4">{t('about')}</h3>
                 <p className="text-lg mb-2"><strong>{t('appName')}</strong></p>
-                <p className="text-md mb-4 text-gray-600 dark:text-gray-300">{t('appVersion')}: 1.0.0</p> {/* Hardcoded version */}
+                <p className="text-md mb-4 text-gray-600 dark:text-gray-300">{t('appVersion')}: {appVersion}</p>
                 <a
                     href="#" // Placeholder link
                     target="_blank"
