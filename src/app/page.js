@@ -1152,8 +1152,13 @@ const getTapasWeekDayUTC = (date, delta) => {
 const formatDateToISO = (date) => date.toISOString().split('T')[0];
 
 const formatDateNoTimeToISO = (date) => {
-    return getStartOfDayUTC(date).toISOString().split('T')[0];
+    return formatDateToISO(getStartOfDayUTC(date));
 };
+
+const formatStartOfWeekNoTimeToISO = (date) => {
+    return formatDateToISO(getStartOfWeekUTC(date));
+};
+
 
 // Helper to get unique checked days, handling potential duplicates and various date types
 const getUniqueCheckedDays = (checkedDaysArray) => {
@@ -2138,25 +2143,23 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         const datesToMark = [];
         const advancedDates = [];
 
+        let thisUnit;
+        let nextUnit;
         if (tapas.scheduleType === 'weekly') {
-            const currentWeekStart = getStartOfWeekUTC(today);
-            const nextWeekStart = getStartOfWeekUTC(new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000)));
-
-            if (!isDateChecked(currentWeekStart) && currentWeekStart >= startDateObj && currentWeekStart <= endDateObj) {
-                datesToMark.push(currentWeekStart);
-            }
-            if (!isDateChecked(nextWeekStart) && nextWeekStart >= startDateObj && nextWeekStart <= endDateObj) {
-                datesToMark.push(nextWeekStart);
-                advancedDates.push(nextWeekStart);
-            }
+            const delta = getTapasWeekDiff(startDateObj);
+            thisUnit = getTapasWeekDayUTC(today, delta);
+            nextUnit = new Date(thisUnit.getTime() + (7 * 24 * 60 * 60 * 1000)); // Calculate from UTC next week
         } else { // daily or everyNthDays
-            if (!isDateChecked(today) && today >= startDateObj && today <= endDateObj) {
-                datesToMark.push(today);
-            }
-            if (!isDateChecked(tomorrow) && tomorrow >= startDateObj && tomorrow <= endDateObj) {
-                datesToMark.push(tomorrow);
-                advancedDates.push(tomorrow);
-            }
+            thisUnit = today;
+            nextUnit = tomorrow;
+        }
+
+        if (!isDateChecked(thisUnit) && thisUnit >= startDateObj && thisUnit <= endDateObj) {
+            datesToMark.push(thisUnit);
+        }
+        if (!isDateChecked(nextUnit) && nextUnit >= startDateObj && nextUnit <= endDateObj) {
+            datesToMark.push(nextUnit);
+            advancedDates.push(nextUnit);
         }
 
         if (datesToMark.length === 0) {
@@ -2188,15 +2191,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         }
 
         let unitsToAcknowledge = [];
-        const currentRefDate = tapas.scheduleType === 'weekly' ? getStartOfWeekUTC(new Date()) : getStartOfDayUTC(new Date());
+        const delta = getTapasWeekDiff(startDateObj);
+        const currentRefDate = tapas.scheduleType === 'weekly' ? getTapasWeekDayUTC(new Date(), delta) : getStartOfDayUTC(new Date());
+        const daysDelta = tapas.scheduleType === 'weekly' ? 7 : 1;
 
         for (let i = nUnits - 1; i >= 0; i--) {
-            let dateToAcknowledge;
-            if (tapas.scheduleType === 'weekly') {
-                dateToAcknowledge = getStartOfWeekUTC(new Date(currentRefDate.getTime() - (i * 7 * 24 * 60 * 60 * 1000)));
-            } else { // daily or everyNthDays
-                dateToAcknowledge = getStartOfDayUTC(new Date(currentRefDate.getTime() - (i * 24 * 60 * 60 * 1000)));
-            }
+            const dateToAcknowledge = getStartOfDayUTC(new Date(currentRefDate.getTime() - (i * daysDelta * 24 * 60 * 60 * 1000)));
             
             // Ensure the date is within the tapas duration
             if (dateToAcknowledge < startDateObj || dateToAcknowledge > endDateObj) {
@@ -2247,24 +2247,26 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         const diffUnits = (currentRefDate.getTime() - lastCheckedUnitDate.getTime()) / (1000 * 60 * 60 * 24 * (tapas.scheduleType === 'weekly' ? 7 : 1));
 
         if (diffUnits < 0) { // Future unit
-            setMessage(t('cannotClearFutureDay')); // Re-using cannotClearFutureDay
-            setShowRecuperationAdvanceMenu(false);
-            return;
+            //setMessage(t('cannotClearFutureDay')); // Re-using cannotClearFutureDay
+            //setShowRecuperationAdvanceMenu(false);
+            //return;
         } else if (diffUnits > 1) { // Older than last/current unit
             setMessage(t('noDayToClear')); // Re-using noDayToClear
             setShowRecuperationAdvanceMenu(false);
             return;
         }
 
+        const dateFunc = tapas.scheduleType === 'weekly' ? formatStartOfWeekNoTimeToISO : formatDateNoTimeToISO;
+
         const newCheckedDays = tapas.checkedDays.filter(
-            ts => formatDateNoTimeToISO(ts.toDate()) !== formatDateNoTimeToISO(lastCheckedUnitDate)
+            ts => dateFunc(ts.toDate()) !== dateFunc(lastCheckedUnitDate)
         );
 
         const newRecuperatedDays = tapas.recuperatedDays ? tapas.recuperatedDays.filter(
-            ts => formatDateNoTimeToISO(ts.toDate()) !== formatDateNoTimeToISO(lastCheckedUnitDate)
+            ts => dateFunc(ts.toDate()) !== dateFunc(lastCheckedUnitDate)
         ) : [];
         const newAdvancedDays = tapas.advancedDays ? tapas.advancedDays.filter(
-            ts => formatDateNoTimeToISO(ts.toDate()) !== formatDateNoTimeToISO(lastCheckedUnitDate)
+            ts => dateFunc(ts.toDate()) !== dateFunc(lastCheckedUnitDate)
         ) : [];
 
         const newCheckedPartsByDate = { ...(tapas.checkedPartsByDate || {}) };
@@ -2728,7 +2730,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                     <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                                         {tapas.scheduleType === 'weekly' ? (
                                             <>
-                                                {(tapas.allowRecuperation && !isDateChecked(getStartOfWeekUTC(yesterday)) && getStartOfWeekUTC(yesterday) >= startDateObj && getStartOfWeekUTC(yesterday) <= endDateObj) && (
+                                                {(tapas.allowRecuperation && !isDateChecked(yesterday) && yesterday >= startDateObj && yesterday <= endDateObj) && (
                                                     <button
                                                         onClick={() => handleRecuperateUnit(yesterday)}
                                                         className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -2736,7 +2738,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                         {t('lastWeekRecuperated')}
                                                     </button>
                                                 )}
-                                                {(tapas.allowRecuperation && (!isDateChecked(getStartOfWeekUTC(today)) || !isDateChecked(getStartOfWeekUTC(tomorrow))) && getStartOfWeekUTC(today) >= startDateObj && getStartOfWeekUTC(today) <= endDateObj) && (
+                                                {(tapas.allowRecuperation && (!isDateChecked(today) || !isDateChecked(tomorrow)) && today >= startDateObj && today <= endDateObj) && (
                                                     <button
                                                         onClick={handleAdvanceUnits}
                                                         className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
