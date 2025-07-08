@@ -1708,15 +1708,16 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
         let pendingStatus = { statusText: '', statusClass: '' };
 
         if (tapasItem.scheduleType === 'weekly') {
-            const currentWeekStart = getStartOfWeekUTC(today);
-            const lastWeekStart = getStartOfWeekUTC(new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000)));
+            const delta = getTapasWeekDiff(startDate);
+            const currentWeek = getTapasWeekDayUTC(today, delta); // Calculate from UTC this week
+            const lastWeek = getStartOfDayUTC(new Date(currentWeek.getTime() - (7 * 24 * 60 * 60 * 1000)));
 
-            const isCurrentWeekWithinDuration = currentWeekStart >= startDate && currentWeekStart <= endDate;
-            const isCurrentWeekChecked = isTapasDateChecked(tapasItem.checkedDays, currentWeekStart);
+            const isCurrentWeekWithinDuration = currentWeek >= startDate && currentWeek <= endDate;
+            const isCurrentWeekChecked = isTapasDateChecked(tapasItem.checkedDays, currentWeek);
             const thisWeekPending = isCurrentWeekWithinDuration && !isCurrentWeekChecked;
 
-            const isLastWeekWithinDuration = lastWeekStart >= startDate && lastWeekStart <= endDate;
-            const isLastWeekChecked = isTapasDateChecked(tapasItem.checkedDays, lastWeekStart);
+            const isLastWeekWithinDuration = lastWeek >= startDate && lastWeek <= endDate;
+            const isLastWeekChecked = isTapasDateChecked(tapasItem.checkedDays, lastWeek);
             const lastWeekPending = isLastWeekWithinDuration && !isLastWeekChecked;
 
             if (lastWeekPending) {
@@ -1726,12 +1727,12 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
             }
 
             let leftOutWeeksCount = 0;
-            let loopWeekStart = getStartOfWeekUTC(startDate);
-            while (loopWeekStart < currentWeekStart && loopWeekStart <= endDate) {
-                if (!isTapasDateChecked(tapasItem.checkedDays, loopWeekStart)) {
+            let loopWeek = getStartOfDayUTC(startDate);
+            while (loopWeek < currentWeek && loopWeek <= endDate) {
+                if (!isTapasDateChecked(tapasItem.checkedDays, loopWeek)) {
                     leftOutWeeksCount++;
                 }
-                loopWeekStart.setDate(loopWeekStart.getDate() + 7); // Move to next week
+                loopWeek.setDate(loopWeek.getDate() + 7); // Move to next week
             }
             if (!pendingStatus.statusText && leftOutWeeksCount > 0) {
                 pendingStatus = { statusText: `${leftOutWeeksCount} ${t('weeksLeftOut')}`, statusClass: 'text-gray-600' };
