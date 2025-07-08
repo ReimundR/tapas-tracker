@@ -1140,6 +1140,14 @@ const getStartOfWeekUTC = (date) => {
     return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
 };
 
+const getTapasWeekDiff = (startDateObj) => {
+    return startDateObj - getStartOfWeekUTC(startDateObj);
+};
+
+const getTapasWeekDayUTC = (date, delta) => {
+    return new Date(getStartOfWeekUTC(date).getTime() + delta);
+};
+
 // Helper to format date objects toYYYY-MM-DD strings for comparison
 const formatDateToISO = (date) => date.toISOString().split('T')[0];
 
@@ -1969,9 +1977,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, tapas.id);
 
-    const today = getStartOfDayUTC(new Date()); // Use UTC start of day
-    const todayDateString = formatDateNoTimeToISO(today);
-
     const startDateObj = getStartOfDayUTC(tapas.startDate.toDate()); // Use UTC start of day
 
     const endDateObj = new Date(startDateObj);
@@ -1996,13 +2001,24 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         return formatDateNoTimeToISO(advancedDate) === formatDateNoTimeToISO(date);
     });
 
+    let today;
+    let yesterday;
+    let tomorrow;
+    if (tapas.scheduleType === 'weekly') {
+        const delta = getTapasWeekDiff(startDateObj);
+        today = getTapasWeekDayUTC(new Date(), delta); // Calculate from UTC this week
+        yesterday = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000)); // Calculate from UTC last week
+        tomorrow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000)); // Calculate from UTC next week
+    } else {
+        today = getStartOfDayUTC(new Date()); // Use UTC start of day
+        yesterday = getStartOfDayUTC(new Date(today.getTime() - (24 * 60 * 60 * 1000))); // Calculate from UTC today
+        tomorrow = getStartOfDayUTC(new Date(today.getTime() + (24 * 60 * 60 * 1000))); // Calculate from UTC today
+    }
     const isTodayChecked = isDateChecked(today);
-
-    const yesterday = getStartOfDayUTC(new Date(today.getTime() - (24 * 60 * 60 * 1000))); // Calculate from UTC today
     const isYesterdayChecked = isDateChecked(yesterday);
-
-    const tomorrow = getStartOfDayUTC(new Date(today.getTime() + (24 * 60 * 60 * 1000))); // Calculate from UTC today
     const isTomorrowChecked = isDateChecked(tomorrow);
+
+    const todayDateString = formatDateNoTimeToISO(today);
 
     // Check if the tapas period is over
     const isPeriodOver = today >= endDateObj;
@@ -2046,14 +2062,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
 
     const handleMarkUnitFinished = async (dateToMark) => {
-        let dateForCheckedDays;
         let successMessageKey;
 
+        const dateForCheckedDays = getStartOfDayUTC(dateToMark);
         if (tapas.scheduleType === 'weekly') {
-            dateForCheckedDays = getStartOfWeekUTC(dateToMark);
             successMessageKey = 'weekCheckedSuccessfully';
         } else {
-            dateForCheckedDays = getStartOfDayUTC(dateToMark);
             successMessageKey = 'dayCheckedSuccessfully';
         }
 
@@ -2226,9 +2240,10 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
         const sortedCheckedDays = [...tapas.checkedDays].sort((a, b) => b.toDate().getTime() - a.toDate().getTime());
         const lastCheckedDayTimestamp = sortedCheckedDays[0];
-        const lastCheckedUnitDate = tapas.scheduleType === 'weekly' ? getStartOfWeekUTC(lastCheckedDayTimestamp.toDate()) : getStartOfDayUTC(lastCheckedDayTimestamp.toDate());
+        const delta = tapas.scheduleType === 'weekly' ? getTapasWeekDiff(startDateObj) : 0;
+        const lastCheckedUnitDate = tapas.scheduleType === 'weekly' ? getTapasWeekDayUTC(lastCheckedDayTimestamp.toDate(), delta) : getStartOfDayUTC(lastCheckedDayTimestamp.toDate());
 
-        const currentRefDate = tapas.scheduleType === 'weekly' ? getStartOfWeekUTC(new Date()) : getStartOfDayUTC(new Date());
+        const currentRefDate = tapas.scheduleType === 'weekly' ? getTapasWeekDayUTC(new Date(), delta) : getStartOfDayUTC(new Date());
         const diffUnits = (currentRefDate.getTime() - lastCheckedUnitDate.getTime()) / (1000 * 60 * 60 * 24 * (tapas.scheduleType === 'weekly' ? 7 : 1));
 
         if (diffUnits < 0) { // Future unit
@@ -2664,7 +2679,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                 </p>
                                 {tapas.scheduleType === 'weekly' ? (
                                     <>
-                                        {!isDateChecked(getStartOfWeekUTC(today)) && (
+                                        {!isDateChecked(today) && (
                                             <button
                                                 onClick={() => handleMarkUnitFinished(today)}
                                                 className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
@@ -2672,7 +2687,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                 {t('thisWeekFinished')}
                                             </button>
                                         )}
-                                        {!isDateChecked(getStartOfWeekUTC(yesterday)) && (getStartOfWeekUTC(today).getTime() !== getStartOfWeekUTC(startDateObj).getTime()) && (
+                                        {!isDateChecked(yesterday) && (getStartOfWeekUTC(today).getTime() !== getStartOfWeekUTC(startDateObj).getTime()) && (
                                             <button
                                                 onClick={() => handleMarkUnitFinished(yesterday)}
                                                 className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
