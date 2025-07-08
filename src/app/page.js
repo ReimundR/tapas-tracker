@@ -1530,6 +1530,35 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="col-span-1">
+                        <label htmlFor="scheduleType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('tapasSchedule')}</label>
+                        <select
+                            id="scheduleType"
+                            value={scheduleType}
+                            onChange={(e) => setScheduleType(e.target.value)}
+                            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
+                        >
+                            <option value="daily">{t('daily')}</option>
+                            <option value="weekly">{t('weekly')}</option>
+                            <option value="everyNthDays">{t('everyNthDays')}</option>
+                        </select>
+                    </div>
+                    {scheduleType === 'everyNthDays' && (
+                        <div className="col-span-1">
+                            <label htmlFor="scheduleInterval" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('scheduleInterval')}</label>
+                            <input
+                                type="number"
+                                id="scheduleInterval"
+                                value={scheduleInterval}
+                                onChange={(e) => setScheduleInterval(e.target.value)}
+                                className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
+                                min="1"
+                                required
+                            />
+                        </div>
+                    )}
+                </div>
                 <div className="col-span-1">
                     <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {t('duration')} [{scheduleType === 'weekly' ? t('weeks').toLowerCase() : t('days').toLowerCase()}]
@@ -1570,34 +1599,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     />
                 </div>
-                {/* New: Tapas Schedule */}
-                <div className="col-span-1">
-                    <label htmlFor="scheduleType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('tapasSchedule')}</label>
-                    <select
-                        id="scheduleType"
-                        value={scheduleType}
-                        onChange={(e) => setScheduleType(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                    >
-                        <option value="daily">{t('daily')}</option>
-                        <option value="weekly">{t('weekly')}</option>
-                        <option value="everyNthDays">{t('everyNthDays')}</option>
-                    </select>
-                </div>
-                {scheduleType === 'everyNthDays' && (
-                    <div className="col-span-1">
-                        <label htmlFor="scheduleInterval" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('scheduleInterval')}</label>
-                        <input
-                            type="number"
-                            id="scheduleInterval"
-                            value={scheduleInterval}
-                            onChange={(e) => setScheduleInterval(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                            min="1"
-                            required
-                        />
-                    </div>
-                )}
                 <div className="col-span-full">
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
                     <textarea
@@ -1608,7 +1609,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     ></textarea>
                 </div>
-                {/* New: Goals input */}
                 <div className="col-span-full">
                     <label htmlFor="goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('goals0n')}</label>
                     <textarea
