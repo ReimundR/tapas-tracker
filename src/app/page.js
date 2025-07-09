@@ -49,6 +49,7 @@ const translations = {
         "confirmDeletion": "To confirm deletion, please type the Tapas name",
         "typeTapasNameToConfirm": "Type Tapas name to confirm",
         "cancel": "Cancel",
+        "confirm": "Confirm",
         "confirmDelete": "Confirm Delete",
         "markTapasAsFailed": "Mark Tapas as Failed",
         "sureMarkFailed": "Are you sure you want to mark \"%s\" as failed?",
@@ -203,9 +204,8 @@ const translations = {
         "alreadyOwnTapas": "You already own a Tapas with this share reference.",
         "sharedCount": "Shared",
         "adoptedCount": "Adopted",
-        "acknowledgeLastNDays": "Acknowledge last %s days",
-        "acknowledgeLastNWeeks": "Acknowledge last %s weeks",
-        "tapasSchedule": "Tapas Schedule",
+        "acknowledgeLastN": "Acknowledge last %s %s",
+        "schedule": "Schedule",
         "daily": "Daily",
         "weekly": "Weekly",
         "nth": "Nth",
@@ -246,6 +246,7 @@ const translations = {
         "confirmDeletion": "Um das Löschen zu bestätigen, geben Sie bitte den Tapas-Namen ein",
         "typeTapasNameToConfirm": "Tapas-Namen zur Bestätigung eingeben",
         "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
         "confirmDelete": "Löschen bestätigen",
         "markTapasAsFailed": "Tapas als fehlgeschlagen markieren",
         "sureMarkFailed": "Sind Sie sicher, dass Sie „%s“ als fehlgeschlagen markieren möchten?",
@@ -400,9 +401,8 @@ const translations = {
         "alreadyOwnTapas": "Sie besitzen bereits eine Tapas mit dieser Referenz.",
         "sharedCount": "Geteilt",
         "adoptedCount": "Übernommen",
-        "acknowledgeLastNDays": "Letzte %s Tage anerkennen",
-        "acknowledgeLastNWeeks": "Letzte %s Wochen anerkennen",
-        "tapasSchedule": "Tapas Zeitplan",
+        "acknowledgeLastN": "Letzte %s %s anerkennen",
+        "schedule": "Zeitplan",
         "daily": "Täglich",
         "weekly": "Wöchentlich",
         "nth": "N-ten",
@@ -443,6 +443,7 @@ const translations = {
         "confirmDeletion": "Pentru a confirma ștergerea, vă rugăm să introduceți numele Tapas",
         "typeTapasNameToConfirm": "Introduceți numele Tapas pentru a confirma",
         "cancel": "Anulează",
+        "confirm": "Confirmă",
         "confirmDelete": "Confirmă ștergerea",
         "markTapasAsFailed": "Marchează Tapas ca eșuat",
         "sureMarkFailed": "Sigur doriți să marcați \"%s\" ca eșuat?",
@@ -597,9 +598,8 @@ const translations = {
         "alreadyOwnTapas": "Deja deții o Tapas cu această referință de partajare.",
         "sharedCount": "Partajat",
         "adoptedCount": "Adoptat",
-        "acknowledgeLastNDays": "Recunoaște ultimele %s zile",
-        "acknowledgeLastNWeeks": "Recunoaște ultimele %s săptămâni",
-        "tapasSchedule": "Program Tapas",
+        "acknowledgeLastN": "Recunoaște ultimele %s %s",
+        "schedule": "Program",
         "daily": "Zilnic",
         "weekly": "Săptămânal",
         "nth": "N",
@@ -640,6 +640,7 @@ const translations = {
         "confirmDeletion": "Per confermare l'eliminazione, digita il nome del Tapas",
         "typeTapasNameToConfirm": "Digita il nome del Tapas per confermare",
         "cancel": "Annulla",
+        "confirm": "Conferma",
         "confirmDelete": "Conferma eliminazione",
         "markTapasAsFailed": "Segna Tapas come fallito",
         "sureMarkFailed": "Sei sicuro di voler segnare \"%s\" come fallito?",
@@ -785,9 +786,8 @@ const translations = {
         "alreadyOwnTapas": "Possiedi già una Tapas con questo riferimento di condivisione.",
         "sharedCount": "Condiviso",
         "adoptedCount": "Adottato",
-        "acknowledgeLastNDays": "Riconosci ultimi %s giorni",
-        "acknowledgeLastNWeeks": "Riconosci ultime %s settimane",
-        "tapasSchedule": "Programma Tapas",
+        "acknowledgeLastN": "Riconosci ultimi %s %s",
+        "schedule": "Programma",
         "daily": "Quotidiano",
         "weekly": "Settimanale",
         "nth": "N-esimo",
@@ -828,6 +828,7 @@ const translations = {
         "confirmDeletion": "Для подтверждения удаления, пожалуйста, введите имя Тапас",
         "typeTapasNameToConfirm": "Введите имя Тапас для подтверждения",
         "cancel": "Отмена",
+        "confirm": "Подтвердить",
         "confirmDelete": "Подтвердить удаление",
         "markTapasAsFailed": "Пометить Тапас как проваленное",
         "sureMarkFailed": "Вы уверены, что хотите пометить «%s» как проваленное?",
@@ -982,9 +983,8 @@ const translations = {
         "alreadyOwnTapas": "У вас уже есть Тапас с этой ссылкой для обмена.",
         "sharedCount": "Поделились",
         "adoptedCount": "Приняли",
-        "acknowledgeLastNDays": "Подтвердить последние %s дней",
-        "acknowledgeLastNWeeks": "Подтвердить последние %s недель",
-        "tapasSchedule": "Расписание Тапаса",
+        "acknowledgeLastN": "Подтвердить последние %s %s",
+        "schedule": "Расписание",
         "daily": "Ежедневно",
         "weekly": "Еженедельно",
         "nth": "N",
@@ -1150,7 +1150,7 @@ const getStartOfWeekUTC = (date) => {
 const getStartOfIntervalUTC = (date, tapas) => {
     const startDate = tapas.startDate.toDate();
     const daysDiff = Math.floor((date - startDate) / timeDayMs);
-    const intervals = Math.floor(daysDiff / tapas.scheduleInterval);
+    const intervals = Math.ceil(daysDiff / tapas.scheduleInterval);
     const diff = intervals * tapas.scheduleInterval;
     return new Date(startDate.getTime() + diff * timeDayMs);
 };
@@ -1228,9 +1228,19 @@ const getUniqueCheckedDays = (checkedDaysArray) => {
 };
 
 
+const getTotalUnits = (unit) => {
+    let value;
+    if (unit === 'weeks' || unit === 'weekly') {
+        value = 7;
+    } else {
+        value = 1;
+    }
+    return value;
+};
+
 const getScheduleFactor = (unit, scheduleInterval) => {
     let value;
-    if (unit === 'weeks') {
+    if (unit === 'weeks' || unit === 'weekly') {
         value = 7;
     } else if (unit === 'everyNthDays') {
         value = scheduleInterval;
@@ -1346,7 +1356,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 end.setHours(0, 0, 0, 0);
                 if (end >= start) {
                     const diffTime = end.getTime() - start.getTime();
-                    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
+                    let diffDays = Math.ceil(diffTime / timeDayMs) + 1; // +1 to include both start and end days
                     diffDays = Math.ceil(diffDays / getScheduleFactor(scheduleType, scheduleInterval));
                     setDuration(diffDays.toString());
                 } else {
@@ -1400,7 +1410,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             end.setHours(0, 0, 0, 0);
             if (end >= start) {
                 const diffTime = end.getTime() - start.getTime();
-                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
+                let diffDays = Math.ceil(diffTime / timeDayMs) + 1; // +1 to include both start and end days
                 diffDays = Math.ceil(diffDays / getScheduleFactor(scheduleType, scheduleInterval));
                 setDuration(diffDays.toString());
             } else {
@@ -1561,7 +1571,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="col-span-1">
-                        <label htmlFor="scheduleType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('tapasSchedule')}</label>
+                        <label htmlFor="scheduleType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('schedule')}</label>
                         <select
                             id="scheduleType"
                             value={scheduleType}
@@ -1715,7 +1725,7 @@ const getTapasDatesInfo = (tapasItem) => {
     endDate.setHours(0, 0, 0, 0);
 
     const diffTime = endDate.getTime() - today.getTime();
-    const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    const daysRemaining = Math.max(0, Math.ceil(diffTime / timeDayMs));
 
     return { endDate, daysRemaining };
 };
@@ -1739,7 +1749,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
         if (tapasItem.scheduleType === 'weekly') {
             const delta = getTapasWeekDiff(startDate);
             const currentWeek = getTapasWeekDayUTC(today, delta); // Calculate from UTC this week
-            const lastWeek = getStartOfDayUTC(new Date(currentWeek.getTime() - (7 * 24 * 60 * 60 * 1000)));
+            const lastWeek = getStartOfDayUTC(new Date(currentWeek.getTime() - (7 * timeDayMs)));
 
             const isCurrentWeekWithinDuration = currentWeek >= startDate && currentWeek <= endDate;
             const isCurrentWeekChecked = isTapasDateChecked(tapasItem.checkedDays, currentWeek);
@@ -1788,7 +1798,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
             while (loopDate < today && loopDate <= endDate) { // Iterate up to yesterday
                 let shouldCheck = true;
                 if (tapasItem.scheduleType === 'everyNthDays') {
-                    const diffDays = Math.ceil((loopDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                    const diffDays = Math.ceil((loopDate.getTime() - startDate.getTime()) / timeDayMs);
                     shouldCheck = (diffDays % tapasItem.scheduleInterval) === 0;
                 }
 
@@ -1914,11 +1924,11 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                             <h3 className="text-xl font-semibold text-indigo-700 mb-2">{tapasItem.name}</h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {t('duration')}: {Math.ceil(tapasItem.duration / getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval))} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
-                                {tapasItem.scheduleType === 'everyNthDays' && (
-                                    <span>&nbsp;&nbsp;({t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()})</span>
-                                )}
+                                {t('duration')}: {Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType))} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
                             </p>
+                            {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
+                                {t('schedule')}: {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()} ({Math.ceil(tapasItem.duration / tapasItem.scheduleInterval)}x)</p>
+                            )}
                             {tapasItem.status === 'active' && (
                                 <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
                             )}
@@ -2269,7 +2279,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         const lastCheckedUnitDate = tapas.scheduleType === 'weekly' ? getTapasWeekDayUTC(lastCheckedDayTimestamp.toDate(), delta) : getStartOfDayUTC(lastCheckedDayTimestamp.toDate());
 
         const currentRefDate = tapas.scheduleType === 'weekly' ? getTapasWeekDayUTC(new Date(), delta) : getStartOfDayUTC(new Date());
-        const diffUnits = (currentRefDate.getTime() - lastCheckedUnitDate.getTime()) / (1000 * 60 * 60 * 24 * getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval));
+        const diffUnits = (currentRefDate.getTime() - lastCheckedUnitDate.getTime()) / (timeDayMs * getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval));
 
         if (diffUnits < 0) { // Future unit
             //setMessage(t('cannotClearFutureDay')); // Re-using cannotClearFutureDay
@@ -2383,7 +2393,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 } else if (repeatOption === 'untilEndDate') {
                     // Calculate duration until original end date (if it's in the future)
                     const diffTime = endDateObj.getTime() - newStartDate.getTime();
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const diffDays = Math.ceil(diffTime / timeDayMs);
                     if (diffDays > 0) {
                         newDurationDays = diffDays;
                     } else {
@@ -2462,7 +2472,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
             } else if (repeatOption === 'untilEndDate') {
                 const originalEndDateAsDate = endDateObj; // Already calculated
                 const diffTime = originalEndDateAsDate.getTime() - newStartDate.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.ceil(diffTime / timeDayMs);
                 if (diffDays > 0) {
                     newDurationDays = diffDays;
                 } else {
@@ -2660,15 +2670,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
                 <div className="space-y-4 text-gray-700 dark:text-gray-300">
                     <p><strong className="font-semibold">{t('timeframe')}:</strong> {tapas.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}
-                    {tapas.scheduleType === 'everyNthDays' && (<span>&nbsp;&nbsp;[{tapas.duration} {t('days')}]</span>)}
                     </p>
                     {tapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {tapas.startTime}</p>}
                     <p>
-                        <strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(tapas.duration / getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval))} {t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
-                        {tapas.scheduleType === 'everyNthDays' && (
-                            <span>&nbsp;&nbsp;({t('everyNthDays', tapas.scheduleInterval).toLowerCase()})</span>
-                        )}
+                        <strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(tapas.duration / getTotalUnits(tapas.scheduleType))} {t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
                     </p>
+                    {tapas.scheduleType === 'everyNthDays' && (
+                    <p><strong className="font-semibold">{t('schedule')}:</strong> {t('everyNthDays', tapas.scheduleInterval).toLowerCase()} ({Math.ceil(tapas.duration / tapas.scheduleInterval)}x)</p>
+                    )}
                     {tapas.description && <p><strong className="font-semibold">{t('description')}:</strong> {tapas.description}</p>}
                     {tapas.goals && tapas.goals.length > 0 ? ( // Display goals if present
                         <div>
@@ -2781,7 +2790,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                     onClick={() => setShowAcknowledgeNDaysMenu(!showAcknowledgeNDaysMenu)}
                                                     className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                 >
-                                                    {t('acknowledgeLastNWeeks', 'N')}
+                                                    {t('acknowledgeLastN', 'N', t('weeks'))}
                                                 </button>
                                                 {showAcknowledgeNDaysMenu && (
                                                     <div className="px-4 py-2">
@@ -2789,7 +2798,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                             type="number"
                                                             value={acknowledgeNDaysInput}
                                                             onChange={(e) => setAcknowledgeNDaysInput(e.target.value)}
-                                                            placeholder="Anzahl Wochen"
+                                                            placeholder={t('count') + " " + t('weeks')}
                                                             className="w-full px-2 py-1 border rounded-md shadow-sm bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                                                             min="1"
                                                         />
@@ -2797,7 +2806,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                             onClick={() => handleAcknowledgeLastNUnits(parseInt(acknowledgeNDaysInput))}
                                                             className="mt-2 w-full bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-600"
                                                         >
-                                                            Bestätigen
+                                                            {t('confirm')}
                                                         </button>
                                                     </div>
                                                 )}
@@ -2830,7 +2839,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                     onClick={() => setShowAcknowledgeNDaysMenu(!showAcknowledgeNDaysMenu)}
                                                     className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                 >
-                                                    {t('acknowledgeLastNDays', 'N')}
+                                                    {t('acknowledgeLastN', 'N', t('days'))}
                                                 </button>
                                                 {showAcknowledgeNDaysMenu && (
                                                     <div className="px-4 py-2">
@@ -2838,7 +2847,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                             type="number"
                                                             value={acknowledgeNDaysInput}
                                                             onChange={(e) => setAcknowledgeNDaysInput(e.target.value)}
-                                                            placeholder="Anzahl Tage"
+                                                            placeholder={t('count') + " " + t('days')}
                                                             className="w-full px-2 py-1 border rounded-md shadow-sm bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                                                             min="1"
                                                         />
@@ -2846,7 +2855,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                                             onClick={() => handleAcknowledgeLastNUnits(parseInt(acknowledgeNDaysInput))}
                                                             className="mt-2 w-full bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-600"
                                                         >
-                                                            Bestätigen
+                                                            {t('confirm')}
                                                         </button>
                                                     </div>
                                                 )}
@@ -3548,7 +3557,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
                     )}
                     {sharedTapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {sharedTapas.crystallizationTime} {t('days').toLowerCase()}</p>}
-                    <p><strong className="font-semibold">{t('tapasSchedule')}:</strong> {t(sharedTapas.scheduleType)}</p>
+                    <p><strong className="font-semibold">{t('schedule')}:</strong> {t(sharedTapas.scheduleType)}</p>
                     {sharedTapas.scheduleType === 'everyNthDays' && (
                         <p><strong className="font-semibold">{t('scheduleInterval')}:</strong> {sharedTapas.scheduleInterval} {t('days').toLowerCase()}</p>
                     )}
