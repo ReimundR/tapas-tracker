@@ -4416,8 +4416,7 @@ const HomePage = () => {
 
                 {/* Footer */}
                 <footer className="bg-gray-800 text-white text-center p-4 mt-8 text-sm">
-                    <p>&copy; {new Date().getFullYear()} {t('appName')}</p>
-                    <p>Created by Reimund Renner</p>
+                    <span className="text-nav">{t('appName')} &copy; {new Date().getFullYear()} by Reimund Renner</span>
                     <div className="flex justify-center space-x-4 mt-2">
                         <button
                             onClick={() => { setSelectedGDPR(true); }}
