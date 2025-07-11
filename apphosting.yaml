@@ -6,7 +6,10 @@ env:
       - RUNTIME
 
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    secret: AIzaSyB8O-7yvSsyaSyKTBFOzOY-E98zaiSsg6s
+    value: AIzaSyB8O-7yvSsyaSyKTBFOzOY-E98zaiSsg6s
+    availability:
+      - BUILD
+      - RUNTIME
 
   - variable: NEXT_PUBLIC_AUTH_DOMAIN
     value: tapas-aya.firebaseapp.com
