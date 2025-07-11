@@ -1787,6 +1787,7 @@ const getTapasDatesInfo = (tapasItem) => {
 
 // Component to display a list of Tapas
 const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter }) => {
+    const { locale } = useContext(LocaleContext);
     const { t } = useContext(AppContext);
 
     // Helper to get detailed status for active tapas display
@@ -1933,13 +1934,17 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                         }
                     }
 
+                    const dayOfWeek = tapasItem.startDate.toDate().toLocaleDateString(locale, { weekday: "long" });
+
                     return (
                         <div
                             key={tapasItem.id}
                             className="p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
                             onClick={() => onSelectTapas(tapasItem)}
                         >
-                            <h3 className="text-xl font-semibold text-indigo-700 mb-2">{tapasItem.name}{daysOver < 0 && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;[{t('expired')}]</span>)}</h3>
+                            <h3 className="text-xl font-semibold text-indigo-700 mb-2">{tapasItem.name}
+                                <span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>
+                            </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
                                 {t('duration')}: {Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType))} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
@@ -2022,6 +2027,7 @@ const ResultsModal = ({ tapas, onClose, onSaveResults }) => {
 
 // Component for a single Tapas detail view
 const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added setSelectedTapas prop
+    const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -2642,7 +2648,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
     // Determine the current date/week display based on scheduleType
     let displayDateInfo;
-    const todayFormatted = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const todayFormatted = new Date().toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     if (tapas.scheduleType === 'weekly') {
         const currentWeekStart = getStartOfWeekUTC(today);
