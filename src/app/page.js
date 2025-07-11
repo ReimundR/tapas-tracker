@@ -12,7 +12,7 @@ import { Suspense } from 'react'
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
 
-const __app_id = "1:136005099339:web:28b6186333d3ae2ef792ce"; // Directly assign provided appId
+const __app_id = process.env.appId;
 const appVersion = process.env.version
 
 // Define translations for different languages
@@ -3624,12 +3624,12 @@ const HomePage = () => {
     useEffect(() => {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = {
-            apiKey: "AIzaSyB8O-7yvSsyaSyKTBFOzOY-E98zaiSsg6s",
-            authDomain: "tapas-aya.firebaseapp.com",
-            projectId: "tapas-aya",
-            storageBucket: "tapas-aya.firebasestorage.app",
-            messagingSenderId: "136005099339",
-            appId: "1:136005099339:web:28b6186333d3ae2ef792ce"
+            apiKey: process.env.apiKey,
+            authDomain: process.env.projectId + ".firebaseapp.com",
+            projectId: process.env.projectId,
+            storageBucket: process.env.projectId + ".firebasestorage.app",
+            messagingSenderId: process.env.messagingSenderId,
+            appId: __app_id
         };
 
         try {

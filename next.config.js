@@ -26,7 +26,11 @@ const nextConfig = {
     return config;
   },
   env: {
-    version
+    version,
+    messagingSenderId: "136005099339",
+    appId: "1:136005099339:web:28b6186333d3ae2ef792ce",
+    apiKey: "AIzaSyB8O-7yvSsyaSyKTBFOzOY-E98zaiSsg6s",
+    projectId: "tapas-aya"
   }
 };
 
