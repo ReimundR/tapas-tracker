@@ -12,7 +12,7 @@ import { Suspense } from 'react'
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
 
-const __app_id = process.env.appId;
+const __app_id = process.env.NEXT_PUBLIC_APP_ID;
 const appVersion = process.env.version
 
 // Define translations for different languages
@@ -3626,11 +3626,11 @@ const HomePage = () => {
     useEffect(() => {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = {
-            apiKey: process.env.apiKey,
-            authDomain: process.env.projectId + ".firebaseapp.com",
-            projectId: process.env.projectId,
-            storageBucket: process.env.projectId + ".firebasestorage.app",
-            messagingSenderId: process.env.messagingSenderId,
+            apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+            authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
+            projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
+            storageBucket: process.env.NEXT_PUBLIC_STORAGE_BUCKET,
+            messagingSenderId: process.env.NEXT_PUBLIC_MESSAGING_SENDER_ID,
             appId: __app_id
         };
 
