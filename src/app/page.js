@@ -30,7 +30,7 @@ if (process.env.FIREBASE_WEBAPP_CONFIG) {
     };
 }
 
-const __app_id = firebaseConfig['appId'];
+const __app_id = firebaseConfig.appId;
 const appVersion = process.env.version
 
 // Define translations for different languages
@@ -3644,37 +3644,41 @@ const HomePage = () => {
     useEffect(() => {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        try {
-            const app = initializeApp(firebaseConfig);
-            const firestore = getFirestore(app);
-            const authentication = getAuth(app);
-            setDb(firestore);
-            setAuth(authentication);
+        if (firebaseConfig && firebaseConfig.apiKey) {
+            try {
+                const app = initializeApp(firebaseConfig);
+                const firestore = getFirestore(app);
+                const authentication = getAuth(app);
+                setDb(firestore);
+                setAuth(authentication);
 
-            const unsubscribe = onAuthStateChanged(authentication, async (user) => {
-                if (user) {
-                    setUserId(user.uid);
-                    setUserDisplayName(user.displayName || user.email || t('guestUser'));
-                    setIsGuestUser(user.isAnonymous); // Set isGuestUser based on Firebase user object
-                    // Only hide the login prompt if it's not a guest user initially
-                    if (!user.isAnonymous) {
-                         setShowLoginPrompt(false);
+                const unsubscribe = onAuthStateChanged(authentication, async (user) => {
+                    if (user) {
+                        setUserId(user.uid);
+                        setUserDisplayName(user.displayName || user.email || t('guestUser'));
+                        setIsGuestUser(user.isAnonymous); // Set isGuestUser based on Firebase user object
+                        // Only hide the login prompt if it's not a guest user initially
+                        if (!user.isAnonymous) {
+                            setShowLoginPrompt(false);
+                        }
+                        setCurrentPage('active');
+                    } else {
+                        setUserId(null);
+                        setUserDisplayName(null);
+                        setIsGuestUser(false); // No user, so not a guest user
+                        setShowLoginPrompt(true); // Show login prompt if no user is authenticated
                     }
-                    setCurrentPage('active');
-                } else {
-                    setUserId(null);
-                    setUserDisplayName(null);
-                    setIsGuestUser(false); // No user, so not a guest user
-                    setShowLoginPrompt(true); // Show login prompt if no user is authenticated
-                }
-                setLoadingFirebase(false);
-            });
+                    setLoadingFirebase(false);
+                });
 
-            return () => unsubscribe();
-        } catch (error) {
-            console.error("Error initializing Firebase: ", error);
-            setFirebaseError(`${t('firebaseInitFailed')} ${error.message}`);
-            setLoadingFirebase(false);
+                return () => unsubscribe();
+            } catch (error) {
+                console.error("Error initializing Firebase: ", error);
+                setFirebaseError(`${t('firebaseInitFailed')} ${error.message}`);
+                setLoadingFirebase(false);
+            }
+        } else {
+            console.warn("Firebase configuration is missing or incomplete. Firebase will not be initialized.");
         }
     }, [t]);
 

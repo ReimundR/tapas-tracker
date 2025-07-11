@@ -26,7 +26,8 @@ const nextConfig = {
     return config;
   },
   env: {
-    version
+    version,
+    FIREBASE_WEBAPP_CONFIG: process.env.FIREBASE_WEBAPP_CONFIG
   }
 };
 
