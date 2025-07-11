@@ -234,7 +234,9 @@ const translations = {
         "Ntimes": "%s times",
         "scheduleInterval": "Interval (days)",
         "todayIs": "Today is",
-        "thisWeekIs": "This week is %s - %s"
+        "thisWeekIs": "This week is %s - %s",
+        "acknowledgeAfter": "Acknowledge afterwards",
+        "yes": "yes"
     },
     de: {
         "appName": "Tapas Tracker",
@@ -435,7 +437,9 @@ const translations = {
         "Ntimes": "%s mal",
         "scheduleInterval": "Intervall (Tage)",
         "todayIs": "Heute ist",
-        "thisWeekIs": "Diese Woche ist %s - %s"
+        "thisWeekIs": "Diese Woche ist %s - %s",
+        "acknowledgeAfter": "Danach bestätigen",
+        "yes": "ja"
     },
     ro: {
         "appName": "Urmăritor Tapas",
@@ -636,7 +640,9 @@ const translations = {
         "Ntimes": "de %s ori",
         "scheduleInterval": "Interval (zile)",
         "todayIs": "Astăzi este",
-        "thisWeekIs": "Această săptămână este %s - %s"
+        "thisWeekIs": "Această săptămână este %s - %s",
+        "acknowledgeAfter": "Apoi confirmați",
+        "yes": "da"
     },
     it: {
         "appName": "Tapas Tracker",
@@ -828,7 +834,9 @@ const translations = {
         "Ntimes": "%s volte",
         "scheduleInterval": "Intervallo (giorni)",
         "todayIs": "Oggi è",
-        "thisWeekIs": "Questa settimana è %s - %s"
+        "thisWeekIs": "Questa settimana è %s - %s",
+        "acknowledgeAfter": "Quindi conferma",
+        "yes": "sì"
     },
     ru: {
         "appName": "Трекер Тапас",
@@ -1029,7 +1037,9 @@ const translations = {
         "Ntimes": "%s раз",
         "scheduleInterval": "Интервал (дни)",
         "todayIs": "Сегодня",
-        "thisWeekIs": "На этой неделе %s - %s"
+        "thisWeekIs": "На этой неделе %s - %s",
+        "acknowledgeAfter": "Затем подтвердите",
+        "yes": "да"
     }
 };
 
@@ -1333,6 +1343,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const [allowRecuperation, setAllowRecuperation] = useState(false); // New state for recuperation
     const [scheduleType, setScheduleType] = useState('daily'); // 'daily', 'weekly', 'everyNthDays'
     const [scheduleInterval, setScheduleInterval] = useState(''); // For 'everyNthDays'
+    const [acknowledgeAfter, setAcknowledgeAfter] = useState(false); // New state for acknowledgeAfter
 
     // Effect to set form fields when editingTapas prop changes
     useEffect(() => {
@@ -1353,6 +1364,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             setAllowRecuperation(editingTapas.allowRecuperation || false);
             setScheduleType(loadedScheduleType); // Load schedule type
             setScheduleInterval(editingTapas.scheduleInterval || ''); // Load schedule interval
+            setAcknowledgeAfter(editingTapas.acknowledgeAfter || false); // Load acknowledgeAfter
 
             // Calculate endDate from startDate and loadedDuration, ensuring validity
             if (editingTapas.startDate && loadedDuration && !isNaN(parseInt(loadedDuration)) && parseInt(loadedDuration) > 0) {
@@ -1386,6 +1398,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             setAllowRecuperation(false); // Reset allowRecuperation
             setScheduleType('daily'); // Reset schedule type
             setScheduleInterval(''); // Reset schedule interval
+            setAcknowledgeAfter(false); // Reset acknowledgeAfter
         }
         setErrorMessage('');
         setSuccessMessage('');
@@ -1534,6 +1547,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             shareReference: editingTapas ? editingTapas.shareReference || null : null, // Preserve shareReference
             scheduleType: scheduleType, // New field
             scheduleInterval: scheduleType === 'everyNthDays' ? parseInt(scheduleInterval) : null, // New field
+            acknowledgeAfter: acknowledgeAfter, // Include new field
         };
 
         try {
@@ -1558,6 +1572,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 setAllowRecuperation(false); // Reset after adding
                 setScheduleType('daily'); // Reset schedule type
                 setScheduleInterval(''); // Reset schedule interval
+                setAcknowledgeAfter(false); // Reset acknowledgeAfter
             }
             onTapasAdded(); // Trigger refresh in parent component
         } catch (e) {
@@ -1692,6 +1707,18 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     />
                 </div>
+                <div className="col-span-full flex items-center mt-2">
+                    <input
+                        type="checkbox"
+                        id="acknowledgeAfter"
+                        checked={acknowledgeAfter}
+                        onChange={(e) => setAcknowledgeAfter(e.target.checked)}
+                        className="form-checkbox h-5 w-5 text-indigo-600 rounded"
+                    />
+                    <label htmlFor="acknowledgeAfter" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t('acknowledgeAfter')}
+                    </label>
+                </div>
                 <div className="col-span-full">
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
                     <textarea
@@ -1814,13 +1841,14 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
 
         if (yesterdayPending) {
             pendingStatus = { statusText: t((tapasItem.scheduleType === 'weekly' ? 'lastWeek' : 'yesterday') + 'Pending'), statusClass: 'text-red-600' };
-        } else if (todayPending) {
+        } else if (todayPending && !tapasItem.acknowledgeAfter) {
             pendingStatus = { statusText: t((tapasItem.scheduleType === 'weekly' ? 'thisWeek' : 'today') + 'Pending'), statusClass: 'text-orange-600' };
         }
 
         let leftOutDaysCount = 0;
         const loopDate = new Date(startDate);
-        while (loopDate < today && loopDate <= endDate) { // Iterate up to yesterday
+        const loopEnd = tapasItem.acknowledgeAfter ? yesterday : today;
+        while (loopDate < loopEnd && loopDate <= endDate) { // Iterate up to yesterday
             if (!isTapasDateChecked(tapasItem.checkedDays, loopDate)) {
                 leftOutDaysCount++;
             }
@@ -2083,8 +2111,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
     const todayDateString = formatDateNoTimeToISO(today);
 
     // Check if the tapas period is over
-    const isTodayOver = today > endDateObj;
-    const isYesterdayOver = yesterday > endDateObj;
+    const isTodayValid = startDateObj <= today && today <= endDateObj;
+    const isYesterdayValid = startDateObj <= yesterday && yesterday <= endDateObj;
     const isPeriodEndOrOver = today >= endDateObj;
     const isSuccessful = tapas.status === 'successful';
     const isFailed = tapas.status === 'failed';
@@ -2445,6 +2473,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                     shareReference: tapas.shareReference || null, // Carry over share reference if exists
                     scheduleType: tapas.scheduleType, // Carry over schedule type
                     scheduleInterval: tapas.scheduleInterval, // Carry over schedule interval
+                    acknowledgeAfter: tapas.acknowledgeAfter, // Carry over acknowledgeAfter
                 };
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
@@ -2527,6 +2556,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 shareReference: tapas.shareReference || null, // Carry over share reference if exists
                 scheduleType: tapas.scheduleType, // Carry over schedule type
                 scheduleInterval: tapas.scheduleInterval, // Carry over schedule interval
+                acknowledgeAfter: tapas.acknowledgeAfter, // Carry over acknowledgeAfter
             };
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
@@ -2608,6 +2638,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 allowRecuperation: tapas.allowRecuperation || false,
                 sharedCount: (tapas.sharedCount || 0) + 1, // Increment shared count
                 adoptedCount: (tapas.adoptedCount || 0), // Initialize or preserve
+                acknowledgeAfter: tapas.acknowledgeAfter, // Include acknowledgeAfter
             };
 
             // Get the public document reference
@@ -2687,6 +2718,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                     {tapas.scheduleType === 'everyNthDays' && (
                     <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(tapas.duration / tapas.scheduleInterval))} {t('everyNthDays', tapas.scheduleInterval).toLowerCase()}</p>
                     )}
+                    {tapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
                     {tapas.description && <p><strong className="font-semibold">{t('description')}:</strong> {tapas.description}</p>}
                     {tapas.goals && tapas.goals.length > 0 ? ( // Display goals if present
                         <div>
@@ -2728,7 +2760,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                     {displayDateInfo}
                                 </p>
-                                {!isTodayChecked && !isTodayOver && (
+                                {!isTodayChecked && isTodayValid && !tapas.acknowledgeAfter && (
                                     <button
                                         onClick={() => handleMarkUnitFinished(today)}
                                         className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
@@ -2736,7 +2768,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                                         {t((tapas.scheduleType === 'weekly' ? 'thisWeek' : 'today') + 'Finished')}
                                     </button>
                                 )}
-                                {!isYesterdayChecked && !isYesterdayOver && (
+                                {!isYesterdayChecked && isYesterdayValid && (
                                     <button
                                         onClick={() => handleMarkUnitFinished(yesterday)}
                                         className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
