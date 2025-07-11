@@ -12,7 +12,25 @@ import { Suspense } from 'react'
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
 
-const __app_id = process.env.NEXT_PUBLIC_APP_ID;
+let firebaseConfig;
+if (process.env.FIREBASE_WEBAPP_CONFIG) {
+    try {
+        firebaseConfig = JSON.parse(process.env.FIREBASE_WEBAPP_CONFIG);
+    } catch (e) {
+        console.error("Error parsing FIREBASE_WEBAPP_CONFIG:", e);
+    }
+} else {
+    firebaseConfig = {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_MESSAGING_SENDER_ID,
+        appId: process.env.NEXT_PUBLIC_APP_ID
+    };
+}
+
+const __app_id = firebaseConfig['appId'];
 const appVersion = process.env.version
 
 // Define translations for different languages
@@ -3625,14 +3643,6 @@ const HomePage = () => {
     // Initialize Firebase and handle authentication
     useEffect(() => {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = process.env.FIREBASE_WEBAPP_CONFIG || {
-            apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-            authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
-            projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
-            storageBucket: process.env.NEXT_PUBLIC_STORAGE_BUCKET,
-            messagingSenderId: process.env.NEXT_PUBLIC_MESSAGING_SENDER_ID,
-            appId: __app_id
-        };
 
         try {
             const app = initializeApp(firebaseConfig);
