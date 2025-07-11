@@ -2572,16 +2572,18 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
             // Prepare static data for public sharing
             const staticTapasData = {
                 name: tapas.name,
+                sharedAt: new Date(),
+                userId: userId,
                 description: tapas.description || null,
                 goals: tapas.goals || [],
                 parts: tapas.parts || [],
+                scheduleType: tapas.scheduleType,
+                scheduleInterval: tapas.scheduleInterval,
                 duration: tapas.duration,
                 crystallizationTime: tapas.crystallizationTime || null,
                 allowRecuperation: tapas.allowRecuperation || false,
                 sharedCount: (tapas.sharedCount || 0) + 1, // Increment shared count
                 adoptedCount: (tapas.adoptedCount || 0), // Initialize or preserve
-                scheduleType: tapas.scheduleType, // Include schedule type
-                scheduleInterval: tapas.scheduleInterval, // Include schedule interval
             };
 
             // Get the public document reference
