@@ -3625,7 +3625,7 @@ const HomePage = () => {
     // Initialize Firebase and handle authentication
     useEffect(() => {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = {
+        const firebaseConfig = process.env.FIREBASE_WEBAPP_CONFIG || {
             apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
             authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
             projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
