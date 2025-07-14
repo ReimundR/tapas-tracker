@@ -31,7 +31,8 @@ if (process.env.FIREBASE_WEBAPP_CONFIG) {
 }
 
 const __app_id = firebaseConfig.appId;
-const appVersion = process.env.version
+const appVersion = process.env.version;
+const repUrl = "https://github.com/ReimundR/tapas-tracker";
 
 // Define translations for different languages
 const translations = {
@@ -205,7 +206,11 @@ const translations = {
         "about": "About",
         "appVersion": "App Version",
         "tapasWebsite": "Tapas Tracker Website",
-        "aboutDescription": "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently.  Tapas is a form of Yogic practice and part of the ten Yamas and Niyamas.  The application allows you to track your Tapas success or failure, sepcify flexibly the parts of the Tapas, its goals and add results after the end of the Tapas or in case of a Tapas failure the cause for it.  History and Statistics help analysing your Tapasya and plan repetitions of failed or successful Tapas, respectively.",
+        "aboutDescription": "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently."+
+            "  Tapas is a form of Yogic practice and part of the ten Yamas and Niyamas."+
+            "  The application allows you to track your Tapas success or failure, sepcify flexibly the parts of the Tapas, its goals and add results after the end of the Tapas or in case of a Tapas failure the cause for it."+
+            "  History and Statistics help analysing your Tapasya and plan repetitions of failed or successful Tapas, respectively."+
+            "  This application is Open Source. See",
         "data": "Data",
         "cleanData": "Clean Data",
         "cleanDataConfirmation": "Are you sure you want to delete all Tapas with an end date older than the selected timeframe?",
@@ -408,7 +413,11 @@ const translations = {
         "about": "Über uns",
         "appVersion": "App-Version",
         "tapasWebsite": "Tapas Tracker Webseite",
-        "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Ihnen hilft, Ihre Tapas oder Ziele konsequent zu verfolgen und zu erreichen.  Tapas ist eine Form der Yoga-Praxis und Teil der zehn Yamas und Niyamas.  Die Anwendung ermöglicht es Ihnen, Ihren Tapas-Erfolg oder -Misserfolg zu verfolgen, die einzelnen Tapas-Teile und Ziele flexibel zu spezifizieren und Ergebnisse nach dem Ende des Tapas oder im Falle eines Tapas-Misserfolgs die Ursache dafür hinzuzufügen.  Verlauf und Statistiken helfen Ihnen, Ihr Tapasya zu analysieren und Wiederholungen fehlgeschlagener bzw. erfolgreicher Tapas zu planen.",
+        "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Ihnen hilft, Ihre Tapas oder Ziele konsequent zu verfolgen und zu erreichen."+
+            "  Tapas ist eine Form der Yoga-Praxis und Teil der zehn Yamas und Niyamas."+
+            "  Die Anwendung ermöglicht es Ihnen, Ihren Tapas-Erfolg oder -Misserfolg zu verfolgen, die einzelnen Tapas-Teile und Ziele flexibel zu spezifizieren und Ergebnisse nach dem Ende des Tapas oder im Falle eines Tapas-Misserfolgs die Ursache dafür hinzuzufügen."+
+            "  Verlauf und Statistiken helfen Ihnen, Ihr Tapasya zu analysieren und Wiederholungen fehlgeschlagener bzw. erfolgreicher Tapas zu planen."+
+            "  Diese Anwendung ist Open Source. Siehe",
         "data": "Daten",
         "cleanData": "Daten bereinigen",
         "cleanDataConfirmation": "Möchten Sie wirklich alle Tapas löschen, deren Enddatum älter ist als der ausgewählte Zeitraum?",
@@ -611,7 +620,11 @@ const translations = {
         "about": "Despre",
         "appVersion": "Versiunea aplicației",
         "tapasWebsite": "Site-ul Tapas Tracker",
-        "aboutDescription": "Tapas Tracker este un instrument de dezvoltare personală conceput pentru a te ajuta să urmărești și să-ți atingi Tapas-urile sau obiectivele în mod constant.  Tapas este o formă de practică yoghină și face parte din cele zece Yama și Niyama.  Aplicația îți permite să urmărești succesul sau eșecul Tapas-ului tău, să specifici flexibil părțile Tapas-ului, obiectivele acestuia și să adaugi rezultate după încheierea Tapas-ului sau, în cazul unui eșec Tapas, cauza acestuia.  Istoricul și statisticile ajută la analizarea Tapas-ului tău și la planificarea repetărilor Tapas-urilor eșuate sau de succes, respectiv.",
+        "aboutDescription": "Tapas Tracker este un instrument de dezvoltare personală conceput pentru a te ajuta să urmărești și să-ți atingi Tapas-urile sau obiectivele în mod constant."+
+        "  Tapas este o formă de practică yoghină și face parte din cele zece Yama și Niyama."+
+        "  Aplicația îți permite să urmărești succesul sau eșecul Tapas-ului tău, să specifici flexibil părțile Tapas-ului, obiectivele acestuia și să adaugi rezultate după încheierea Tapas-ului sau, în cazul unui eșec Tapas, cauza acestuia."+
+        "  Istoricul și statisticile ajută la analizarea Tapas-ului tău și la planificarea repetărilor Tapas-urilor eșuate sau de succes, respectiv."+
+        "  Această aplicație este open source. Vedeți",
         "data": "Date",
         "cleanData": "Curăță Date",
         "cleanDataConfirmation": "Sunteți sigur că doriți să ștergeți toate Tapas-urile cu o dată de sfârșit mai veche decât perioada selectată?",
@@ -814,7 +827,11 @@ const translations = {
         "about": "Informazioni",
         "appVersion": "Versione dell'app",
         "tapasWebsite": "Sito web di Tapas Tracker",
-        "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente.  Tapas è una forma di pratica yoga e fa parte dei dieci Yama e Niyama.  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa.  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite.",
+        "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente."+
+        "  Tapas è una forma di pratica yoga e fa parte dei dieci Yama e Niyama."+
+        "  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa."+
+        "  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite."+
+        "  Questa applicazione è Open Source. Vedi",
         "close": "Chiudere",
         "shareTapas": "Condividi",
         "shareLinkCopied": "Link di condivisione copiato negli appunti!",
@@ -1008,7 +1025,11 @@ const translations = {
         "about": "О программе",
         "appVersion": "Версия приложения",
         "tapasWebsite": "Веб-сайт Tapas Tracker",
-        "aboutDescription": "Tapas Tracker — это инструмент для личного развития, призванный помочь вам отслеживать и последовательно достигать ваших тапасов или целей.  Тапас — это форма йогической практики и часть десяти Ям и Ниям.  Приложение позволяет вам отслеживать успехи или неудачи в тапасах, гибко определять части тапаса, его цели и добавлять результаты после окончания тапаса или, в случае неудачи тапаса, причину ее возникновения.  История и статистика помогают анализировать вашу тапасью и планировать повторения неудачных или успешных тапасов соответственно.",
+        "aboutDescription": "Tapas Tracker — это инструмент для личного развития, призванный помочь вам отслеживать и последовательно достигать ваших тапасов или целей."+
+        "  Тапас — это форма йогической практики и часть десяти Ям и Ниям."+
+        "  Приложение позволяет вам отслеживать успехи или неудачи в тапасах, гибко определять части тапаса, его цели и добавлять результаты после окончания тапаса или, в случае неудачи тапаса, причину ее возникновения."+
+        "  История и статистика помогают анализировать вашу тапасью и планировать повторения неудачных или успешных тапасов соответственно."+
+        "  Это приложение с открытым исходным кодом. См.",
         "data": "Данные",
         "cleanData": "Очистить данные",
         "cleanDataConfirmation": "Вы уверены, что хотите удалить все Тапасы с датой окончания, старше выбранного периода?",
@@ -3253,14 +3274,14 @@ const AboutModal = ({ onClose }) => {
                 <p className="text-lg mb-2"><strong>{t('appName')}</strong></p>
                 <p className="text-md mb-4 text-gray-600 dark:text-gray-300">{t('appVersion')}: {appVersion}</p>
                 <a
-                    href="#" // Placeholder link
+                    href="https://tapas-tracker.app"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors duration-200 text-md font-medium mb-6"
                 >
                     {t('tapasWebsite')}
                 </a>
-                <div className="text-sm font-medium mb-6 text-gray-700 dark:text-gray-300" style={{ whiteSpace: 'pre-wrap' }}>{t('aboutDescription').split("  ").join("\n\n")}</div>
+                <div className="text-sm font-medium mb-6 text-gray-700 dark:text-gray-300" style={{ whiteSpace: 'pre-wrap' }}>{t('aboutDescription').split("  ").join("\n\n")+"\n"}<a className="text-blue-600 dark:text-blue-400" href={repUrl} target="_blank">{repUrl}</a></div>
                 <button
                     onClick={onClose}
                     className="w-full bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
@@ -4137,7 +4158,21 @@ const HomePage = () => {
     if (showLoginPrompt && !loadingFirebase && (!userId || isGuestUser)) {
         return (
             <div className="fixed inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center p-4 z-50">
-                <div className="p-8 rounded-lg shadow-2xl text-center max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <div className="p-4 rounded-lg shadow-2xl text-center max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                    <div className="p-0 grid justify-items-end">
+                        <select
+                            value={locale}
+                            onChange={(e) => setLocale(e.target.value)}
+                            className="bg-indigo-700 text-white px-2 py-1 rounded-md text-sm cursor-pointer"
+                        >
+                            <option value="en">English</option>
+                            <option value="de">Deutsch</option>
+                            <option value="ro">Română</option>
+                            <option value="ru">Русский</option>
+                            <option value="it">Italiano</option>
+                        </select>
+                    </div>
+                    <div className="p-4 rounded-lg shadow-2xl text-center max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                     <h2 className="text-3xl font-bold mb-6">{t('welcomeTapasTracker')}</h2>
                     <p className="mb-6 text-gray-600 dark:text-gray-300">{t('trackPersonalGoals')}</p>
 
@@ -4212,6 +4247,7 @@ const HomePage = () => {
                     </button>
                     {firebaseError && <p className="text-red-600 mt-4">{firebaseError}</p>}
                 </div>
+            </div>
             </div>
         );
     }
