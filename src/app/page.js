@@ -1847,6 +1847,8 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
 
         let pendingStatus = { statusText: '', statusClass: '' };
 
+        const isWeekly = tapasItem.scheduleType === 'weekly';
+
         const daysDelta = getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval);
         const today = getTapasDay(new Date(), tapasItem, startDate);
         const yesterday = getStartOfDayUTC(new Date(today.getTime() - (daysDelta * timeDayMs)));
@@ -1861,9 +1863,12 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
         const yesterdayPending = isYesterdayWithinDuration && !isYesterdayChecked;
 
         if (yesterdayPending) {
-            pendingStatus = { statusText: t((tapasItem.scheduleType === 'weekly' ? 'lastWeek' : 'yesterday') + 'Pending'), statusClass: 'text-red-600' };
+            pendingStatus = { statusText: t((isWeekly ? 'lastWeek' : 'yesterday') + 'Pending'), statusClass: 'text-red-600' };
         } else if (todayPending && !tapasItem.acknowledgeAfter) {
-            pendingStatus = { statusText: t((tapasItem.scheduleType === 'weekly' ? 'thisWeek' : 'today') + 'Pending'), statusClass: 'text-orange-600' };
+            const isTodayPending = !isWeekly || today.getTime() == getStartOfDayUTC(new Date()).getTime();
+            const pendingDay = isTodayPending ? 'today' : 'thisWeek';
+            const pendingColor = isTodayPending ? 'text-orange-600' : 'text-gray-600';
+            pendingStatus = { statusText: t(pendingDay + 'Pending'), statusClass: pendingColor };
         }
 
         let leftOutDaysCount = 0;
@@ -1876,7 +1881,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
             loopDate.setDate(loopDate.getDate() + daysDelta);
         }
         if (!pendingStatus.statusText && leftOutDaysCount > 0) {
-            pendingStatus = { statusText: `${leftOutDaysCount} ${t((tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days') + 'LeftOut')}`, statusClass: 'text-gray-600' };
+            pendingStatus = { statusText: `${leftOutDaysCount} ${t((isWeekly ? 'weeks' : 'days') + 'LeftOut')}`, statusClass: 'text-gray-600' };
         }
 
         return pendingStatus;
