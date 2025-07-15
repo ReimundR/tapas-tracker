@@ -1992,7 +1992,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                             onClick={() => onSelectTapas(tapasItem)}
                         >
                             <h3 className="text-xl font-semibold text-indigo-700 mb-2">{tapasItem.name}
-                                <span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>
+                                {tapasItem.status === 'active' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -3268,7 +3268,7 @@ const Statistics = ({ allTapas }) => {
 const AboutModal = ({ onClose }) => {
     const { t } = useContext(AppContext);
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div className="max-h-screen overflow-y-auto fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <h3 className="text-2xl font-bold mb-4">{t('about')}</h3>
                 <p className="text-lg mb-2"><strong>{t('appName')}</strong></p>
