@@ -117,6 +117,7 @@ const translations = {
         "editTapasTitle": "Edit Tapas",
         "name": "Name",
         "descriptionAndGoal": "Description and goal (optional)",
+        "enterDescription": "Enter description",
         "goals0n": "Goals 0..n (optional, one per line)",
         "parts0n": "Parts 0..n (optional, one per line)",
         "crystallizationTime": "Crystallisation and awareness time [days] (optional)",
@@ -331,6 +332,7 @@ const translations = {
         "editTapasTitle": "Tapas bearbeiten",
         "name": "Name",
         "descriptionAndGoal": "Beschreibung und Ziel (optional)",
+        "enterDescription": "Beschreibung eingeben",
         "goals0n": "Ziele 0..n (optional, pro Zeile)",
         "parts0n": "Teile 0..n (optional, pro Zeile)",
         "crystallizationTime": "Kristallisations- und Bewusstseinszeit [Tage] (optional)",
@@ -545,6 +547,7 @@ const translations = {
         "editTapasTitle": "Editează Tapas",
         "name": "Nume",
         "descriptionAndGoal": "Descriere și scop (opțional)",
+        "enterDescription": "Introduceți descrierea",
         "goals0n": "Obiective 0..n (opțional, una pe linie)",
         "parts0n": "Părți 0..n (opțional, una pe linie)",
         "crystallizationTime": "Timp de cristalizare și conștientizare [zile] (opțional)",
@@ -759,6 +762,7 @@ const translations = {
         "editTapasTitle": "Modifica Tapas",
         "name": "Nome",
         "descriptionAndGoal": "Descrizione e obiettivo (opzionale)",
+        "enterDescription": "Inserisci la descrizione",
         "goals0n": "Obiettivi 0..n (opzionali, una per riga)",
         "parts0n": "Părți 0..n (opzionali, una per riga)",
         "crystallizationTime": "Tempo di cristallizzazione e consapevolezza [giorni] (opzionale)",
@@ -964,6 +968,7 @@ const translations = {
         "editTapasTitle": "Редактировать Тапас",
         "name": "Имя",
         "descriptionAndGoal": "Описание и цель (необязательно)",
+        "enterDescription": "Введите описание",
         "goals0n": "Цели 0..n (необязательно, одна на строку)",
         "parts0n": "Части 0..n (необязательно, одна на строку)",
         "crystallizationTime": "Время кристаллизации и осознания [дней] (необязательно)",
@@ -1121,10 +1126,6 @@ const translations = {
     }
 };
 
-function Placeholder() {
-  return <div className="editor-placeholder">Enter description...</div>;
-}
-
 // Lexical Editor Configuration
 const editorConfig = {
     namespace: 'TapasDescriptionEditor',
@@ -1188,8 +1189,26 @@ const LoadInitialContent = ({ initialContent }) => {
   return null;
 };
 
+const LanguageSelect = ({ locale, setLocale }) => {
+    return (
+        <select
+            value={locale}
+            onChange={(e) => setLocale(e.target.value)}
+            className="bg-indigo-700 text-white px-2 py-1 rounded-md text-sm cursor-pointer"
+        >
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="ro">Română</option>
+            <option value="ru">Русский</option>
+            <option value="it">Italiano</option>
+        </select>
+    );
+};
+
 // RichTextEditor Component
 const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
+    const { locale, setLocale, t } = useContext(LocaleContext);
+
     const initialConfig = {
         ...editorConfig,
         //editorState: initialEditorState, // Load initial state
@@ -1203,7 +1222,7 @@ const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
                 <div className="editor-inner">
                 <RichTextPlugin
                     contentEditable={<ContentEditable className="editor-input min-h-[150px] p-3 outline-none resize-y overflow-auto bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 rounded-b-md" />}
-                    placeholder={<Placeholder />}
+                    placeholder={<div className="editor-placeholder">{t('enterDescription')}...</div>}
                     ErrorBoundary={LexicalErrorBoundary}
                 />
                 <HistoryPlugin />
@@ -1706,7 +1725,9 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         const [editorState, editor] = descriptionEditorState;
         let descriptionHtml;
         editorState.read(() => {
-            descriptionHtml = $generateHtmlFromNodes(editor);
+            const root = $getRoot();
+            const isEmpty = root.getFirstChild().isEmpty() && root.getChildrenSize() === 1
+            descriptionHtml = isEmpty ? '' : $generateHtmlFromNodes(editor);
         });
 
         if (!name || !startDate || !duration) { // Duration is the source of truth for calculation
@@ -4374,17 +4395,7 @@ const HomePage = () => {
             <div className="fixed inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center p-4 z-50">
                 <div className="p-4 rounded-lg shadow-2xl text-center max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                     <div className="p-0 grid justify-items-end">
-                        <select
-                            value={locale}
-                            onChange={(e) => setLocale(e.target.value)}
-                            className="bg-indigo-700 text-white px-2 py-1 rounded-md text-sm cursor-pointer"
-                        >
-                            <option value="en">English</option>
-                            <option value="de">Deutsch</option>
-                            <option value="ro">Română</option>
-                            <option value="ru">Русский</option>
-                            <option value="it">Italiano</option>
-                        </select>
+                        <LanguageSelect locale={locale} setLocale={setLocale} />
                     </div>
                     <div className="p-4 rounded-lg shadow-2xl text-center max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                     <h2 className="text-3xl font-bold mb-6">{t('welcomeTapasTracker')}</h2>
@@ -4530,17 +4541,7 @@ const HomePage = () => {
                                 )}
                             </button>
 
-                            <select
-                                value={locale}
-                                onChange={(e) => setLocale(e.target.value)}
-                                className="bg-indigo-700 text-white px-2 py-1 rounded-md text-sm cursor-pointer"
-                            >
-                                <option value="en">English</option>
-                                <option value="de">Deutsch</option>
-                                <option value="ro">Română</option>
-                                <option value="ru">Русский</option>
-                                <option value="it">Italiano</option>
-                            </select>
+                            <LanguageSelect locale={locale} setLocale={setLocale} />
 
                             {userDisplayName && (
                                 <span className="text-sm bg-indigo-700 px-3 py-1 rounded-full opacity-80 hidden md:inline-block">
