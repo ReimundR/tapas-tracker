@@ -207,7 +207,7 @@ const translations = {
         "appVersion": "App Version",
         "tapasWebsite": "Tapas Tracker Website",
         "aboutDescription": "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently."+
-            "  Tapas is a form of Yogic practice and part of the ten Yamas and Niyamas."+
+            "  Tapas or also known as Tapasya is a form of Yogic practice and part of the ten Yamas and Niyamas."+
             "  The application allows you to track your Tapas success or failure, sepcify flexibly the parts of the Tapas, its goals and add results after the end of the Tapas or in case of a Tapas failure the cause for it."+
             "  History and Statistics help analysing your Tapasya and plan repetitions of failed or successful Tapas, respectively."+
             "  This application is Open Source. See",
@@ -241,7 +241,14 @@ const translations = {
         "todayIs": "Today is",
         "thisWeekIs": "This week is %s - %s",
         "acknowledgeAfter": "Acknowledge afterwards",
-        "yes": "yes"
+        "yes": "yes",
+        "help": "Help",
+        "helpContents": [
+            {q: "How to install Tapas Tracker on an Android system?",
+             a: "In Chrome or Firefox or any other supporting brownser go to menu (mostly three dots) and select 'Add to Home Screen'"},
+            {q: "How to install Tapas Tracker on an iPhone or iPad?",
+             a: "In Safari (other browser won't work) tap the Share button and select 'Add to Home Screen'"}
+            ]
     },
     de: {
         "appName": "Tapas Tracker",
@@ -414,7 +421,7 @@ const translations = {
         "appVersion": "App-Version",
         "tapasWebsite": "Tapas Tracker Webseite",
         "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Ihnen hilft, Ihre Tapas oder Ziele konsequent zu verfolgen und zu erreichen."+
-            "  Tapas ist eine Form der Yoga-Praxis und Teil der zehn Yamas und Niyamas."+
+            "  Tapas oder auch bekannt unter Tapasya ist eine Form der Yoga-Praxis und Teil der zehn Yamas und Niyamas."+
             "  Die Anwendung ermöglicht es Ihnen, Ihren Tapas-Erfolg oder -Misserfolg zu verfolgen, die einzelnen Tapas-Teile und Ziele flexibel zu spezifizieren und Ergebnisse nach dem Ende des Tapas oder im Falle eines Tapas-Misserfolgs die Ursache dafür hinzuzufügen."+
             "  Verlauf und Statistiken helfen Ihnen, Ihr Tapasya zu analysieren und Wiederholungen fehlgeschlagener bzw. erfolgreicher Tapas zu planen."+
             "  Diese Anwendung ist Open Source. Siehe",
@@ -448,7 +455,14 @@ const translations = {
         "todayIs": "Heute ist",
         "thisWeekIs": "Diese Woche ist %s - %s",
         "acknowledgeAfter": "Danach bestätigen",
-        "yes": "ja"
+        "yes": "ja",
+        "help": "Hilfe",
+        "helpContents": [
+            {q: "Wie installiere ich Tapas Tracker auf einem Android-System?",
+             a: "Gehen Sie in Chrome, Firefox oder einem anderen unterstützenden Browser zum Menü (meistens drei Punkte) und wählen Sie „Zum Startbildschirm hinzufügen“"},
+            {q: "Wie installiere ich Tapas Tracker auf einem iPhone oder iPad?",
+             a: "Tippen Sie in Safari (andere Browser funktionieren nicht) auf die Schaltfläche „Teilen“ und wählen Sie „Zum Startbildschirm hinzufügen“"}
+            ]
     },
     ro: {
         "appName": "Urmăritor Tapas",
@@ -621,7 +635,7 @@ const translations = {
         "appVersion": "Versiunea aplicației",
         "tapasWebsite": "Site-ul Tapas Tracker",
         "aboutDescription": "Tapas Tracker este un instrument de dezvoltare personală conceput pentru a te ajuta să urmărești și să-ți atingi Tapas-urile sau obiectivele în mod constant."+
-        "  Tapas este o formă de practică yoghină și face parte din cele zece Yama și Niyama."+
+        "  Tapas sau cunoscută și sub numele de Tapasya este o formă de practică yoghină și face parte din cele zece Yama și Niyama."+
         "  Aplicația îți permite să urmărești succesul sau eșecul Tapas-ului tău, să specifici flexibil părțile Tapas-ului, obiectivele acestuia și să adaugi rezultate după încheierea Tapas-ului sau, în cazul unui eșec Tapas, cauza acestuia."+
         "  Istoricul și statisticile ajută la analizarea Tapas-ului tău și la planificarea repetărilor Tapas-urilor eșuate sau de succes, respectiv."+
         "  Această aplicație este open source. Vedeți",
@@ -655,7 +669,14 @@ const translations = {
         "todayIs": "Astăzi este",
         "thisWeekIs": "Această săptămână este %s - %s",
         "acknowledgeAfter": "Apoi confirmați",
-        "yes": "da"
+        "yes": "da",
+        "help": "Ajutor",
+        "helpContents": [
+            {q: "Cum se instalează Tapas Tracker pe un sistem Android?",
+             a: "În Chrome, Firefox sau orice alt browser compatibil, accesați meniul (de obicei trei puncte) și selectați 'Adăugați la ecranul de pornire'"},
+            {q: "Cum se instalează Tapas Tracker pe un iPhone sau iPad?",
+             a: "În Safari (alt browser nu va funcționa), atinge butonul Partajare și selectează 'Adăugați la ecranul de pornire'"}
+            ]
     },
     it: {
         "appName": "Tapas Tracker",
@@ -828,7 +849,7 @@ const translations = {
         "appVersion": "Versione dell'app",
         "tapasWebsite": "Sito web di Tapas Tracker",
         "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente."+
-        "  Tapas è una forma di pratica yoga e fa parte dei dieci Yama e Niyama."+
+        "  Tapas o anche conosciuto come Tapasya è una forma di pratica yoga e fa parte dei dieci Yama e Niyama."+
         "  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa."+
         "  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite."+
         "  Questa applicazione è Open Source. Vedi",
@@ -853,7 +874,14 @@ const translations = {
         "todayIs": "Oggi è",
         "thisWeekIs": "Questa settimana è %s - %s",
         "acknowledgeAfter": "Quindi conferma",
-        "yes": "sì"
+        "yes": "sì",
+        "help": "Aiuto",
+        "helpContents": [
+            {q: "Come installare Tapas Tracker su un sistema Android?",
+             a: "In Chrome o Firefox o qualsiasi altro browser che lo supporti, vai al menu (principalmente tre punti) e seleziona 'Aggiungi alla schermata Home'"},
+            {q: "Come installare Tapas Tracker su un iPhone o iPad?",
+             a: "In Safari (gli altri browser non funzioneranno) tocca il pulsante Condividi e seleziona 'Aggiungi alla schermata Home'"}
+            ]
     },
     ru: {
         "appName": "Трекер Тапас",
@@ -1026,7 +1054,7 @@ const translations = {
         "appVersion": "Версия приложения",
         "tapasWebsite": "Веб-сайт Tapas Tracker",
         "aboutDescription": "Tapas Tracker — это инструмент для личного развития, призванный помочь вам отслеживать и последовательно достигать ваших тапасов или целей."+
-        "  Тапас — это форма йогической практики и часть десяти Ям и Ниям."+
+        "  Тапас или также известный как Тапасья — это форма йогической практики и часть десяти Ям и Ниям."+
         "  Приложение позволяет вам отслеживать успехи или неудачи в тапасах, гибко определять части тапаса, его цели и добавлять результаты после окончания тапаса или, в случае неудачи тапаса, причину ее возникновения."+
         "  История и статистика помогают анализировать вашу тапасью и планировать повторения неудачных или успешных тапасов соответственно."+
         "  Это приложение с открытым исходным кодом. См.",
@@ -1060,7 +1088,14 @@ const translations = {
         "todayIs": "Сегодня",
         "thisWeekIs": "На этой неделе %s - %s",
         "acknowledgeAfter": "Затем подтвердите",
-        "yes": "да"
+        "yes": "да",
+        "help": "помощь",
+        "helpContents": [
+            {q: "Как установить Tapas Tracker на Android-систему?",
+             a: "В Chrome, Firefox или любом другом поддерживающем браузере перейдите в меню (обычно это три точки) и выберите «Добавить на главный экран»"},
+            {q: "Как установить Tapas Tracker на iPhone или iPad?",
+             a: "В Safari (другие браузеры не подойдут) нажмите кнопку «Поделиться» и выберите «Добавить на главный экран»"}
+            ]
     }
 };
 
@@ -3269,7 +3304,6 @@ const Statistics = ({ allTapas }) => {
     );
 };
 
-// New About Modal Component
 const AboutModal = ({ onClose }) => {
     const { t } = useContext(AppContext);
     return (
@@ -3298,7 +3332,33 @@ const AboutModal = ({ onClose }) => {
     );
 };
 
-// New Clean Data Modal Component
+const HelpModal = ({ onClose }) => {
+    const { t } = useContext(AppContext);
+    return (
+        <div className="max-h-screen overflow-y-auto fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="p-6 rounded-lg shadow-xl max-w-xl w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <h3 className="text-2xl font-bold mb-4">{t('help')}</h3>
+
+                {t('helpContents').map((helpItem) => {
+                    return (
+                        <div className="text-sm mb-4">
+                          <p className="text-blue-300"><strong>{helpItem.q}</strong></p>
+                          <p>{helpItem.a}</p>
+                        </div>
+                    );
+                })}
+                            
+                <button
+                    onClick={onClose}
+                    className="w-full bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
+                >
+                    {t('close')}
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const CleanDataModal = ({ onClose, onCleanConfirmed }) => {
     const { t } = useContext(AppContext);
     const [selectedTimeframe, setSelectedTimeframe] = useState('5years'); // Default to 5 years
@@ -3697,6 +3757,7 @@ const HomePage = () => {
     const [password, setPassword] = useState('');
     const [showEmailLoginForm, setShowEmailLoginForm] = useState(false); // Toggle email/password form
     const [showAboutModal, setShowAboutModal] = useState(false); // State for About modal
+    const [showHelpModal, setShowHelpModal] = useState(false); // State for Help modal
     const [showCleanDataModal, setShowCleanDataModal] = useState(false); // State for Clean Data modal
 
 
@@ -4402,6 +4463,12 @@ const HomePage = () => {
                                         )}
                                         <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
                                         <button
+                                            onClick={() => { setShowHelpModal(true); setShowMenu(false); }}
+                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        >
+                                            {t('help')}
+                                        </button>
+                                        <button
                                             onClick={() => { setShowAboutModal(true); setShowMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                         >
@@ -4538,6 +4605,7 @@ const HomePage = () => {
 
                 {/* Modals/Overlays */}
                 {showAboutModal && <AboutModal onClose={() => setShowAboutModal(false)} />}
+                {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
                 {showCleanDataModal && <CleanDataModal onClose={() => setShowCleanDataModal(false)} onCleanConfirmed={handleCleanDataConfirmed} />}
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
             </div>
