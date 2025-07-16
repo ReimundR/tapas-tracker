@@ -11,6 +11,8 @@ import { $createHeadingNode, $createQuoteNode, $isHeadingNode } from "@lexical/r
 
 const LowPriority = 1;
 
+const dropDownPadding = 4;
+
 const supportedBlockTypes = new Set([
   "paragraph",
   "quote",
@@ -221,20 +223,29 @@ function BlockOptionsDropdownList({
   editor,
   blockType,
   toolbarRef,
+  buttonRef,
   setShowBlockOptionsDropDown
 }) {
   const dropDownRef = useRef(null);
 
   useEffect(() => {
+    const button = buttonRef.current;
     const toolbar = toolbarRef.current;
     const dropDown = dropDownRef.current;
 
     if (toolbar !== null && dropDown !== null) {
-      const { top, left } = toolbar.getBoundingClientRect();
-      dropDown.style.top = `${top + 40}px`;
-      dropDown.style.left = `${left}px`;
+      const {top, left} = button.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      dropDown.style.top = `${top + button.offsetHeight + dropDownPadding + scrollTop}px`;
+      dropDown.style.left = `${Math.min(
+        left,
+        window.innerWidth - dropDown.offsetWidth - 20,
+      )}px`;
+      //const { top, left } = toolbar.getBoundingClientRect();
+      //dropDown.style.top = `${top + 40}px`;
+      //dropDown.style.left = `${left}px`;
     }
-  }, [dropDownRef, toolbarRef]);
+  }, [dropDownRef, toolbarRef, buttonRef]);
 
   useEffect(() => {
     const dropDown = dropDownRef.current;
@@ -365,6 +376,7 @@ function BlockOptionsDropdownList({
 export default function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
   const toolbarRef = useRef(null);
+  const buttonRef = useRef(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [blockType, setBlockType] = useState("paragraph");
@@ -487,7 +499,7 @@ export default function ToolbarPlugin() {
       <Divider />
       {supportedBlockTypes.has(blockType) && (
         <>
-          <button
+          <button ref={buttonRef}
             className="toolbar-item block-controls"
             onClick={() =>
               setShowBlockOptionsDropDown(!showBlockOptionsDropDown)
@@ -505,6 +517,7 @@ export default function ToolbarPlugin() {
                 editor={editor}
                 blockType={blockType}
                 toolbarRef={toolbarRef}
+                buttonRef={buttonRef}
                 setShowBlockOptionsDropDown={setShowBlockOptionsDropDown}
               />,
               document.body
