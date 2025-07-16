@@ -12,6 +12,28 @@ import { Suspense } from 'react'
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
 
+// Lexical Editor Imports
+import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
+import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
+import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+import { ListNode, ListItemNode } from '@lexical/list';
+import { AutoLinkNode, LinkNode } from '@lexical/link';
+import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
+import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { $getRoot, $getSelection, $insertNodes, $isRangeSelection, FORMAT_TEXT_COMMAND, COMMAND_PRIORITY_CRITICAL, INSERT_PARAGRAPH_COMMAND } from 'lexical';
+import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
+import { mergeRegister } from '@lexical/utils';
+import { TOGGLE_LINK_COMMAND } from '@lexical/link';
+import { useState as useLexicalState, useEffect as useLexicalEffect } from 'react'; // Renamed to avoid conflict
+import AutoLinkPlugin from "../plugins/AutoLinkPlugin";
+import ToolbarPlugin from "../plugins/ToolbarPlugin";
+
 let firebaseConfig;
 if (process.env.FIREBASE_WEBAPP_CONFIG) {
     try {
@@ -1099,6 +1121,121 @@ const translations = {
     }
 };
 
+function Placeholder() {
+  return <div className="editor-placeholder">Enter description...</div>;
+}
+
+// Lexical Editor Configuration
+const editorConfig = {
+    namespace: 'TapasDescriptionEditor',
+    theme: {
+        // Basic theme for styling content editable
+        // You might want to expand this with more specific styles
+        placeholder: "editor-placeholder",
+        paragraph: "editor-paragraph",
+        quote: "editor-quote",
+        heading: {
+            h1: "editor-heading-h1",
+            h2: "editor-heading-h2",
+            h3: "editor-heading-h3",
+            h4: "editor-heading-h4",
+            h5: "editor-heading-h5"
+        },
+        text: {
+            bold: 'editor-text-bold',
+            italic: 'editor-text-italic',
+            underline: 'editor-text-underline',
+        },
+        link: 'editor-link',
+        list: {
+            nested: {
+                listitem: "editor-nested-listitem"
+            },
+            ol: "editor-list-ol",
+            ul: "editor-list-ul",
+            listitem: "editor-listitem"
+        },
+    },
+    onError(error) {
+        console.error(error);
+    },
+    nodes: [
+        HeadingNode,
+        ListNode,
+        ListItemNode,
+        QuoteNode,
+        AutoLinkNode,
+        LinkNode
+    ]
+};
+
+const LoadInitialContent = ({ initialContent }) => {
+  const [editor] = useLexicalComposerContext();
+  
+  useEffect(() => {
+    if (!initialContent) { return; }
+    editor.update(() => {
+      const parser = new DOMParser();
+      const dom = parser.parseFromString(initialContent, "text/html");
+      const nodes = $generateNodesFromDOM(editor, dom);
+
+      const root = $getRoot();
+      root.clear();
+      root.select();
+      $insertNodes(nodes);
+    });
+  }, []);
+  return null;
+};
+
+// RichTextEditor Component
+const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
+    const initialConfig = {
+        ...editorConfig,
+        //editorState: initialEditorState, // Load initial state
+    };
+
+    return (
+        <LexicalComposer initialConfig={initialConfig}>
+            <LoadInitialContent initialContent={initialContent} />
+            <div className="relative border border-gray-300 dark:border-gray-600 rounded-md">
+                <ToolbarPlugin />
+                <div className="editor-inner">
+                <RichTextPlugin
+                    contentEditable={<ContentEditable className="editor-input min-h-[150px] p-3 outline-none resize-y overflow-auto bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 rounded-b-md" />}
+                    placeholder={<Placeholder />}
+                    ErrorBoundary={LexicalErrorBoundary}
+                />
+                <HistoryPlugin />
+                <AutoFocusPlugin />
+                <ListPlugin />
+                <LinkPlugin />
+                <AutoLinkPlugin />
+                <OnChangePlugin onChange={onEditorStateChange} />
+                </div>
+            </div>
+        </LexicalComposer>
+    );
+};
+
+// Helper to convert Lexical EditorState to HTML for display
+const LexicalHtmlRenderer = ({ editorStateHtml }) => {
+    const [htmlContent, setHtmlContent] = useState('');
+
+    useEffect(() => {
+        if (editorStateHtml) {
+            setHtmlContent(editorStateHtml);
+        } else {
+            setHtmlContent('');
+        }
+    }, [editorStateHtml]);
+
+    return (
+        <div className="" dangerouslySetInnerHTML={{ __html: htmlContent }} />
+    );
+};
+
+
 // Locale Context
 const LocaleContext = createContext({
     locale: 'en',
@@ -1390,7 +1527,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const [startTime, setStartTime] = useState('');
     const [duration, setDuration] = useState('');
     const [endDate, setEndDate] = useState(''); // New state for end date
-    const [description, setDescription] = useState('');
+    const [descriptionEditorState, setDescriptionEditorState] = useState(null); // Lexical EditorState
     const [goals, setGoals] = useState(''); // New state for goals
     const [parts, setParts] = useState('');
     const [crystallizationTime, setCrystallizationTime] = useState('');
@@ -1400,6 +1537,8 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const [scheduleType, setScheduleType] = useState('daily'); // 'daily', 'weekly', 'everyNthDays'
     const [scheduleInterval, setScheduleInterval] = useState(''); // For 'everyNthDays'
     const [acknowledgeAfter, setAcknowledgeAfter] = useState(false); // New state for acknowledgeAfter
+
+    const initialDescription = editingTapas && editingTapas.description ? editingTapas.description : '';
 
     // Effect to set form fields when editingTapas prop changes
     useEffect(() => {
@@ -1413,7 +1552,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             const loadedDuration = Math.ceil(editingTapas.duration / getScheduleFactor(loadedScheduleType, editingTapas.scheduleInterval));
             setDuration(loadedDuration || ''); // Set state from loaded data
 
-            setDescription(editingTapas.description || null);
             setGoals(editingTapas.goals ? editingTapas.goals.join('\n') : ''); // Set goals from loaded data
             setParts(editingTapas.parts ? editingTapas.parts.join('\n') : '');
             setCrystallizationTime(editingTapas.crystallizationTime || '');
@@ -1446,7 +1584,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             setStartDate('');
             setStartTime('');
             setDuration('');
-            setDescription('');
             setGoals(''); // Reset goals
             setParts('');
             setCrystallizationTime('');
@@ -1556,11 +1693,21 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         }
     };
 
+    const handleDescriptionChange = (editorState, editor) => {
+        setDescriptionEditorState([editorState, editor]);
+    };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMessage('');
         setSuccessMessage('');
+
+        const [editorState, editor] = descriptionEditorState;
+        let descriptionHtml;
+        editorState.read(() => {
+            descriptionHtml = $generateHtmlFromNodes(editor);
+        });
 
         if (!name || !startDate || !duration) { // Duration is the source of truth for calculation
             setErrorMessage(t('nameStartDateDurationRequired'));
@@ -1585,7 +1732,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             startDate: new Date(startDate),
             startTime: startTime || null,
             duration: durationToSave, // Save in days
-            description: description || null,
+            description: descriptionHtml, // Save Lexical EditorState as HTML
             goals: goals.split('\n').filter(g => g.trim() !== '') || [], // Include goals
             parts: parts.split('\n').filter(p => p.trim() !== '') || [],
             crystallizationTime: crystallizationTime ? parseInt(crystallizationTime) : null,
@@ -1621,7 +1768,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 setStartTime('');
                 setDuration('');
                 setEndDate('');
-                setDescription('');
                 setGoals(''); // Clear goals
                 setParts('');
                 setCrystallizationTime('');
@@ -1777,13 +1923,10 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 </div>
                 <div className="col-span-full">
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
-                    <textarea
-                        id="description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        rows="3"
-                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                    ></textarea>
+                    <RichTextEditor
+                        initialContent={initialDescription}
+                        onEditorStateChange={handleDescriptionChange}
+                    />
                 </div>
                 <div className="col-span-full">
                     <label htmlFor="goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('goals0n')}</label>
@@ -2780,7 +2923,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                     <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(tapas.duration / tapas.scheduleInterval))} {t('everyNthDays', tapas.scheduleInterval).toLowerCase()}</p>
                     )}
                     {tapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
-                    {tapas.description && <p><strong className="font-semibold">{t('description')}:</strong> {tapas.description}</p>}
+                    {tapas.description && (
+                        <div>
+                            <strong className="font-semibold">{t('description')}:</strong>
+                            <LexicalHtmlRenderer editorStateHtml={tapas.description} />
+                        </div>
+                    )}
                     {tapas.goals && tapas.goals.length > 0 ? ( // Display goals if present
                         <div>
                             <strong className="font-semibold">{t('goals')}:</strong>
