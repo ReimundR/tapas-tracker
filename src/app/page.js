@@ -1167,25 +1167,35 @@ const editorConfig = {
 };
 
 const LoadInitialContent = ({ initialContent, focusRef }) => {
-  const [editor] = useLexicalComposerContext();
+    const [editor] = useLexicalComposerContext();
 
-  useEffect(() => {
-    if (!initialContent) { return; }
-    editor.update(() => {
-      const parser = new DOMParser();
-      const dom = parser.parseFromString(initialContent, "text/html");
-      const nodes = $generateNodesFromDOM(editor, dom);
+    useEffect(() => {
+        if (!initialContent) { return; }
 
-      $getRoot().clear();
-      $insertNodes(nodes);
-    });
-    editor.registerUpdateListener((editorState) => {
-      if (focusRef && focusRef.current) {
-        focusRef.current.focus();
-      }
-    });
-}, []);
-  return null;
+        editor.update(() => {
+            const parser = new DOMParser();
+            const dom = parser.parseFromString(initialContent, "text/html");
+            const nodes = $generateNodesFromDOM(editor, dom);
+
+            $getRoot().clear();
+            $insertNodes(nodes);
+        });
+
+        editor.registerUpdateListener((editorState) => {
+            // reset scroll twice
+            const scrollTop = window.scrollY || document.documentElement.scrollTop;
+            if (scrollTop > 0 && focusRef) {
+                window.scrollY = 0;
+                document.documentElement.scrollTop = 0;
+                if (focusRef && focusRef.current) {
+                    focusRef.current = null; // first
+                } else if (focusRef) {
+                    focusRef = null; // second
+                }
+            }
+        });
+    }, []);
+    return null;
 };
 
 const LanguageSelect = ({ locale, setLocale }) => {
