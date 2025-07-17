@@ -480,7 +480,7 @@ export default function ToolbarPlugin() {
           editor.dispatchCommand(UNDO_COMMAND);
         }}
         type="button"
-        className="toolbar-item spaced"
+        className="toolbar-item spaced font-bold text-lg"
         aria-label="Undo"
       >
         <i className="format undo" />
@@ -491,7 +491,7 @@ export default function ToolbarPlugin() {
           editor.dispatchCommand(REDO_COMMAND);
         }}
         type="button"
-        className="toolbar-item"
+        className="toolbar-item font-bold text-lg"
         aria-label="Redo"
       >
         <i className="format redo" />
@@ -533,7 +533,7 @@ export default function ToolbarPlugin() {
         className={"toolbar-item spaced " + (isBold ? "active" : "")}
         aria-label="Format Bold"
       >
-        <i className="format bold" />
+        <b>B</b>
       </button>
       <button
         onClick={() => {
@@ -543,7 +543,7 @@ export default function ToolbarPlugin() {
         className={"toolbar-item spaced " + (isItalic ? "active" : "")}
         aria-label="Format Italics"
       >
-        <i className="format italic" />
+        <i>I</i>
       </button>
       <button
         onClick={() => {
@@ -553,7 +553,7 @@ export default function ToolbarPlugin() {
         className={"toolbar-item spaced " + (isUnderline ? "active" : "")}
         aria-label="Format Underline"
       >
-        <i className="format underline" />
+        <u>U</u>
       </button>
       <button
         onClick={insertLink}
@@ -561,7 +561,7 @@ export default function ToolbarPlugin() {
         className={"toolbar-item spaced " + (isLink ? "active" : "")}
         aria-label="Insert Link"
       >
-        <i className="format link" />
+        &#x1F517;
       </button>
       {isLink &&
         createPortal(<FloatingLinkEditor editor={editor} />, document.body)}

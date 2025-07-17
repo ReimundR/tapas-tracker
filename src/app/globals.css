@@ -64,12 +64,18 @@ pre p {
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   margin-bottom: 1px;
   background: #fff;
   padding: 4px;
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
   vertical-align: middle;
+}
+
+.dark .toolbar {
+  background: #414141;
+  color: #cccccc;
 }
 
 .toolbar button.toolbar-item {
@@ -80,6 +86,8 @@ pre p {
   padding: 8px;
   cursor: pointer;
   vertical-align: middle;
+  min-width: 34px;
+  justify-content: center;
 }
 
 .toolbar button.toolbar-item:disabled {
@@ -101,7 +109,7 @@ pre p {
   opacity: 0.6;
 }
 
-.toolbar button.toolbar-item:disabled i.format {
+.toolbar button.toolbar-item:disabled {
   opacity: 0.2;
 }
 
@@ -117,10 +125,18 @@ pre p {
   background-color: #eee;
 }
 
+.dark .toolbar .toolbar-item:hover:not([disabled]) {
+  background-color: #272727;
+}
+
 .toolbar .divider {
   width: 1px;
   background-color: #eee;
   margin: 0 4px;
+}
+
+.dark .toolbar .divider {
+  background-color: #272727;
 }
 
 .toolbar select.toolbar-item {
@@ -138,9 +154,8 @@ pre p {
   text-overflow: ellipsis;
 }
 
-.toolbar select.code-language {
-  text-transform: capitalize;
-  width: 130px;
+.dark .toolbar select.toolbar-item {
+  color: #ccc;
 }
 
 .toolbar .toolbar-item .text {
@@ -157,11 +172,16 @@ pre p {
   text-align: left;
 }
 
+.dark .toolbar .toolbar-item .text {
+  color: #ccc;
+}
+
 .toolbar .toolbar-item .icon {
   display: flex;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   user-select: none;
+  margin-top: 3px;
   margin-right: 8px;
   line-height: 16px;
   background-size: contain;
@@ -186,12 +206,12 @@ pre p {
 }
 
 i.chevron-down {
-  background-color: transparent;
+  background-color: currentColor;
   background-size: contain;
   display: inline-block;
   height: 8px;
   width: 8px;
-  background-image: url(../icons/chevron-down.svg);
+  mask: url(../icons/chevron-down.svg);
 }
 
 #block-controls button:hover {
@@ -211,7 +231,8 @@ i.chevron-down {
 }
 
 #block-controls span.block-type.paragraph {
-  background-image: url(../icons/text-paragraph.svg);
+  background-color: currentColor;
+  mask: url(../icons/text-paragraph.svg);
 }
 
 #block-controls span.block-type.h1 {
@@ -246,6 +267,10 @@ i.chevron-down {
   background-color: #fff;
 }
 
+.dark .dropdown {
+  background-color: #363636;
+}
+
 .dropdown .item {
   margin: 0 8px 0 8px;
   padding: 8px;
@@ -262,6 +287,11 @@ i.chevron-down {
   border-radius: 8px;
   border: 0;
   min-width: 268px;
+}
+
+.dark .dropdown .item {
+  color: #ddd;
+  background-color: #363636;
 }
 
 .dropdown .item .active {
@@ -283,6 +313,10 @@ i.chevron-down {
   background-color: #eee;
 }
 
+.dark .dropdown .item:hover {
+  background-color: #272727;
+}
+
 .dropdown .item .text {
   display: flex;
   line-height: 20px;
@@ -292,8 +326,8 @@ i.chevron-down {
 
 .dropdown .item .icon {
   display: flex;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   user-select: none;
   margin-right: 12px;
   line-height: 16px;
@@ -331,11 +365,21 @@ i.chevron-down {
   font-family: inherit;
 }
 
+.dark .link-editor {
+  background-color: #363636;
+}
+
+.dark .link-editor .link-input {
+  color: rgb(223, 223, 223);
+  background-color: #272727;
+}
+
 .link-editor div.link-edit {
-  background-image: url(../icons/pencil-fill.svg);
-  background-size: 16px;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-color: #333;
+  mask: url(../icons/pencil-fill.svg);
+  mask-size: 16px;
+  mask-position: center;
+  mask-repeat: no-repeat;
   width: 35px;
   vertical-align: -0.25em;
   position: absolute;
@@ -343,6 +387,10 @@ i.chevron-down {
   top: 0;
   bottom: 0;
   cursor: pointer;
+}
+
+.dark .link-editor div.link-edit {
+  background-color: #ccc;
 }
 
 .link-editor .link-input a {
@@ -353,6 +401,10 @@ i.chevron-down {
   overflow: hidden;
   margin-right: 30px;
   text-overflow: ellipsis;
+}
+
+.dark .link-editor .link-input a {
+  color: rgb(100, 165, 255);
 }
 
 .link-editor .link-input a:hover {
@@ -386,55 +438,47 @@ i.chevron-down {
 }
 
 i.undo {
-  background-image: url(../icons/arrow-counterclockwise.svg);
+  background-color: currentColor;
+  mask: url(../icons/arrow-counterclockwise.svg);
 }
 
 i.redo {
-  background-image: url(../icons/arrow-clockwise.svg);
+  background-color: currentColor;
+  mask: url(../icons/arrow-clockwise.svg);
 }
 
 .icon.paragraph {
-  background-image: url(../icons/text-paragraph.svg);
+  background-color: currentColor;
+  mask: url(../icons/text-paragraph.svg);
 }
 
 .icon.large-heading,
 .icon.h1 {
-  background-image: url(../icons/type-h1.svg);
+  background-color: currentColor;
+  mask: url(../icons/type-h1.svg);
 }
 
 .icon.small-heading,
 .icon.h2 {
-  background-image: url(../icons/type-h2.svg);
+  background-color: currentColor;
+  mask: url(../icons/type-h2.svg);
 }
 
 .icon.bullet-list,
 .icon.ul {
-  background-image: url(../icons/list-ul.svg);
+  background-color: currentColor;
+  mask: url(../icons/list-ul.svg);
 }
 
 .icon.numbered-list,
 .icon.ol {
-  background-image: url(../icons/list-ol.svg);
+  background-color: currentColor;
+  mask: url(../icons/list-ol.svg);
 }
 
 .icon.quote {
-  background-image: url(../icons/chat-square-quote.svg);
-}
-
-i.bold {
-  background-image: url(../icons/type-bold.svg);
-}
-
-i.italic {
-  background-image: url(../icons/type-italic.svg);
-}
-
-i.underline {
-  background-image: url(../icons/type-underline.svg);
-}
-
-i.link {
-  background-image: url(../icons/link.svg);
+  background-color: currentColor;
+  mask: url(../icons/chat-square-quote.svg);
 }
 
 .editor-container {
@@ -464,7 +508,7 @@ i.link {
   tab-size: 1;
   outline: 0;
   padding: 15px 10px;
-  caret-color: #444;
+  caret-color: auto;
 }
 
 .editor-placeholder {
@@ -510,6 +554,10 @@ i.link {
 .editor-link {
   color: rgb(33, 111, 219);
   text-decoration: none;
+}
+
+.dark .editor-link {
+  color: rgb(100, 165, 255);
 }
 
 .tree-view-output {
