@@ -17,7 +17,6 @@ import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { ListNode, ListItemNode } from '@lexical/list';
@@ -26,11 +25,8 @@ import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $getSelection, $insertNodes, $isRangeSelection, FORMAT_TEXT_COMMAND, COMMAND_PRIORITY_CRITICAL, INSERT_PARAGRAPH_COMMAND } from 'lexical';
+import { $getRoot, $insertNodes } from 'lexical';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
-import { mergeRegister } from '@lexical/utils';
-import { TOGGLE_LINK_COMMAND } from '@lexical/link';
-import { useState as useLexicalState, useEffect as useLexicalEffect } from 'react'; // Renamed to avoid conflict
 import AutoLinkPlugin from "../plugins/AutoLinkPlugin";
 import ToolbarPlugin from "../plugins/ToolbarPlugin";
 
@@ -1170,9 +1166,9 @@ const editorConfig = {
     ]
 };
 
-const LoadInitialContent = ({ initialContent }) => {
+const LoadInitialContent = ({ initialContent, focusRef }) => {
   const [editor] = useLexicalComposerContext();
-  
+
   useEffect(() => {
     if (!initialContent) { return; }
     editor.update(() => {
@@ -1180,12 +1176,15 @@ const LoadInitialContent = ({ initialContent }) => {
       const dom = parser.parseFromString(initialContent, "text/html");
       const nodes = $generateNodesFromDOM(editor, dom);
 
-      const root = $getRoot();
-      root.clear();
-      root.select();
+      $getRoot().clear();
       $insertNodes(nodes);
     });
-  }, []);
+    editor.registerUpdateListener((editorState) => {
+      if (focusRef && focusRef.current) {
+        focusRef.current.focus();
+      }
+    });
+}, []);
   return null;
 };
 
@@ -1206,7 +1205,7 @@ const LanguageSelect = ({ locale, setLocale }) => {
 };
 
 // RichTextEditor Component
-const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
+const RichTextEditor = ({ initialContent, onEditorStateChange, focusRef }) => {
     const { locale, setLocale, t } = useContext(LocaleContext);
 
     const initialConfig = {
@@ -1216,7 +1215,7 @@ const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
 
     return (
         <LexicalComposer initialConfig={initialConfig}>
-            <LoadInitialContent initialContent={initialContent} />
+            <LoadInitialContent initialContent={initialContent} focusRef={focusRef} />
             <div className="relative border border-gray-300 dark:border-gray-600 rounded-md">
                 <ToolbarPlugin />
                 <div className="editor-inner">
@@ -1226,7 +1225,6 @@ const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
                     ErrorBoundary={LexicalErrorBoundary}
                 />
                 <HistoryPlugin />
-                <AutoFocusPlugin />
                 <ListPlugin />
                 <LinkPlugin />
                 <AutoLinkPlugin />
@@ -1542,6 +1540,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const { db, userId, t } = useContext(AppContext);
 
     const [name, setName] = useState('');
+    const firstRef = useRef(null);
     const [startDate, setStartDate] = useState('');
     const [startTime, setStartTime] = useState('');
     const [duration, setDuration] = useState('');
@@ -1823,6 +1822,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 <div className="col-span-1">
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('name')}</label>
                     <input
+                        ref={firstRef}
                         type="text"
                         id="name"
                         value={name}
@@ -1947,6 +1947,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     <RichTextEditor
                         initialContent={initialDescription}
                         onEditorStateChange={handleDescriptionChange}
+                        focusRef={firstRef}
                     />
                 </div>
                 <div className="col-span-full">
