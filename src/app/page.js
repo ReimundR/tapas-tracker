@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, FacebookAuthProvider, OAuthProvider } from 'firebase/auth'; // Added FacebookAuthProvider and OAuthProvider for Apple
 import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
 import Head from 'next/head'; // Import Head from next/head for meta tags
 import { Suspense } from 'react'
@@ -3023,6 +3023,37 @@ const HomePage = () => {
         }
     };
 
+    const handleFacebookSignIn = async () => {
+        if (!auth) return;
+        try {
+            const provider = new FacebookAuthProvider();
+            await signInWithPopup(auth, provider);
+            setFirebaseError('');
+            setShowLoginPrompt(false); // Close login prompt after successful sign-in
+            setShowMenu(false); // Close menu after login
+        } catch (error) {
+            console.error("Error signing in with Facebook:", error);
+            setFirebaseError(`Error signing in with Facebook: ${error.message}`);
+        }
+    };
+
+    const handleAppleSignIn = async () => {
+        if (!auth) return;
+        try {
+            const provider = new OAuthProvider('apple.com');
+            provider.addScope('email');
+            provider.addScope('name');
+            await signInWithPopup(auth, provider);
+            setFirebaseError('');
+            setShowLoginPrompt(false); // Close login prompt after successful sign-in
+            setShowMenu(false); // Close menu after login
+        } catch (error) {
+            console.error("Error signing in with Apple:", error);
+            setFirebaseError(`Error signing in with Apple: ${error.message}`);
+        }
+    };
+
+
     const handleEmailSignUp = async () => {
         if (!auth) return;
         try {
@@ -3364,7 +3395,7 @@ const HomePage = () => {
                                 onClick={handleEmailSignIn}
                                 className="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-200 text-lg font-medium mb-3"
                             >
-                                {t('signInWithEmail')}
+                                {t('signInWithX', 'Email')}
                             </button>
                             <button
                                 onClick={handleEmailSignUp}
@@ -3377,7 +3408,7 @@ const HomePage = () => {
                                     onClick={() => setShowEmailLoginForm(false)}
                                     className="text-indigo-600 hover:underline"
                                 >
-                                    {t('or')} {t('signInWithGoogle')}
+                                    {t('or')} {t('signInWithX', 'Google')}
                                 </button>
                             </p>
                         </>
@@ -3393,14 +3424,32 @@ const HomePage = () => {
                                     <path fill="#4CAF50" d="M24 43.999C12.955 43.999 4 35.044 4 24L4.001 24.01L8.514 26.837L10.42 30.638L10.42 30.638C12.446 36.657 17.72 40.89 24 40.89C29.268 40.89 34.046 38.947 37.893 35.107L32.27 29.588C30.648 30.768 28.318 31.512 26.012 31.512C20.373 31.512 15.825 26.964 15.825 21.325L15.825 21.325L15.825 21.325L15.825 21.325L15.825 21.325L15.825 21.325L15.825 21.325L15.825 21.325L15.825 21.325C15.825 21.325 15.825 21.325 15.825 21.325V21.325V21.325C15.825 15.686 20.373 11.138 26.012 11.138C28.318 11.138 30.648 11.882 32.27 13.062L37.893 7.543L37.893 7.543C34.046 3.703 29.268 1.76 24 1.76C12.955 1.76 4 10.715 4 21.76z"/>
                                     <path fill="#1976D2" d="M43.611 20.083L43.611 20.083L43.611 20.083C43.611 20.083 43.611 20.083 43.611 20.083z"/>
                                 </svg>
-                                {t('signInWithGoogle')}
+                                {t('signInWithX', 'Google')}
+                            </button>
+                            <button
+                                onClick={handleFacebookSignIn}
+                                className="w-full flex items-center justify-center bg-blue-800 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-900 transition-colors duration-200 text-lg font-medium mb-4"
+                            >
+                                <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 0C5.373 0 0 5.373 0 12c0 6.016 4.388 11.008 10.125 11.854V15.46H7.078V12h3.047V9.356c0-3.007 1.792-4.669 4.533-4.669c1.306 0 2.684.235 2.684.235V8.07h-1.538c-1.505 0-1.97.931-1.97 1.898V12h3.328l-.532 3.46h-2.796v6.394C19.612 23.008 24 18.016 24 12C24 5.373 18.627 0 12 0z"/>
+                                </svg>
+                                {t('signInWithX', 'Facebook')}
+                            </button>
+                            <button
+                                onClick={handleAppleSignIn}
+                                className="w-full flex items-center justify-center bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200 text-lg font-medium mb-4"
+                            >
+                                <svg fill="currentColor" width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.12997 6.91 8.81997 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z"/>
+                                </svg>
+                                &nbsp;&nbsp;{t('signInWithX', 'Apple')}
                             </button>
                             <p className="text-sm mb-4 text-gray-500 dark:text-gray-400">
                                 <button
                                     onClick={() => setShowEmailLoginForm(true)}
                                     className="text-indigo-600 hover:underline"
                                 >
-                                    {t('or')} {t('signInWithEmail')}
+                                    {t('or')} {t('signInWithX', 'Email')}
                                 </button>
                             </p>
                         </>
