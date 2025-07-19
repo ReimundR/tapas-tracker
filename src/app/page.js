@@ -2418,8 +2418,8 @@ const Statistics = ({ allTapas }) => {
 const AboutModal = ({ onClose }) => {
     const { t } = useContext(AppContext);
     return (
-        <div className="max-h-screen overflow-y-auto fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-y-auto max-h-screen">
+            <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <h3 className="text-2xl font-bold mb-4">{t('about')}</h3>
                 <p className="text-lg mb-2"><strong>{t('appName')}</strong></p>
                 <p className="text-md mb-4 text-gray-600 dark:text-gray-300">{t('appVersion')}: {appVersion}</p>
