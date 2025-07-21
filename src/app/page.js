@@ -2439,7 +2439,7 @@ const Statistics = ({ allTapas }) => {
 
     const successfulTapas = filteredTapas.filter(tapas => tapas.status === 'successful');
     const failedTapas = filteredTapas.filter(tapas => tapas.status === 'failed');
-    const activeTapas = filteredTapas.filter(tapas => tapas.status === 'active');
+    const activeTapas = filteredTapas.filter(tapas => tapas.status === 'active' && tapas.scheduleType !== 'noTapas');
 
     const calculateAverageDuration = (tapasList) => {
         if (tapasList.length === 0) return 0;
