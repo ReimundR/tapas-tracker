@@ -3451,7 +3451,35 @@ const HomePage = () => {
     };
 
 
-    const activeTapas = tapas.filter(tapas => tapas.status === 'active');
+    const activeTapas = tapas.filter(tapas => tapas.status === 'active').sort((a, b) => {
+        // Custom sorting logic for active tapas
+        const isATapas = a.scheduleType !== 'noTapas';
+        const isBTapas = b.scheduleType !== 'noTapas';
+
+        // If one is 'noTapas' and the other isn't, 'noTapas' goes to the end
+        if (isATapas && !isBTapas) return -1;
+        if (!isATapas && isBTapas) return 1;
+
+        // If both are 'noTapas' or both are regular tapas, sort by end date
+        if (isATapas && isBTapas) {
+            const endDateA = getTapasDatesInfo(a).endDate;
+            const endDateB = getTapasDatesInfo(b).endDate;
+
+            // Handle cases where endDate might be null or invalid (shouldn't happen for active tapas normally)
+            if (!endDateA && !endDateB) return 0;
+            if (!endDateA) return 1; // Null end date goes to the end
+            if (!endDateB) return -1; // Null end date goes to the end
+
+            return endDateA.getTime() - endDateB.getTime(); // Sort by end date ascending (earliest first)
+        }
+
+        // If both are 'noTapas', sort by name alphabetically
+        if (!isATapas && !isBTapas) {
+            return a.name.localeCompare(b.name);
+        }
+
+        return 0; // Should not be reached
+    });
 
     // History tapas are already filtered by status and time in TapasList component
     // We only pass the base history tapas here, and let TapasList apply its internal filters.
