@@ -1178,7 +1178,8 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
             {displayedTapas.length === 0 ? (
                 <p className="text-center py-8 text-gray-600 dark:text-gray-400">{t('noTapasFound')}</p>
             ) : (
-                displayedTapas.map((tapasItem) => {
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {displayedTapas.map((tapasItem) => {
                     const { endDate, daysRemaining, daysOver } = getTapasDatesInfo(tapasItem);
                     const { statusText, statusClass } = getDetailedStatus(tapasItem); // Get detailed status
 
@@ -1244,7 +1245,8 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                             )}
                         </div>
                     );
-                })
+                })}
+                </div>
             )}
         </div>
     );
