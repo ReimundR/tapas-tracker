@@ -1790,7 +1790,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 description: tapas.description,
                 goals: tapas.goals, // Carry over goals to new tapas
                 parts: tapas.parts,
-                crystallizationTime: tapas.crystallizationTime,
+                crystallizationTime: tapas.crystallizationTime || '',
+                allowRecuperation: tapas.allowRecuperation || false,
                 status: 'active',
                 checkedDays: [],
                 failureCause: null,
@@ -1801,9 +1802,9 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 checkedPartsByDate: {},
                 results: null, // New tapas starts with no results
                 shareReference: tapas.shareReference || null, // Carry over share reference if exists
-                scheduleType: tapas.scheduleType, // Carry over schedule type
-                scheduleInterval: tapas.scheduleInterval, // Carry over schedule interval
-                acknowledgeAfter: tapas.acknowledgeAfter, // Carry over acknowledgeAfter
+                scheduleType: tapas.scheduleType || 'daily', // Carry over schedule type
+                scheduleInterval: tapas.scheduleInterval || '', // Carry over schedule interval
+                acknowledgeAfter: tapas.acknowledgeAfter || false, // Carry over acknowledgeAfter
             };
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
