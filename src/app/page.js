@@ -1982,7 +1982,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                             {tapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
                         </>
                     )}
-                    <p><strong className="font-semibold">{t('schedule')}:</strong> {tapas.scheduleType === 'everyNthDays' ? t(tapas.scheduleType, tapas.scheduleInterval) : t(tapas.scheduleType)}</p>
                     {tapas.description && (
                         <div>
                             <strong className="font-semibold">{t('description')}:</strong>
@@ -2771,6 +2770,11 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
     const pageUrl = `${window.location.origin}?ref=${sharedTapas.id}`;
     const scheduleType = sharedTapas.scheduleType || 'daily';
 
+    let endDate = '';
+    if (sharedTapas.startDate) {
+        endDate = getTapasDatesInfo(sharedTapas).endDate;
+    }
+
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <Head>
@@ -2790,10 +2794,17 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                 </div>
 
                 <div className="space-y-4 text-gray-700 dark:text-gray-300">
-                    <p>
-                        <strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(sharedTapas.duration / getScheduleFactor(sharedTapas.scheduleType, sharedTapas.scheduleInterval))} {t(sharedTapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
-                    </p>
-                    {sharedTapas.description && <p><strong className="font-semibold">{t('description')}:</strong> {sharedTapas.description}</p>}
+                    {sharedTapas.startDate && (<p><strong className="font-semibold">{t('timeframe')}:</strong> {sharedTapas.startDate?.toDate().toLocaleDateString()} - {endDate?.toLocaleDateString()}</p>)}
+                    {sharedTapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {sharedTapas.startTime}</p>}
+                    <p><strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(sharedTapas.duration / getTotalUnits(sharedTapas.scheduleType))} {t(sharedTapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}</p>
+                    {sharedTapas.scheduleType === 'everyNthDays' && (
+                    <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(sharedTapas.duration / sharedTapas.scheduleInterval))} {t('everyNthDays', sharedTapas.scheduleInterval).toLowerCase()}</p>
+                    )}
+                    {sharedTapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
+                    {sharedTapas.description && (<div><strong className="font-semibold">{t('description')}:</strong>
+                            <LexicalHtmlRenderer editorStateHtml={sharedTapas.description} />
+                        </div>
+                    )}
                     {sharedTapas.goals && sharedTapas.goals.length > 0 ? (
                         <div>
                             <strong className="font-semibold">{t('goals')}:</strong>
@@ -2819,8 +2830,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
                     )}
                     {sharedTapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {sharedTapas.crystallizationTime} {t('days').toLowerCase()}</p>}
-                    <p><strong className="font-semibold">{t('schedule')}:</strong> {scheduleType === 'everyNthDays' ? t(scheduleType, sharedTapas.scheduleInterval) : t(scheduleType)}
-                    </p>
+                    {sharedTapas.allowRecuperation && <p><strong className="font-semibold">{t('allowRecuperation')}:</strong> {t('yes')}</p>}
                     <p className="mt-4"><strong className="font-semibold">{t('sharedCount')}:</strong> {sharedTapas.sharedCount || 0}</p>
                     <p><strong className="font-semibold">{t('adoptedCount')}:</strong> {sharedTapas.adoptedCount || 0}</p>
                 </div>
