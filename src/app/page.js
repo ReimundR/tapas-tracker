@@ -1881,17 +1881,19 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 name: tapas.name,
                 sharedAt: new Date(),
                 userId: userId,
+                startDate: tapas.startDate,
+                startTime: tapas.startTime,
+                duration: tapas.duration,
                 description: tapas.description || null,
                 goals: tapas.goals || [],
                 parts: tapas.parts || [],
                 scheduleType: tapas.scheduleType,
                 scheduleInterval: tapas.scheduleInterval,
-                duration: tapas.duration,
                 crystallizationTime: tapas.crystallizationTime || null,
+                acknowledgeAfter: tapas.acknowledgeAfter, // Include acknowledgeAfter
                 allowRecuperation: tapas.allowRecuperation || false,
                 sharedCount: (tapas.sharedCount || 0) + 1, // Increment shared count
                 adoptedCount: (tapas.adoptedCount || 0), // Initialize or preserve
-                acknowledgeAfter: tapas.acknowledgeAfter, // Include acknowledgeAfter
             };
 
             // Get the public document reference
@@ -2164,7 +2166,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                         </button>
                     )}
 
-                    {/* New Share Button */}
                     {tapas.scheduleType !== 'noTapas' && (
                         <button
                             onClick={handleShareTapas}
@@ -2699,7 +2700,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
 
             const newTapasData = {
                 name: sharedTapas.name,
-                startDate: new Date(), // New Tapas starts today for the adopting user
+                startDate: sharedTapas.startDate || new Date(), // New Tapas starts today for the adopting user
                 startTime: sharedTapas.startTime || null,
                 duration: sharedTapas.duration,
                 description: sharedTapas.description || null,
@@ -2707,6 +2708,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                 parts: sharedTapas.parts || [],
                 crystallizationTime: sharedTapas.crystallizationTime || null,
                 allowRecuperation: sharedTapas.allowRecuperation || false,
+                acknowledgeAfter: sharedTapas.acknowledgeAfter || false,
                 status: 'active', // Adopted tapas starts as active
                 checkedDays: [],
                 failureCause: null,
@@ -2717,8 +2719,8 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                 checkedPartsByDate: {},
                 results: null,
                 shareReference: sharedTapas.id, // Inherit the share reference
-                scheduleType: sharedTapas.scheduleType, // Inherit schedule type
-                scheduleInterval: sharedTapas.scheduleInterval, // Inherit schedule interval
+                scheduleType: sharedTapas.scheduleType || 'daily',
+                scheduleInterval: sharedTapas.scheduleInterval || '',
             };
 
             await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
