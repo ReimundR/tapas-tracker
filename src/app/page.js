@@ -1949,33 +1949,33 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                 // Store this shareReference in the user's private tapas document
                 await updateDoc(tapasRef, { shareReference: currentShareReference });
                 setSelectedTapas(prev => ({ ...prev, shareReference: currentShareReference })); // Update local state immediately
+
+                // Prepare static data for public sharing
+                const staticTapasData = {
+                    name: tapas.name,
+                    sharedAt: new Date(),
+                    userId: userId,
+                    startDate: tapas.startDate,
+                    startTime: tapas.startTime,
+                    duration: tapas.duration,
+                    description: tapas.description || null,
+                    goals: tapas.goals || [],
+                    parts: tapas.parts || [],
+                    scheduleType: tapas.scheduleType,
+                    scheduleInterval: tapas.scheduleInterval,
+                    crystallizationTime: tapas.crystallizationTime || null,
+                    acknowledgeAfter: tapas.acknowledgeAfter || false,
+                    allowRecuperation: tapas.allowRecuperation || false,
+                    sharedCount: (publicSharedTapas?.sharedCount || 0) + 1, // Increment shared count from existing public data if available
+                    adoptedCount: (publicSharedTapas?.adoptedCount || 0), // Initialize or preserve from existing public data
+                    version: tapas.version || 1, // Use the current local tapas version
+                };
+
+                // Get the public document reference
+                const publicTapasDocRef = doc(publicSharedTapasCollectionRef, currentShareReference);
+
+                await setDoc(publicTapasDocRef, staticTapasData, { merge: true }); // Use merge to update existing fields and add new ones
             }
-
-            // Prepare static data for public sharing
-            const staticTapasData = {
-                name: tapas.name,
-                sharedAt: new Date(),
-                userId: userId,
-                startDate: tapas.startDate,
-                startTime: tapas.startTime,
-                duration: tapas.duration,
-                description: tapas.description || null,
-                goals: tapas.goals || [],
-                parts: tapas.parts || [],
-                scheduleType: tapas.scheduleType,
-                scheduleInterval: tapas.scheduleInterval,
-                crystallizationTime: tapas.crystallizationTime || null,
-                acknowledgeAfter: tapas.acknowledgeAfter || false,
-                allowRecuperation: tapas.allowRecuperation || false,
-                sharedCount: (publicSharedTapas?.sharedCount || 0) + 1, // Increment shared count from existing public data if available
-                adoptedCount: (publicSharedTapas?.adoptedCount || 0), // Initialize or preserve from existing public data
-                version: tapas.version || 1, // Use the current local tapas version
-            };
-
-            // Get the public document reference
-            const publicTapasDocRef = doc(publicSharedTapasCollectionRef, currentShareReference);
-            
-            await setDoc(publicTapasDocRef, staticTapasData, { merge: true }); // Use merge to update existing fields and add new ones
 
             // Construct the shareable URL
             const shareUrl = `${window.location.origin}?ref=${currentShareReference}`;
@@ -2148,8 +2148,10 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         });
     };
 
-    const actualDataIsNewer = publicSharedTapas && publicSharedTapas.userId === userId && publicSharedTapas.version < tapas.version;
-    const updateAvailable = publicSharedTapas && publicSharedTapas.userId !== userId && publicSharedTapas.version > (tapas.version || 1);
+    const tapasVersion = tapas.version || 1;
+    const sharedVersion = publicSharedTapas ? publicSharedTapas.version || 1 : 0;
+    const actualDataIsNewer = publicSharedTapas && publicSharedTapas.userId === userId && sharedVersion < tapasVersion;
+    const updateAvailable = publicSharedTapas && publicSharedTapas.userId !== userId && sharedVersion > tapasVersion;
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
@@ -3420,14 +3422,30 @@ const HomePage = () => {
         setCurrentPage('active'); // When canceling from 'add new', go back to active
     };
 
+    const mySignInWithPopup = async (auth, provider) => {
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+                // ignore user abort
+                return false;
+            } else {
+                throw error;
+            }
+        }
+        return true;
+    };
+
     const handleGoogleSignIn = async () => {
         if (!auth) return;
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
-            setFirebaseError('');
-            setShowLoginPrompt(false); // Close login prompt after successful sign-in
-            setShowMenu(false); // Close menu after login
+            const ok = await mySignInWithPopup(auth, provider);
+            if (ok) {
+                setFirebaseError('');
+                setShowLoginPrompt(false); // Close login prompt after successful sign-in
+                setShowMenu(false); // Close menu after login
+            }
         } catch (error) {
             console.error("Error signing in with Google:", error);
             setFirebaseError(`${t('googleSignInFailed')} ${error.message}`);
@@ -3882,7 +3900,7 @@ const HomePage = () => {
                                 </svg>
                                 {t('signInWithX', 'Google')}
                             </button>
-                            {0 && (<button
+                            {false && (<button
                                 onClick={handleFacebookSignIn}
                                 className="w-full flex items-center justify-center bg-blue-800 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-900 transition-colors duration-200 text-lg font-medium mb-4"
                             >
@@ -3891,7 +3909,7 @@ const HomePage = () => {
                                 </svg>
                                 {t('signInWithX', 'Facebook')}
                             </button>)}
-                            {0 && (<button
+                            {false && (<button
                                 onClick={handleAppleSignIn}
                                 className="w-full flex items-center justify-center bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200 text-lg font-medium mb-4"
                             >
