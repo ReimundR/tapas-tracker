@@ -743,7 +743,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             scheduleType: scheduleType, // New field
             scheduleInterval: scheduleType === 'everyNthDays' ? parseInt(scheduleInterval) : null, // New field
             acknowledgeAfter: scheduleType === 'noTapas' ? false : acknowledgeAfter, // Include new field
-            version: editingTapas ? (editingTapas.version || 0) + 1 : 1, // Increment version on update, start at 1 for new
+            version: editingTapas ? (editingTapas.version || 1) + 1 : 1, // Increment version on update, start at 1 for new
         };
 
         try {
@@ -1696,7 +1696,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleDeleteSharedTapas = async () => {
-        if (!tapas.shareReference || tapas.userId !== userId) {
+        if (!tapas.shareReference || !publicSharedTapas || publicSharedTapas.userId !== userId) {
             setMessage(t('notOwnerOfSharedTapas'));
             return;
         }
@@ -2000,7 +2000,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleUpdateSharedTapas = async () => {
-        if (!tapas.shareReference || tapas.userId !== userId) {
+        if (!tapas.shareReference || !publicSharedTapas || publicSharedTapas.userId !== userId) {
             setMessage(t('notOwnerOfSharedTapas'));
             return;
         }
@@ -2033,7 +2033,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleUpdateFromSharedTapas = async () => {
-        if (!tapas.shareReference || tapas.userId === userId || !publicSharedTapas) {
+        if (!tapas.shareReference || publicSharedTapas.userId === userId || !publicSharedTapas) {
             setMessage(t('notSharedTapasOrOwner'));
             return;
         }
@@ -2149,7 +2149,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const actualDataIsNewer = publicSharedTapas && publicSharedTapas.userId === userId && publicSharedTapas.version < tapas.version;
-    const updateAvailable = publicSharedTapas && publicSharedTapas.userId !== userId && publicSharedTapas.version > (tapas.version || 0);
+    const updateAvailable = publicSharedTapas && publicSharedTapas.userId !== userId && publicSharedTapas.version > (tapas.version || 1);
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
@@ -2165,7 +2165,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
                 <div className="space-y-4 text-gray-700 dark:text-gray-300">
                     {tapas.shareReference && (
-                        <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                        <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                             {t('sharedTapas')}
                             {actualDataIsNewer && (
                                 <span className="ml-2 text-orange-600 dark:text-orange-400">
@@ -2227,27 +2227,27 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                             )}
                             {tapas.shareReference && publicSharedTapas && !actualDataIsNewer && !updateAvailable && publicSharedTapas.userId === userId && (
                                 <span className="ml-2 text-green-600 dark:text-green-400">
-                                <div className="relative inline-block ml-2">
-                                    <button
-                                        onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
-                                        className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium"
-                                    >
-                                        ...
-                                    </button>
-                                    {showUpdateSharedTapasMenu && (
-                                        <div className="absolute left-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
-                                            <button
-                                                onClick={handleDeleteSharedTapas}
-                                                className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
-                                            >
-                                                {t('deleteSharedTapasFromPublic')}
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
+                                    <div className="relative inline-block ml-2">
+                                        <button
+                                            onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
+                                            className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium"
+                                        >
+                                            ...
+                                        </button>
+                                        {showUpdateSharedTapasMenu && (
+                                            <div className="absolute left-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                                                <button
+                                                    onClick={handleDeleteSharedTapas}
+                                                    className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
+                                                >
+                                                    {t('deleteSharedTapasFromPublic')}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </span>
                             )}
-                        </p>
+                        </div>
                     )}
                     {tapas.scheduleType === 'noTapas' && (
                         <>
@@ -2411,7 +2411,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                         </div>
                     )}
                     {tapas.userId === userId && tapas.shareReference && publicSharedTapas && (
-                        <div className="mt-4">
+                        <div className="mt-4 text-sm">
                             <p><strong className="font-semibold">{t('sharedCount')}:</strong> {publicSharedTapas.sharedCount || 0}</p>
                             <p><strong className="font-semibold">{t('adoptedCount')}:</strong> {publicSharedTapas.adoptedCount || 0}</p>
                         </div>

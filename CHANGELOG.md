@@ -5,6 +5,7 @@
 * added Shared Tapas update and delete functionality
 * show Shared Tapas icon/text in Tapas list/detail
 * show checked dates in reduced format for better readability
+* show shared/adopted counts in tapas details of the owner
 
 #### = 1.0.3 (2025-07-21) =
 
