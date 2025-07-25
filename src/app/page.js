@@ -743,6 +743,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             scheduleType: scheduleType, // New field
             scheduleInterval: scheduleType === 'everyNthDays' ? parseInt(scheduleInterval) : null, // New field
             acknowledgeAfter: scheduleType === 'noTapas' ? false : acknowledgeAfter, // Include new field
+            version: editingTapas ? (editingTapas.version || 0) + 1 : 1, // Increment version on update, start at 1 for new
         };
 
         try {
@@ -1000,17 +1001,17 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
 
 // Helper function to calculate end date and remaining days
 const getTapasDatesInfo = (tapasItem) => {
-    const today = getStartOfDayUTC(new Date()); // Use UTC start of day
+    const today = getStartOfDayUTC(new Date());
     
     // For 'noTapas' scheduleType, duration and dates are not applicable
     if (tapasItem.scheduleType === 'noTapas') {
         return { endDate: null, daysRemaining: null, daysOver: null };
     }
 
-    const startDate = getStartOfDayUTC(tapasItem.startDate.toDate()); // Use UTC start of day
+    const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
     
     const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + tapasItem.duration - 1); // Reduced by one day
+    endDate.setDate(startDate.getDate() + tapasItem.duration - 1);
     endDate.setHours(0, 0, 0, 0);
 
     const diffTime = endDate.getTime() - today.getTime();
@@ -1020,15 +1021,37 @@ const getTapasDatesInfo = (tapasItem) => {
     return { endDate, daysRemaining, daysOver };
 };
 
+// Helper to get shared tapas info (userId and version)
+const getSharedTapasInfo = async (shareReference, db) => {
+    if (!shareReference || !db) {
+        return { userId: null, version: null };
+    }
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const publicSharedTapasCollectionRef = collection(db, `artifacts/${appId}/public/data/sharedTapas`);
+    const publicTapasDocRef = doc(publicSharedTapasCollectionRef, shareReference);
+
+    try {
+        const docSnap = await getDoc(publicTapasDocRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            return { userId: data.userId, version: data.version || 1 };
+        }
+    } catch (e) {
+        console.error("Error fetching shared tapas info:", e);
+    }
+    return { userId: null, version: null };
+};
+
+
 // Component to display a list of Tapas
-const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter }) => {
+const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter, sharedTapasInfoMap }) => {
     const { locale } = useContext(LocaleContext);
-    const { t } = useContext(AppContext);
+    const { db, userId, t } = useContext(AppContext);
 
     // Helper to get detailed status for active tapas display
     const getDetailedStatus = useCallback((tapasItem) => {
         const noTapas = tapasItem.scheduleType === 'noTapas';
-        const startDate = noTapas ? null : getStartOfDayUTC(tapasItem.startDate.toDate()); // Use UTC start of day
+        const startDate = noTapas ? null : getStartOfDayUTC(tapasItem.startDate.toDate());
         const today = getTapasDay(new Date(), tapasItem, startDate);
 
         if (noTapas) {
@@ -1128,7 +1151,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
             filterDate.setHours(0, 0, 0, 0); // Normalize filter date
 
             filtered = filtered.filter(tapas => {
-                const completionDate = tapas.completionDate ? tapas.completionDate.toDate() : tapas.createdAt.toDate(); // Use completionDate if available, otherwise createdAt
+                const completionDate = tapas.completionDate ? tapas.completionDate.toDate() : tapas.createdAt.toDate();
                 return completionDate >= filterDate;
             });
         }
@@ -1178,74 +1201,83 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
             {displayedTapas.length === 0 ? (
                 <p className="text-center py-8 text-gray-600 dark:text-gray-400">{t('noTapasFound')}</p>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayedTapas.map((tapasItem) => {
-                    const { endDate, daysRemaining, daysOver } = getTapasDatesInfo(tapasItem);
-                    const { statusText, statusClass } = getDetailedStatus(tapasItem); // Get detailed status
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Added responsive grid classes */}
+                    {displayedTapas.map((tapasItem) => {
+                        const { endDate, daysRemaining, daysOver } = getTapasDatesInfo(tapasItem);
+                        const { statusText, statusClass } = getDetailedStatus(tapasItem); 
+                        const sharedInfo = sharedTapasInfoMap[tapasItem.id] || { userId: null, version: null };
 
-                    // Calculate undone parts for active tapas
-                    const undoneParts = [];
-                    if (tapasItem.status === 'active' && tapasItem.parts && tapasItem.parts.length > 0) {
-                        const todayDateString = formatDateNoTimeToISO(new Date());
-                        const checkedPartsForToday = tapasItem.checkedPartsByDate?.[todayDateString] || [];
-                        if (checkedPartsForToday.length > 0) {
-                            tapasItem.parts.forEach((part, index) => {
-                                if (!checkedPartsForToday.includes(index)) {
-                                    undoneParts.push(part);
-                                }
-                            });
+                        // Calculate undone parts for active tapas
+                        const undoneParts = [];
+                        if (tapasItem.status === 'active' && tapasItem.parts && tapasItem.parts.length > 0) {
+                            const todayDateString = formatDateNoTimeToISO(new Date());
+                            const checkedPartsForToday = tapasItem.checkedPartsByDate?.[todayDateString] || [];
+                            if (checkedPartsForToday.length > 0) {
+                                tapasItem.parts.forEach((part, index) => {
+                                    if (!checkedPartsForToday.includes(index)) {
+                                        undoneParts.push(part);
+                                    }
+                                });
+                            }
                         }
-                    }
 
-                    const dayOfWeek = tapasItem.startDate?.toDate().toLocaleDateString(locale, { weekday: "long" });
+                        const dayOfWeek = tapasItem.startDate?.toDate().toLocaleDateString(locale, { weekday: "long" });
 
-                    return (
-                        <div
-                            key={tapasItem.id}
-                            className="p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                            onClick={() => onSelectTapas(tapasItem)}
-                        >
-                            <h3 className="text-xl font-semibold text-indigo-700 mb-2">{tapasItem.name}
-                                {tapasItem.status === 'active' && tapasItem.scheduleType !== 'noTapas' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
-                            </h3>
-                            {tapasItem.scheduleType !== 'noTapas' && (
-                                <>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {t('duration')}: {Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType))} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
-                                    </p>
-                                    {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
+                        return (
+                            <div
+                                key={tapasItem.id}
+                                className="p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                                onClick={() => onSelectTapas(tapasItem)}
+                            >
+                                <h3 className="text-xl font-semibold text-indigo-700 mb-2">
+                                    {tapasItem.name}
+                                    {tapasItem.shareReference && sharedInfo.userId === userId && (
+                                        <span className="ml-2 text-blue-500" title={t('sharedTapas')}>
+                                            <svg className="inline-block" fill="currentColor" height="16" width="16" icon-name="shared" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M2.239 18.723A1.235 1.235 0 0 1 1 17.488C1 11.5 4.821 6.91 10 6.505V3.616a1.646 1.646 0 0 1 2.812-1.16l6.9 6.952a.841.841 0 0 1 0 1.186l-6.9 6.852A1.645 1.645 0 0 1 10 16.284v-2.76c-2.573.243-3.961 1.738-5.547 3.445-.437.47-.881.949-1.356 1.407-.23.223-.538.348-.858.347ZM10.75 7.976c-4.509 0-7.954 3.762-8.228 8.855.285-.292.559-.59.832-.883C5.16 14 7.028 11.99 10.75 11.99h.75v4.294a.132.132 0 0 0 .09.134.136.136 0 0 0 .158-.032L18.186 10l-6.438-6.486a.135.135 0 0 0-.158-.032.134.134 0 0 0-.09.134v4.36h-.75Z"></path>
+                                            </svg>
+                                        </span>
                                     )}
-                                    {tapasItem.status === 'active' && (
-                                        <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
-                                    )}
-                                </>
-                            )}
-                            {tapasItem.status === 'successful' && (
-                                <p className="text-sm font-medium text-green-600 mt-2">{t('status')}: {t('successful')}</p>
-                            )}
-                            {tapasItem.status === 'failed' && (
-                                <p className="text-sm font-medium text-red-600 mt-2">{t('status')}: {t('failed')}</p>
-                            )}
-                            {/* Display new statuses for active tapas */}
-                            {tapasItem.status === 'active' && statusText && (
-                                <p className={`text-sm font-bold mt-1 ${statusClass}`}>{statusText}</p>
-                            )}
-                            {/* Display undone parts for active tapas */}
-                            {tapasItem.status === 'active' && undoneParts.length > 0 && tapasItem.scheduleType !== 'noTapas' && (
-                                <div className="mt-2">
-                                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Unerledigte Teile für heute:</p>
-                                    <ul className="list-disc list-inside ml-4 text-sm text-gray-600 dark:text-gray-400">
-                                        {undoneParts.map((part, idx) => (
-                                            <li key={idx}>{part}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
+                                    {tapasItem.status === 'active' && tapasItem.scheduleType !== 'noTapas' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
+                                </h3>
+                                {tapasItem.scheduleType !== 'noTapas' && (
+                                    <>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {t('duration')}: {Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType))} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
+                                        </p>
+                                        {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
+                                        )}
+                                        {tapasItem.status === 'active' && (
+                                            <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
+                                        )}
+                                    </>
+                                )}
+                                {tapasItem.status === 'successful' && (
+                                    <p className="text-sm font-medium text-green-600 mt-2">{t('status')}: {t('successful')}</p>
+                                )}
+                                {tapasItem.status === 'failed' && (
+                                    <p className="text-sm font-medium text-red-600 mt-2">{t('status')}: {t('failed')}</p>
+                                )}
+                                {/* Display new statuses for active tapas */}
+                                {tapasItem.status === 'active' && statusText && (
+                                    <p className={`text-sm font-bold mt-1 ${statusClass}`}>{statusText}</p>
+                                )}
+                                {/* Display undone parts for active tapas */}
+                                {tapasItem.status === 'active' && undoneParts.length > 0 && tapasItem.scheduleType !== 'noTapas' && (
+                                    <div className="mt-2">
+                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Unerledigte Teile für heute:</p>
+                                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600 dark:text-gray-400">
+                                            {undoneParts.map((part, idx) => (
+                                                <li key={idx}>{part}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -1294,7 +1326,7 @@ const ResultsModal = ({ tapas, onClose, onSaveResults }) => {
 
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added setSelectedTapas prop
+const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfoMap }) => { // Added setSelectedTapas prop
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -1311,10 +1343,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
     const [showAcknowledgeNDaysMenu, setShowAcknowledgeNDaysMenu] = useState(false); // New state for acknowledge N days menu
     const [acknowledgeNDaysInput, setAcknowledgeNDaysInput] = useState(''); // Input for N days
     const [showResultsModal, setShowResultsModal] = useState(false); // State for results modal
+    const [publicSharedTapas, setPublicSharedTapas] = useState(null); // State for public shared tapas data
+    const [showUpdateSharedTapasMenu, setShowUpdateSharedTapasMenu] = useState(false); // State for update shared tapas menu
 
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, tapas.id);
+    const publicSharedTapasCollectionRef = collection(db, `artifacts/${appId}/public/data/sharedTapas`);
+
 
     const startDateObj = tapas.startDate ? getStartOfDayUTC(tapas.startDate.toDate()) : null; // Use UTC start of day
 
@@ -1359,6 +1395,26 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
     const isPeriodEndOrOver = !noTapas && today >= endDateObj;
     const isSuccessful = tapas.status === 'successful';
     const isFailed = tapas.status === 'failed';
+
+    // Fetch public shared tapas data if shareReference exists
+    useEffect(() => {
+        if (tapas.shareReference) {
+            const publicTapasDocRef = doc(publicSharedTapasCollectionRef, tapas.shareReference);
+            const unsubscribe = onSnapshot(publicTapasDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setPublicSharedTapas(docSnap.data());
+                } else {
+                    setPublicSharedTapas(null); // Public shared tapas deleted or not found
+                }
+            }, (error) => {
+                console.error("Error fetching public shared tapas:", error);
+                setPublicSharedTapas(null);
+            });
+            return () => unsubscribe();
+        } else {
+            setPublicSharedTapas(null);
+        }
+    }, [tapas.shareReference, publicSharedTapasCollectionRef]);
 
     // Load checkedPartsSelection from database on mount/tapas change
     useEffect(() => {
@@ -1639,6 +1695,24 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         }
     };
 
+    const handleDeleteSharedTapas = async () => {
+        if (!tapas.shareReference || tapas.userId !== userId) {
+            setMessage(t('notOwnerOfSharedTapas'));
+            return;
+        }
+        try {
+            await deleteDoc(doc(publicSharedTapasCollectionRef, tapas.shareReference));
+            // Optionally, remove the shareReference from the user's local tapas as well
+            await updateDoc(tapasRef, { shareReference: null });
+            setSelectedTapas(prev => ({ ...prev, shareReference: null }));
+            setMessage(t('sharedTapasDeletedFromPublic'));
+            setShowUpdateSharedTapasMenu(false); // Close menu
+        } catch (error) {
+            console.error("Error deleting shared tapas from public:", error);
+            setMessage(`${t('errorDeletingSharedTapasFromPublic')} ${error.message}`);
+        }
+    };
+
     const handleMarkFailed = async () => {
         setShowFailDialog(true);
         // Ensure repeatOption is reset when opening the fail dialog
@@ -1721,6 +1795,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                     scheduleType: tapas.scheduleType, // Carry over schedule type
                     scheduleInterval: tapas.scheduleInterval, // Carry over schedule interval
                     acknowledgeAfter: tapas.acknowledgeAfter, // Carry over acknowledgeAfter
+                    version: 1, // New tapas starts with version 1
                 };
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
@@ -1805,6 +1880,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 scheduleType: tapas.scheduleType || 'daily', // Carry over schedule type
                 scheduleInterval: tapas.scheduleInterval || '', // Carry over schedule interval
                 acknowledgeAfter: tapas.acknowledgeAfter || false, // Carry over acknowledgeAfter
+                version: 1, // New tapas starts with version 1
             };
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
@@ -1862,7 +1938,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         }
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        // Corrected path for public shared tapas collection
         const publicSharedTapasCollectionRef = collection(db, `artifacts/${appId}/public/data/sharedTapas`);
         let currentShareReference = tapas.shareReference;
 
@@ -1890,25 +1965,17 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 scheduleType: tapas.scheduleType,
                 scheduleInterval: tapas.scheduleInterval,
                 crystallizationTime: tapas.crystallizationTime || null,
-                acknowledgeAfter: tapas.acknowledgeAfter, // Include acknowledgeAfter
+                acknowledgeAfter: tapas.acknowledgeAfter || false,
                 allowRecuperation: tapas.allowRecuperation || false,
-                sharedCount: (tapas.sharedCount || 0) + 1, // Increment shared count
-                adoptedCount: (tapas.adoptedCount || 0), // Initialize or preserve
+                sharedCount: (publicSharedTapas?.sharedCount || 0) + 1, // Increment shared count from existing public data if available
+                adoptedCount: (publicSharedTapas?.adoptedCount || 0), // Initialize or preserve from existing public data
+                version: tapas.version || 1, // Use the current local tapas version
             };
 
             // Get the public document reference
             const publicTapasDocRef = doc(publicSharedTapasCollectionRef, currentShareReference);
-            const publicTapasDocSnap = await getDoc(publicTapasDocRef);
-
-            if (publicTapasDocSnap.exists()) {
-                // If it exists, update the counts
-                await updateDoc(publicTapasDocRef, {
-                    sharedCount: (publicTapasDocSnap.data().sharedCount || 0) + 1,
-                });
-            } else {
-                // If it doesn't exist, create it with the static data and counts
-                await setDoc(publicTapasDocRef, staticTapasData);
-            }
+            
+            await setDoc(publicTapasDocRef, staticTapasData, { merge: true }); // Use merge to update existing fields and add new ones
 
             // Construct the shareable URL
             const shareUrl = `${window.location.origin}?ref=${currentShareReference}`;
@@ -1932,6 +1999,72 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
         }
     };
 
+    const handleUpdateSharedTapas = async () => {
+        if (!tapas.shareReference || tapas.userId !== userId) {
+            setMessage(t('notOwnerOfSharedTapas'));
+            return;
+        }
+
+        try {
+            const publicTapasDocRef = doc(publicSharedTapasCollectionRef, tapas.shareReference);
+            const updatedSharedData = {
+                name: tapas.name,
+                sharedAt: new Date(), // Update shared timestamp
+                startDate: tapas.startDate,
+                startTime: tapas.startTime,
+                duration: tapas.duration,
+                description: tapas.description || null,
+                goals: tapas.goals || [],
+                parts: tapas.parts || [],
+                scheduleType: tapas.scheduleType,
+                scheduleInterval: tapas.scheduleInterval,
+                crystallizationTime: tapas.crystallizationTime || null,
+                acknowledgeAfter: tapas.acknowledgeAfter || false,
+                allowRecuperation: tapas.allowRecuperation || false,
+                version: tapas.version || 1, // Use the current local tapas version
+            };
+            await updateDoc(publicTapasDocRef, updatedSharedData);
+            setMessage(t('sharedTapasUpdated'));
+            setShowUpdateSharedTapasMenu(false); // Close menu
+        } catch (error) {
+            console.error("Error updating shared tapas:", error);
+            setMessage(`${t('errorUpdatingSharedTapas')} ${error.message}`);
+        }
+    };
+
+    const handleUpdateFromSharedTapas = async () => {
+        if (!tapas.shareReference || tapas.userId === userId || !publicSharedTapas) {
+            setMessage(t('notSharedTapasOrOwner'));
+            return;
+        }
+
+        try {
+            const updatedLocalData = {
+                name: publicSharedTapas.name,
+                startDate: publicSharedTapas.startDate,
+                startTime: publicSharedTapas.startTime,
+                duration: publicSharedTapas.duration,
+                description: publicSharedTapas.description || null,
+                goals: publicSharedTapas.goals || [],
+                parts: publicSharedTapas.parts || [],
+                scheduleType: publicSharedTapas.scheduleType,
+                scheduleInterval: publicSharedTapas.scheduleInterval,
+                crystallizationTime: publicSharedTapas.crystallizationTime || null,
+                acknowledgeAfter: publicSharedTapas.acknowledgeAfter || false,
+                allowRecuperation: publicSharedTapas.allowRecuperation || false,
+                version: publicSharedTapas.version || 1, // Update local version to shared version
+            };
+            await updateDoc(tapasRef, updatedLocalData);
+            setSelectedTapas(prev => ({ ...prev, ...updatedLocalData })); // Update local state
+            setMessage(t('tapasUpdatedFromShared'));
+            setShowUpdateSharedTapasMenu(false); // Close menu
+        } catch (error) {
+            console.error("Error updating local tapas from shared:", error);
+            setMessage(`${t('errorUpdatingFromSharedTapas')} ${error.message}`);
+        }
+    };
+
+
     // Determine the current date/week display based on scheduleType
     let displayDateInfo;
     const todayFormatted = new Date().toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1951,6 +2084,73 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
 
     const { endDate, daysRemaining } = getTapasDatesInfo(tapas);
 
+    // Group successive checked dates into ranges
+    const formatCheckedDays = (checkedDays) => {
+        if (!checkedDays || checkedDays.length === 0) return [];
+
+        const sortedDates = getUniqueCheckedDays(checkedDays)
+            .map(ts => ts.toDate().getTime())
+            .sort((a, b) => a - b);
+
+        const ranges = [];
+        let currentRangeStart = null;
+        let currentRangeEnd = null;
+
+        for (let i = 0; i < sortedDates.length; i++) {
+            const currentDate = new Date(sortedDates[i]);
+            const isRecuperated = isDateRecuperated(currentDate);
+            const isAdvanced = isDateAdvanced(currentDate);
+
+            if (isRecuperated || isAdvanced) {
+                // If the current date is recuperated or advanced, it cannot be part of a range
+                if (currentRangeStart) {
+                    ranges.push({ start: currentRangeStart, end: currentRangeEnd });
+                    currentRangeStart = null;
+                    currentRangeEnd = null;
+                }
+                ranges.push({ single: currentDate, isRecuperated, isAdvanced });
+            } else {
+                // Not recuperated or advanced, can be part of a range
+                if (!currentRangeStart) {
+                    currentRangeStart = currentDate;
+                    currentRangeEnd = currentDate;
+                } else if (currentDate.getTime() === currentRangeEnd.getTime() + timeDayMs) {
+                    currentRangeEnd = currentDate;
+                } else {
+                    ranges.push({ start: currentRangeStart, end: currentRangeEnd });
+                    currentRangeStart = currentDate;
+                    currentRangeEnd = currentDate;
+                }
+            }
+        }
+        if (currentRangeStart) {
+            ranges.push({ start: currentRangeStart, end: currentRangeEnd });
+        }
+
+        return ranges.map(range => {
+            if (range.single) {
+                return (
+                    <li key={range.single.getTime()}>
+                        {range.single.toLocaleDateString()}
+                        {range.isRecuperated && <span className="text-green-500 ml-2">({t('recuperatedDays').toLowerCase().replace('days', '')})</span>}
+                        {range.isAdvanced && <span className="text-purple-500 ml-2">({t('advancedDays').toLowerCase().replace('days', '')})</span>}
+                    </li>
+                );
+            } else {
+                const startStr = range.start.toLocaleDateString();
+                const endStr = range.end.toLocaleDateString();
+                return (
+                    <li key={`${startStr}-${endStr}`}>
+                        {startStr === endStr ? startStr : `${startStr} - ${endStr}`}
+                    </li>
+                );
+            }
+        });
+    };
+
+    const actualDataIsNewer = publicSharedTapas && publicSharedTapas.userId === userId && publicSharedTapas.version < tapas.version;
+    const updateAvailable = publicSharedTapas && publicSharedTapas.userId !== userId && publicSharedTapas.version > (tapas.version || 0);
+
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
@@ -1964,9 +2164,97 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                 {message && <p className="mb-4 text-center text-green-600 font-medium">{message}</p>}
 
                 <div className="space-y-4 text-gray-700 dark:text-gray-300">
-                    {tapas.scheduleType === 'noTapas' && (
-                        <p><strong className="font-semibold">{t('startDate')}:</strong> {tapas.startDate?.toDate().toLocaleDateString()}
+                    {tapas.shareReference && (
+                        <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                            {t('sharedTapas')}
+                            {actualDataIsNewer && (
+                                <span className="ml-2 text-orange-600 dark:text-orange-400">
+                                    ({t('actualDataIsNewer')})
+                                    <div className="relative inline-block ml-2">
+                                        <button
+                                            onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
+                                            className="bg-orange-500 text-white px-2 py-1 rounded text-xs font-medium"
+                                        >
+                                            ...
+                                        </button>
+                                        {showUpdateSharedTapasMenu && (
+                                            <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                                                <button
+                                                    onClick={handleUpdateSharedTapas}
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                >
+                                                    {t('updateSharedTapas')}
+                                                </button>
+                                                <button
+                                                    onClick={handleDeleteSharedTapas}
+                                                    className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
+                                                >
+                                                    {t('deleteSharedTapasFromPublic')}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </span>
+                            )}
+                            {updateAvailable && (
+                                <span className="ml-2 text-green-600 dark:text-green-400">
+                                    ({t('updateAvailable')})
+                                    <div className="relative inline-block ml-2">
+                                        <button
+                                            onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
+                                            className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium"
+                                        >
+                                            ...
+                                        </button>
+                                        {showUpdateSharedTapasMenu && (
+                                            <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                                                <button
+                                                    onClick={handleUpdateFromSharedTapas}
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                >
+                                                    {t('updateFromShared')}
+                                                </button>
+                                                <button
+                                                    onClick={handleDeleteSharedTapas}
+                                                    className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
+                                                >
+                                                    {t('deleteSharedTapasFromPublic')}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </span>
+                            )}
+                            {tapas.shareReference && publicSharedTapas && !actualDataIsNewer && !updateAvailable && publicSharedTapas.userId === userId && (
+                                <span className="ml-2 text-green-600 dark:text-green-400">
+                                <div className="relative inline-block ml-2">
+                                    <button
+                                        onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
+                                        className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium"
+                                    >
+                                        ...
+                                    </button>
+                                    {showUpdateSharedTapasMenu && (
+                                        <div className="absolute left-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                                            <button
+                                                onClick={handleDeleteSharedTapas}
+                                                className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
+                                            >
+                                                {t('deleteSharedTapasFromPublic')}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                </span>
+                            )}
                         </p>
+                    )}
+                    {tapas.scheduleType === 'noTapas' && (
+                        <>
+                            <p><strong className="font-semibold">{t('startDate')}:</strong> {tapas.startDate?.toDate().toLocaleDateString()}
+                            </p>
+                            <p><strong className="font-semibold">{t('schedule')}:</strong> {t(tapas.scheduleType)}</p>
+                        </>
                     )}
                     {tapas.scheduleType !== 'noTapas' && (
                         <>
@@ -2118,13 +2406,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas }) => { // Added
                         <div>
                             <strong className="font-semibold">{t('checkedDates')}:</strong>
                             <ul className="list-disc list-inside ml-4">
-                                {getUniqueCheckedDays(tapas.checkedDays).map((timestamp, index) => ( // Display unique checked days
-                                    <li key={index}>{timestamp.toDate().toLocaleDateString()}
-                                        {isDateRecuperated(timestamp.toDate()) && <span className="text-green-500 ml-2">({t('recuperatedDays').toLowerCase().replace('days', '')})</span>}
-                                        {isDateAdvanced(timestamp.toDate()) && <span className="text-purple-500 ml-2">({t('advancedDays').toLowerCase().replace('days', '')})</span>}
-                                    </li>
-                                ))}
+                                {formatCheckedDays(tapas.checkedDays)}
                             </ul>
+                        </div>
+                    )}
+                    {tapas.userId === userId && tapas.shareReference && publicSharedTapas && (
+                        <div className="mt-4">
+                            <p><strong className="font-semibold">{t('sharedCount')}:</strong> {publicSharedTapas.sharedCount || 0}</p>
+                            <p><strong className="font-semibold">{t('adoptedCount')}:</strong> {publicSharedTapas.adoptedCount || 0}</p>
                         </div>
                     )}
                 </div>
@@ -2457,7 +2746,7 @@ const Statistics = ({ allTapas }) => {
     const calculateAverageCompletion = (tapasList) => {
         if (tapasList.length === 0) return 0;
         const totalCompletion = tapasList.reduce((sum, tapas) => {
-            const checkedDaysCount = tapas.checkedDays ? getUniqueCheckedDays(tapas.checkedDays).length : 0; // Use unique count
+            const checkedDaysCount = tapas.checkedDays ? getUniqueCheckedDays(tapas.checkedDays).length : 0;
             return sum + (checkedDaysCount / tapas.duration);
         }, 0);
         return (totalCompletion / tapasList.length * 100).toFixed(1);
@@ -2675,7 +2964,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
         // If we want to increment on *every* view, this needs to be re-thought (e.g., cloud function)
         // For now, it's simpler to increment only on generation.
 
-    }, [db, shareReference, appId, publicSharedTapasCollectionRef]); // Added publicSharedTapasCollectionRef to dependencies
+    }, [db, shareReference, appId, publicSharedTapasCollectionRef]);
 
     const handleAdoptTapas = async () => {
         if (!db || !userId || !sharedTapas) {
@@ -2720,12 +3009,13 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                 shareReference: sharedTapas.id, // Inherit the share reference
                 scheduleType: sharedTapas.scheduleType || 'daily',
                 scheduleInterval: sharedTapas.scheduleInterval || '',
+                version: sharedTapas.version || 1, // Inherit the version from shared tapas
             };
 
             await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
 
             // Increment adoptedCount in the public shared document
-            await updateDoc(doc(publicSharedTapasCollectionRef, sharedTapas.id), { // Corrected path here
+            await updateDoc(doc(publicSharedTapasCollectionRef, sharedTapas.id), {
                 adoptedCount: (sharedTapas.adoptedCount || 0) + 1
             });
 
@@ -2968,6 +3258,7 @@ const HomePage = () => {
     const [statusMessage, setStatusMessage] = useState(''); // For import/export feedback
     const [isGuestUser, setIsGuestUser] = useState(false); // New state to track if user is anonymous
     const [pageBeforeDetail, setPageBeforeDetail] = useState('active'); // New state to remember previous page
+    const [sharedTapasInfoMap, setSharedTapasInfoMap] = useState({}); // Moved here
 
     // History filters
     const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
@@ -3027,7 +3318,7 @@ const HomePage = () => {
         }
     }, [t]);
 
-    // Fetch Tapas data
+    // Fetch Tapas data and shared info
     useEffect(() => {
         if (!db || !userId) return;
 
@@ -3035,7 +3326,7 @@ const HomePage = () => {
         const tapasCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/tapas`);
         const q = query(tapasCollectionRef);
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
             const tapasData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             // Ensure checkedDays are unique when loading from Firestore
             const cleanedTapasData = tapasData.map(tapasItem => ({
@@ -3045,6 +3336,17 @@ const HomePage = () => {
                 advancedDays: getUniqueCheckedDays(tapasItem.advancedDays || []),
             }));
             setTapas(cleanedTapasData);
+
+            // Fetch shared tapas info for all tapas items here
+            const newSharedTapasInfoMap = {};
+            for (const tapasItem of cleanedTapasData) {
+                if (tapasItem.shareReference) {
+                    const info = await getSharedTapasInfo(tapasItem.shareReference, db);
+                    newSharedTapasInfoMap[tapasItem.id] = info;
+                }
+            }
+            setSharedTapasInfoMap(newSharedTapasInfoMap);
+
         }, (error) => {
             console.error("Error fetching tapas: ", error);
             setFirebaseError(`${t('errorLoadingTapasData')} ${error.message}`);
@@ -3370,6 +3672,10 @@ const HomePage = () => {
                         // Ensure duration is set to 0 if scheduleType is 'noTapas'
                         if (dataToSave.scheduleType === 'noTapas') {
                             dataToSave.duration = 0;
+                        }
+                        // Set version to 1 if not present
+                        if (typeof dataToSave.version !== 'number') {
+                            dataToSave.version = 1;
                         }
 
 
@@ -3831,11 +4137,12 @@ const HomePage = () => {
                     ) : (
                         <>
                             {currentPage === 'active' && (
-                                <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} />
+                                <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} />
                             )}
                             {currentPage === 'history' && (
                                 <TapasList
                                     tapas={baseHistoryTapas}
+                                    sharedTapasInfoMap={sharedTapasInfoMap}
                                     onSelectTapas={handleSelectTapas}
                                     showFilters={true}
                                     historyStatusFilter={historyStatusFilter}
