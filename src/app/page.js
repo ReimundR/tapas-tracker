@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef, Suspense } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, FacebookAuthProvider } from 'firebase/auth'; // Added FacebookAuthProvider
+import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
 import Head from 'next/head'; // Import Head from next/head for meta tags
 import GdprEN from "@/content/privacy-policy-en.mdx";
@@ -3449,22 +3449,6 @@ const HomePage = () => {
         }
     };
 
-    const handleFacebookSignIn = async () => {
-        if (!auth) return;
-        try {
-            const provider = new FacebookAuthProvider();
-            const ok = await mySignInWithPopup(auth, provider);
-            if (ok) {
-                setFirebaseError('');
-                setShowLoginPrompt(false); // Close login prompt after successful sign-in
-                setShowMenu(false); // Close menu after login
-            }
-        } catch (error) {
-            console.error("Error signing in with Facebook:", error);
-            setFirebaseError(`Error signing in with Facebook: ${error.message}`);
-        }
-    };
-
     const handleEmailSignUp = async () => {
         if (!auth) return;
         try {
@@ -3881,15 +3865,6 @@ const HomePage = () => {
                                     <path fill="#1976D2" d="M43.611 20.083L43.611 20.083L43.611 20.083C43.611 20.083 43.611 20.083 43.611 20.083z"/>
                                 </svg>
                                 {t('signInWithX', 'Google')}
-                            </button>
-                            <button
-                                onClick={handleFacebookSignIn}
-                                className="w-full flex items-center justify-center bg-blue-800 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-900 transition-colors duration-200 text-lg font-medium mb-4"
-                            >
-                                <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 0C5.373 0 0 5.373 0 12c0 6.016 4.388 11.008 10.125 11.854V15.46H7.078V12h3.047V9.356c0-3.007 1.792-4.669 4.533-4.669c1.306 0 2.684.235 2.684.235V8.07h-1.538c-1.505 0-1.97.931-1.97 1.898V12h3.328l-.532 3.46h-2.796v6.394C19.612 23.008 24 18.016 24 12C24 5.373 18.627 0 12 0z"/>
-                                </svg>
-                                {t('signInWithX', 'Facebook')}
                             </button>
                             <p className="text-sm mb-4 text-gray-500 dark:text-gray-400">
                                 <button
