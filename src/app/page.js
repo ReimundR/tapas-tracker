@@ -1345,6 +1345,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     const [publicSharedTapas, setPublicSharedTapas] = useState(null); // State for public shared tapas data
     const [showUpdateSharedTapasMenu, setShowUpdateSharedTapasMenu] = useState(false); // State for update shared tapas menu
 
+    const sharedDropdownRef = useRef(null); // Ref for the main detail container to detect outside clicks
+    const tapasDropdownRef = useRef(null); // Ref for the main detail container to detect outside clicks
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, tapas.id);
@@ -2152,6 +2154,32 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     const actualDataIsNewer = publicSharedTapas && publicSharedTapas.userId === userId && sharedVersion < tapasVersion;
     const updateAvailable = publicSharedTapas && publicSharedTapas.userId !== userId && sharedVersion > tapasVersion;
 
+    // Effect to close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (tapasDropdownRef.current && !tapasDropdownRef.current.contains(event.target)) {
+                setShowRecuperationAdvanceMenu(false);
+                setShowAcknowledgeNDaysMenu(false);
+            }
+            if (sharedDropdownRef.current && !sharedDropdownRef.current.contains(event.target)) {
+                setShowUpdateSharedTapasMenu(false);
+            }
+        };
+
+        // Attach the event listener to the document body when any dropdown is open
+        if (showRecuperationAdvanceMenu || showAcknowledgeNDaysMenu || showUpdateSharedTapasMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        // Clean up the event listener on component unmount
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showRecuperationAdvanceMenu, showAcknowledgeNDaysMenu, showUpdateSharedTapasMenu]);
+
+
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
@@ -2171,7 +2199,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                             {actualDataIsNewer && (
                                 <span className="ml-2 text-orange-600 dark:text-orange-400">
                                     ({t('actualDataIsNewer')})
-                                    <div className="relative inline-block ml-2">
+                                    <div ref={sharedDropdownRef} className="relative inline-block ml-2">
                                         <button
                                             onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
                                             className="bg-orange-500 text-white px-2 py-1 rounded text-xs font-medium"
@@ -2200,7 +2228,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                             {updateAvailable && (
                                 <span className="ml-2 text-green-600 dark:text-green-400">
                                     ({t('updateAvailable')})
-                                    <div className="relative inline-block ml-2">
+                                    <div ref={sharedDropdownRef} className="relative inline-block ml-2">
                                         <button
                                             onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
                                             className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium"
@@ -2228,7 +2256,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                             )}
                             {tapas.shareReference && publicSharedTapas && !actualDataIsNewer && !updateAvailable && publicSharedTapas.userId === userId && (
                                 <span className="ml-2 text-green-600 dark:text-green-400">
-                                    <div className="relative inline-block ml-2">
+                                    <div ref={sharedDropdownRef} className="relative inline-block ml-2">
                                         <button
                                             onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
                                             className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium"
@@ -2334,7 +2362,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                                     </button>
                                 )}
                             </div>
-                            <div className="relative"> {/* "..." button container */}
+                            <div ref={tapasDropdownRef} className="relative"> {/* "..." button container */}
                                 <button
                                     onClick={() => setShowRecuperationAdvanceMenu(!showRecuperationAdvanceMenu)}
                                     className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-colors duration-200 text-lg font-medium"
