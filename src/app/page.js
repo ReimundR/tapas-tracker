@@ -43,11 +43,9 @@ const LanguageSelect = ({ locale, setLocale }) => {
             onChange={(e) => setLocale(e.target.value)}
             className="bg-indigo-700 text-white px-2 py-1 rounded-md text-sm cursor-pointer"
         >
-            <option value="en">English</option>
-            <option value="de">Deutsch</option>
-            <option value="ro">Română</option>
-            <option value="ru">Русский</option>
-            <option value="it">Italiano</option>
+            {translations && (Object.keys(translations).map((lang, index) => (
+                <option key={index} value={lang}>{translations[lang]['languageName']}</option>
+            )))}
         </select>
     );
 };
@@ -341,11 +339,25 @@ const isTapasDateChecked = (checkedDays, date) => {
     });
 };
 
+// Helper to get content in the preferred language with fallbacks
+const getLocalizedContent = (contentObject, currentLocale) => {
+    if (!contentObject) return '';
+    if (typeof contentObject === 'string' || Array.isArray(contentObject)) return contentObject;
+    if (contentObject[currentLocale]) return contentObject[currentLocale];
+    if (contentObject['en']) return contentObject['en']; // Fallback to English
+    // Fallback to the first available language if currentLocale and English are not found
+    const firstAvailableLang = Object.keys(contentObject)[0];
+    return contentObject[firstAvailableLang] || '';
+};
+
 // Component for adding/editing a Tapas
 const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
-    const { db, userId, t } = useContext(AppContext);
+    const { db, userId, t, locale } = useContext(AppContext);
 
-    const [name, setName] = useState('');
+    const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
+    const [currentFormLanguage, setCurrentFormLanguage] = useState(locale); // Language currently being edited in the form
+    const [availableFormLanguages, setAvailableFormLanguages] = useState([locale]); // Languages for which data exists in the form
+
     const firstRef = useRef(null); // Ref for the first input field
     const formContainerRef = useRef(null); // Ref for the form's main container
     const [startDate, setStartDate] = useState('');
@@ -353,8 +365,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const [duration, setDuration] = useState('');
     const [endDate, setEndDate] = useState(''); // New state for end date
     const [descriptionEditorState, setDescriptionEditorState] = useState(null); // Lexical EditorState
-    const [goals, setGoals] = useState(''); // New state for goals
-    const [parts, setParts] = useState('');
     const [crystallizationTime, setCrystallizationTime] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -362,12 +372,10 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const [scheduleType, setScheduleType] = useState('daily'); // 'daily', 'weekly', 'everyNthDays', 'noTapas'
     const [scheduleInterval, setScheduleInterval] = useState(''); // For 'everyNthDays'
     const [acknowledgeAfter, setAcknowledgeAfter] = useState(false); // New state for acknowledgeAfter
-
-    const initialDescription = editingTapas && editingTapas.description ? editingTapas.description : '';
+    const [showLanguageSelector, setShowLanguageSelector] = useState(false); // State for showing language selector
 
     // Effect to set form fields when editingTapas prop changes
     useEffect(() => {
-        // Reset messages
         setErrorMessage('');
         setSuccessMessage('');
 
@@ -377,63 +385,92 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 if (firstRef.current) {
                     firstRef.current.focus();
                 }
-                if (formContainerRef.current) {
-                    // Scroll the form container itself to the top
-                    //formContainerRef.current.scrollIntoView({ behavior: 'instant', block: 'start' });
-                }
             });
 
-            setName(editingTapas.name || '');
+            // Load multi-language data
+            const initialMultiLangData = {};
+            const initialLangs = new Set();
+
+            // Populate initialMultiLangData with existing translations
+            if (editingTapas.name && typeof editingTapas.name === 'object') {
+                Object.keys(editingTapas.name).forEach(lang => {
+                    initialMultiLangData[lang] = {
+                        name: editingTapas.name[lang] || '',
+                        description: editingTapas.description?.[lang] || '',
+                        goals: (editingTapas.goals?.[lang] || []).join('\n'),
+                        parts: (editingTapas.parts?.[lang] || []).join('\n'),
+                    };
+                    initialLangs.add(lang);
+                });
+            } else {
+                // Handle legacy data (single string)
+                initialMultiLangData[locale] = {
+                    name: editingTapas.name || '',
+                    description: editingTapas.description || '',
+                    goals: (editingTapas.goals || []).join('\n'),
+                    parts: (editingTapas.parts || []).join('\n'),
+                };
+                initialLangs.add(locale);
+            }
+
+            setTapasMultiLanguageData(initialMultiLangData);
+            setAvailableFormLanguages(Array.from(initialLangs));
+            setCurrentFormLanguage(locale); // Set current editing language to user's locale
+
             setStartDate(editingTapas.startDate ? new Date(editingTapas.startDate.toDate()).toISOString().split('T')[0] : '');
             setStartTime(editingTapas.startTime || '');
             
-            // Ensure duration is handled correctly for editing
             let loadedScheduleType = editingTapas.scheduleType || 'daily';
             const loadedDuration = Math.ceil(editingTapas.duration / getScheduleFactor(loadedScheduleType, editingTapas.scheduleInterval));
-            setDuration(loadedDuration || ''); // Set state from loaded data
+            setDuration(loadedDuration || '');
 
-            setGoals(editingTapas.goals ? editingTapas.goals.join('\n') : ''); // Set goals from loaded data
-            setParts(editingTapas.parts ? editingTapas.parts.join('\n') : '');
             setCrystallizationTime(editingTapas.crystallizationTime || '');
             setAllowRecuperation(editingTapas.allowRecuperation || false);
-            setScheduleType(loadedScheduleType); // Load schedule type
-            setScheduleInterval(editingTapas.scheduleInterval || ''); // Load schedule interval
-            setAcknowledgeAfter(editingTapas.acknowledgeAfter || false); // Load acknowledgeAfter
+            setScheduleType(loadedScheduleType);
+            setScheduleInterval(editingTapas.scheduleInterval || '');
+            setAcknowledgeAfter(editingTapas.acknowledgeAfter || false);
 
             // Calculate endDate from startDate and loadedDuration, ensuring validity
             if (editingTapas.startDate && loadedDuration && !isNaN(parseInt(loadedDuration)) && parseInt(loadedDuration) > 0) {
                 const start = new Date(editingTapas.startDate.toDate());
                 start.setHours(0, 0, 0, 0); // Normalize
                 const end = new Date(start);
-                /*let actualDays = parseInt(loadedDuration);
-                if (loadedScheduleType === 'weekly') {
-                    actualDays *= 7; // Convert weeks back to days for end date calculation
-                } else if (loadedScheduleType === 'everyNthDays') {
-                    actualDays *= editingTapas.scheduleInterval; // Convert weeks back to days for end date calculation
-                }
-                end.setDate(start.getDate() + actualDays); // Adjust for 1-based duration
-                */
-                end.setDate(start.getDate() + editingTapas.duration); // Adjust for 1-based duration
+                end.setDate(start.getDate() + editingTapas.duration);
                 setEndDate(end.toISOString().split('T')[0]);
             } else {
                 setEndDate('');
             }
         } else {
-            // Reset form when not editing
-            setName('');
+            // Reset form for new tapas
+            setTapasMultiLanguageData({
+                [locale]: { name: '', description: '', goals: '', parts: '' }
+            });
+            setAvailableFormLanguages([locale]);
+            setCurrentFormLanguage(locale);
+
             setStartDate('');
             setStartTime('');
             setDuration('');
-            setGoals(''); // Reset goals
-            setParts('');
+            setEndDate('');
             setCrystallizationTime('');
-            setEndDate(''); // Also reset endDate
-            setAllowRecuperation(false); // Reset allowRecuperation
-            setScheduleType('daily'); // Reset schedule type
-            setScheduleInterval(''); // Reset schedule interval
-            setAcknowledgeAfter(false); // Reset acknowledgeAfter
+            setAllowRecuperation(false);
+            setScheduleType('daily');
+            setScheduleInterval('');
+            setAcknowledgeAfter(false);
         }
-    }, [editingTapas]);
+    }, [editingTapas, locale]);
+
+    // Update description editor when currentFormLanguage or multi-language data changes
+    useEffect(() => {
+        const currentLangData = tapasMultiLanguageData[currentFormLanguage];
+        if (currentLangData) {
+            setDescriptionEditorState([null, null]); // Clear previous state to force re-render
+            setTimeout(() => { // Small delay to ensure Lexical re-initializes
+                setDescriptionEditorState([null, currentLangData.description]);
+            }, 0);
+        }
+    }, [currentFormLanguage, tapasMultiLanguageData]);
+
 
     // Effect to synchronize duration and endDate when startDate changes
     useEffect(() => {
@@ -453,7 +490,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 start.setHours(0, 0, 0, 0);
                 const end = new Date(start);
                 const actualDays = parseInt(duration) * getScheduleFactor(scheduleType, scheduleInterval);
-                end.setDate(start.getDate() + actualDays); // Subtract 1 because duration includes the start day
+                end.setDate(start.getDate() + actualDays);
                 setEndDate(end.toISOString().split('T')[0]);
             } else if (endDate) {
                 // If endDate is already set, recalculate duration
@@ -474,7 +511,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             // If startDate is cleared, clear only endDate, keep duration
             setEndDate('');
         }
-    }, [startDate, scheduleType, scheduleInterval, duration, endDate]); // Dependency on startDate, scheduleType, duration, endDate
+    }, [startDate, scheduleType, scheduleInterval, duration, endDate]);
 
 
     const handleChangeDuration = (e) => {
@@ -485,7 +522,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             start.setHours(0, 0, 0, 0);
             const end = new Date(start);
             const actualDays = parseInt(newDuration) * getScheduleFactor(scheduleType, scheduleInterval);
-            end.setDate(start.getDate() + actualDays); // Subtract 1 because duration includes the start day
+            end.setDate(start.getDate() + actualDays);
             setEndDate(end.toISOString().split('T')[0]);
         } else {
             setEndDate('');
@@ -500,7 +537,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             start.setHours(0, 0, 0, 0);
             const end = new Date(start);
             const actualDays = duration * parseInt(newInterval);
-            end.setDate(start.getDate() + actualDays); // Subtract 1 because duration includes the start day
+            end.setDate(start.getDate() + actualDays);
             setEndDate(end.toISOString().split('T')[0]);
         } else {
             setEndDate('');
@@ -541,8 +578,50 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     };
 
     const handleDescriptionChange = (editorState, editor) => {
-        setDescriptionEditorState([editorState, editor]);
+        // This is called by Lexical's OnChangePlugin
+        editorState.read(() => {
+            const root = editor.getEditorState()._nodeMap.get('root');
+            const isEmpty = root.getChildrenSize() === 1 && root.getFirstChild().isEmpty();
+            const htmlContent = isEmpty ? '' : $generateHtmlFromNodes(editor);
+
+            setTapasMultiLanguageData(prev => ({
+                ...prev,
+                [currentFormLanguage]: {
+                    ...prev[currentFormLanguage],
+                    description: htmlContent
+                }
+            }));
+        });
     };
+
+    const handleMultiLanguageInputChange = (field, value) => {
+        setTapasMultiLanguageData(prev => ({
+            ...prev,
+            [currentFormLanguage]: {
+                ...prev[currentFormLanguage],
+                [field]: value
+            }
+        }));
+    };
+
+    const handleAddLanguage = (selectedLang) => {
+        if (!availableFormLanguages.includes(selectedLang)) {
+            setAvailableFormLanguages(prev => [...prev, selectedLang]);
+            // Prefill with current language content if available, otherwise empty
+            const defaultContent = tapasMultiLanguageData[currentFormLanguage] || { name: '', description: '', goals: '', parts: '' };
+            setTapasMultiLanguageData(prev => ({
+                ...prev,
+                [selectedLang]: { ...defaultContent }
+            }));
+            setCurrentFormLanguage(selectedLang);
+        }
+        setShowLanguageSelector(false); // Hide selector after adding
+    };
+
+    const currentTapasName = tapasMultiLanguageData[currentFormLanguage]?.name || '';
+    const currentTapasGoals = tapasMultiLanguageData[currentFormLanguage]?.goals || '';
+    const currentTapasParts = tapasMultiLanguageData[currentFormLanguage]?.parts || '';
+    const currentTapasDescription = tapasMultiLanguageData[currentFormLanguage]?.description || '';
 
 
     const handleSubmit = async (e) => {
@@ -550,14 +629,11 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         setErrorMessage('');
         setSuccessMessage('');
 
-        let descriptionHtml = '';
-        if (descriptionEditorState) {
-            const [editorState, editor] = descriptionEditorState;
-            editorState.read(() => {
-                const root = $getRoot();
-                const isEmpty = root.getFirstChild().isEmpty() && root.getChildrenSize() === 1
-                descriptionHtml = isEmpty ? '' : $generateHtmlFromNodes(editor);
-            });
+        // Validate at least one language has a name
+        const hasNameInAnyLanguage = Object.values(tapasMultiLanguageData).some(langData => langData.name.trim() !== '');
+        if (!hasNameInAnyLanguage) {
+            setErrorMessage(t('nameRequiredInAtLeastOneLanguage'));
+            return;
         }
 
         if (scheduleType !== 'noTapas') {
@@ -572,7 +648,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             }
 
             if (scheduleType === 'everyNthDays' && (isNaN(parseInt(scheduleInterval)) || parseInt(scheduleInterval) <= 0)) {
-                setErrorMessage(t('scheduleInterval') + ' must be a positive number.');
+                setErrorMessage(t('scheduleInterval') + ' ' + t('mustBePositiveNumber'));
                 return;
             }
         } else if (!name || !startDate) {
@@ -582,16 +658,29 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
 
         const durationToSave = scheduleType === 'noTapas' ? 0 : parseInt(duration) * getScheduleFactor(scheduleType, scheduleInterval);
 
+        // Prepare multi-language data for saving
+        const names = {};
+        const descriptions = {};
+        const goals = {};
+        const parts = {};
+
+        Object.keys(tapasMultiLanguageData).forEach(lang => {
+            const data = tapasMultiLanguageData[lang];
+            if (data.name) names[lang] = data.name;
+            if (data.description) descriptions[lang] = data.description;
+            if (data.goals) goals[lang] = data.goals.split('\n').filter(g => g.trim() !== '');
+            if (data.parts) parts[lang] = data.parts.split('\n').filter(p => p.trim() !== '');
+        });
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const tapasData = {
-            name,
+            name: names, // Multi-language object
             startDate: new Date(startDate),
             startTime: scheduleType === 'noTapas' ? null : startTime || null,
-            duration: durationToSave, // Save in days
-            description: descriptionHtml, // Save Lexical EditorState as HTML
-            goals: goals.split('\n').filter(g => g.trim() !== '') || [], // Include goals
-            parts: parts.split('\n').filter(p => p.trim() !== '') || [],
+            duration: durationToSave,
+            description: descriptions, // Multi-language object
+            goals: goals, // Multi-language object
+            parts: parts, // Multi-language object
             crystallizationTime: crystallizationTime ? parseInt(crystallizationTime) : null,
             allowRecuperation: scheduleType === 'noTapas' ? false : allowRecuperation, // Include new field
             // Preserve existing status, checkedDays, failureCause, and createdAt when editing
@@ -605,9 +694,9 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             checkedPartsByDate: editingTapas ? editingTapas.checkedPartsByDate : {}, // Initialize for new Tapas
             results: editingTapas ? editingTapas.results || null : null, // Initialize results field
             shareReference: editingTapas ? editingTapas.shareReference || null : null, // Preserve shareReference
-            scheduleType: scheduleType, // New field
-            scheduleInterval: scheduleType === 'everyNthDays' ? parseInt(scheduleInterval) : null, // New field
-            acknowledgeAfter: scheduleType === 'noTapas' ? false : acknowledgeAfter, // Include new field
+            scheduleType: scheduleType,
+            scheduleInterval: scheduleType === 'everyNthDays' ? parseInt(scheduleInterval) : null,
+            acknowledgeAfter: scheduleType === 'noTapas' ? false : acknowledgeAfter,
             version: editingTapas ? (editingTapas.version || 1) + 1 : 1, // Increment version on update, start at 1 for new
         };
 
@@ -621,18 +710,20 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), tapasData);
                 setSuccessMessage(t('tapasAddedSuccessfully'));
                 // Clear form after successful addition
-                setName('');
+                setTapasMultiLanguageData({
+                    [locale]: { name: '', description: '', goals: '', parts: '' }
+                });
+                setAvailableFormLanguages([locale]);
+                setCurrentFormLanguage(locale);
                 setStartDate('');
                 setStartTime('');
                 setDuration('');
                 setEndDate('');
-                setGoals(''); // Clear goals
-                setParts('');
                 setCrystallizationTime('');
-                setAllowRecuperation(false); // Reset after adding
-                setScheduleType('daily'); // Reset schedule type
-                setScheduleInterval(''); // Reset schedule interval
-                setAcknowledgeAfter(false); // Reset acknowledgeAfter
+                setAllowRecuperation(false);
+                setScheduleType('daily');
+                setScheduleInterval('');
+                setAcknowledgeAfter(false);
             }
             onTapasAdded(); // Trigger refresh in parent component
         } catch (e) {
@@ -649,12 +740,63 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         setStartDate(`${year}-${month}-${day}`);
     };
 
+    // Available languages for the selector (excluding already added ones)
+    const allAvailableLanguages = Object.keys(translations);
+    const languagesToAdd = allAvailableLanguages.filter(lang => !availableFormLanguages.includes(lang));
 
     return (
         <div ref={formContainerRef} className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">{editingTapas ? t('editTapasTitle') : t('addEditTapas')}</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100 flex items-center">
+                {editingTapas ? t('editTapasTitle') : t('addEditTapas')}
+                <div className="relative ml-4">
+                    <button
+                        onClick={() => setShowLanguageSelector(!showLanguageSelector)}
+                        className="ml-2 bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600 transition-colors duration-200"
+                    >
+                        {t('addLanguage')}
+                    </button>
+                    {showLanguageSelector && (
+                        <div className="absolute left-0 mt-2 w-40 rounded-md shadow-lg text-sm bg-white dark:bg-gray-700 z-10">
+                            {languagesToAdd.length > 0 ? (
+                                languagesToAdd.map(lang => (
+                                    <button
+                                        key={lang}
+                                        onClick={() => handleAddLanguage(lang)}
+                                        className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                    >
+                                        {translations[lang].languageName}
+                                    </button>
+                                ))
+                            ) : (
+                                <p className="px-4 py-2 text-gray-500 dark:text-gray-400">{t('allLanguagesAdded')}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </h2>
             {errorMessage && <p className="text-red-600 mb-4 font-medium">{errorMessage}</p>}
             {successMessage && <p className="text-green-600 mb-4 font-medium">{successMessage}</p>}
+
+            {/* Language Tabs */}
+            {availableFormLanguages.length > 1 && (
+                <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                    <nav className="-mb-px flex space-x-4" aria-label="Tabs">
+                        {availableFormLanguages.map(lang => (
+                            <button
+                                key={lang}
+                                onClick={() => setCurrentFormLanguage(lang)}
+                                className={`whitespace-nowrap py-2 px-4 border-b-2 font-medium text-sm ${
+                                    currentFormLanguage === lang
+                                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500'
+                                }`}
+                            >
+                                {translations[lang].languageName}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-1">
@@ -663,10 +805,10 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         ref={firstRef}
                         type="text"
                         id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        value={currentTapasName}
+                        onChange={(e) => handleMultiLanguageInputChange('name', e.target.value)}
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                        required
+                        required={availableFormLanguages.indexOf(currentFormLanguage) === 0} // Only require for the first language tab
                     />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -681,7 +823,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                             <option value="daily">{t('daily')}</option>
                             <option value="weekly">{t('weekly')}</option>
                             <option value="everyNthDays">{t('everyNthDays', t('nth'))}</option>
-                            <option value="noTapas">{t('noTapas')}</option> {/* New option */}
+                            <option value="noTapas">{t('noTapas')}</option>
                         </select>
                     </div>
                     {scheduleType === 'everyNthDays' && (
@@ -740,21 +882,21 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                             type="number"
                             id="duration"
                             value={duration}
-                            onChange={handleChangeDuration} // Use the new handler
+                            onChange={handleChangeDuration}
                             className="block w-full px-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                             required
                             min="1"
                         />
                         <button
                             type="button"
-                            onClick={() => handleSetDurationFromButton(7, scheduleType === 'weekly' ? 'weeks' : 'days')} // Updated handler
+                            onClick={() => handleSetDurationFromButton(7, scheduleType === 'weekly' ? 'weeks' : 'days')}
                             className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200"
                         >
                             {scheduleType === 'weekly' ? t('7w') : t('7d')}
                         </button>
                         <button
                             type="button"
-                            onClick={() => handleSetDurationFromButton(49, scheduleType === 'weekly' ? 'weeks' : 'days')} // Updated handler
+                            onClick={() => handleSetDurationFromButton(49, scheduleType === 'weekly' ? 'weeks' : 'days')}
                             className="px-3 py-2 bg-indigo-500 text-white rounded-r-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
                             {scheduleType === 'weekly' ? t('49w') : t('49d')}
@@ -767,7 +909,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         type="date"
                         id="endDate"
                         value={endDate}
-                        onChange={handleChangeEndDate} // Use the new handler
+                        onChange={handleChangeEndDate}
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     />
                 </div>
@@ -788,8 +930,8 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 <div className="col-span-full">
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
                     <RichTextEditor
-                        key={editingTapas ? editingTapas.id : 'new-tapas'} // Add a key to force remount
-                        initialContent={initialDescription}
+                        key={`${editingTapas ? editingTapas.id : 'new-tapas'}-${currentFormLanguage}`} // Key to force remount on language change
+                        initialContent={currentTapasDescription}
                         onEditorStateChange={handleDescriptionChange}
                     />
                 </div>
@@ -797,8 +939,8 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     <label htmlFor="goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('goals0n')}</label>
                     <textarea
                         id="goals"
-                        value={goals}
-                        onChange={(e) => setGoals(e.target.value)}
+                        value={currentTapasGoals}
+                        onChange={(e) => handleMultiLanguageInputChange('goals', e.target.value)}
                         rows="3"
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     ></textarea>
@@ -807,8 +949,8 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     <label htmlFor="parts" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('parts0n')}</label>
                     <textarea
                         id="parts"
-                        value={parts}
-                        onChange={(e) => setParts(e.target.value)}
+                        value={currentTapasParts}
+                        onChange={(e) => handleMultiLanguageInputChange('parts', e.target.value)}
                         rows="3"
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     ></textarea>
@@ -844,7 +986,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 )}
 
                 <div className="col-span-full flex justify-end space-x-3">
-                    {/* Always show cancel button for Add/Edit form */}
                     <button
                         type="button"
                         onClick={onCancelEdit}
@@ -1072,13 +1213,24 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                         const { statusText, statusClass } = getDetailedStatus(tapasItem); 
                         const sharedInfo = sharedTapasInfoMap[tapasItem.id] || { userId: null, version: null };
 
+                        // Get localized name for display in the list
+                        const displayTapasName = getLocalizedContent(tapasItem.name, locale);
+
                         // Calculate undone parts for active tapas
                         const undoneParts = [];
                         if (tapasItem.status === 'active' && tapasItem.parts && tapasItem.parts.length > 0) {
                             const todayDateString = formatDateNoTimeToISO(new Date());
                             const checkedPartsForToday = tapasItem.checkedPartsByDate?.[todayDateString] || [];
+                            
+                            // Get localized parts for display
+                            const currentLangParts = getLocalizedContent(tapasItem.parts, locale);
+                            const englishParts = getLocalizedContent(tapasItem.parts, 'en');
+                            const defaultParts = Object.values(tapasItem.parts)[0] || [];
+
+                            const partsToDisplay = currentLangParts.length > 0 ? currentLangParts : (englishParts.length > 0 ? englishParts : defaultParts);
+
                             if (checkedPartsForToday.length > 0) {
-                                tapasItem.parts.forEach((part, index) => {
+                                partsToDisplay.forEach((part, index) => {
                                     if (!checkedPartsForToday.includes(index)) {
                                         undoneParts.push(part);
                                     }
@@ -1095,7 +1247,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                                 onClick={() => onSelectTapas(tapasItem)}
                             >
                                 <h3 className="text-xl font-semibold text-indigo-700 mb-2">
-                                    {tapasItem.name}
+                                    {displayTapasName}
                                     {tapasItem.shareReference && sharedInfo.userId === userId && (
                                         <span className="ml-2 text-blue-500" title={t('sharedTapas')}>
                                             <svg className="inline-block" fill="currentColor" height="16" width="16" icon-name="shared" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -1218,7 +1370,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, tapas.id);
     const publicSharedTapasCollectionRef = collection(db, `artifacts/${appId}/public/data/sharedTapas`);
 
-
     const startDateObj = tapas.startDate ? getStartOfDayUTC(tapas.startDate.toDate()) : null; // Use UTC start of day
 
     const endDateObj = tapas.duration ? new Date(startDateObj) : null;
@@ -1262,6 +1413,13 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     const isPeriodEndOrOver = !noTapas && today >= endDateObj;
     const isSuccessful = tapas.status === 'successful';
     const isFailed = tapas.status === 'failed';
+
+    // Get localized content for display
+    const displayTapasName = getLocalizedContent(tapas.name, locale);
+    const displayDescription = getLocalizedContent(tapas.description, locale);
+    const displayGoals = getLocalizedContent(tapas.goals, locale);
+    const displayParts = getLocalizedContent(tapas.parts, locale);
+
 
     // Fetch public shared tapas data if shareReference exists
     useEffect(() => {
@@ -1483,19 +1641,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         const lastCheckedDayTimestamp = sortedCheckedDays[0];
         const lastCheckedUnitDate = getTapasDay(lastCheckedDayTimestamp.toDate(), tapas, startDateObj);
 
-        /*const currentRefDate = getTapasDay(new Date(), tapas, startDateObj);
-        const diffUnits = (currentRefDate.getTime() - lastCheckedUnitDate.getTime()) / (timeDayMs * getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval));
-
-        if (diffUnits < 0) { // Future unit
-            setMessage(t('cannotClearFutureDay')); // Re-using cannotClearFutureDay
-            setShowRecuperationAdvanceMenu(false);
-            return;
-        } else if (diffUnits > 1) { // Older than last/current unit
-            setMessage(t('noDayToClear')); // Re-using noDayToClear
-            setShowRecuperationAdvanceMenu(false);
-            return;
-        }*/
-
         const dateFunc = tapas.scheduleType === 'weekly' ? formatStartOfWeekNoTimeToISO : formatDateNoTimeToISO;
 
         const newCheckedDays = tapas.checkedDays.filter(
@@ -1545,7 +1690,9 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
 
     const handleDelete = async () => {
-        if (confirmName === tapas.name) {
+        // Use the default language name for confirmation
+        const defaultName = getLocalizedContent(tapas.name, 'en');
+        if (confirmName === defaultName) {
             try {
                 await deleteDoc(tapasRef);
                 setMessage(t('tapasDeletedSuccessfully'));
@@ -1625,7 +1772,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     }
                 }
 
-                let newName = tapas.name;
+                let newName = getLocalizedContent(tapas.name, locale); // Use localized name for repeat
                 const repeatRegex = /\(Repeat(?: (\d+))?\)/;
                 const match = newName.match(repeatRegex);
 
@@ -1640,14 +1787,24 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     newName = `${newName} (Repeat)`;
                 }
 
+                // Create new multi-language name object for the repeated tapas
+                const newMultiLangName = {};
+                Object.keys(tapas.name).forEach(lang => {
+                    newMultiLangName[lang] = (tapas.name[lang] || '').replace(repeatRegex, `(Repeat ${match ? (match[1] ? parseInt(match[1]) + 1 : 2) : ''})`).trim();
+                    if (!match) { // If it didn't have a repeat tag, add it
+                        newMultiLangName[lang] = `${tapas.name[lang]} (Repeat)`;
+                    }
+                });
+
+
                 const newTapasData = {
-                    name: newName,
+                    name: newMultiLangName, // Use multi-language name
                     startDate: newStartDate,
                     startTime: tapas.startTime,
-                    duration: newDurationDays, // Save in days
-                    description: tapas.description,
-                    goals: tapas.goals, // Carry over goals to new tapas
-                    parts: tapas.parts,
+                    duration: newDurationDays,
+                    description: tapas.description, // Carry over multi-language description
+                    goals: tapas.goals, // Carry over multi-language goals
+                    parts: tapas.parts, // Carry over multi-language parts
                     crystallizationTime: tapas.crystallizationTime,
                     status: 'active',
                     checkedDays: [],
@@ -1706,7 +1863,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                 }
             }
 
-            let newName = tapas.name;
+            let newName = getLocalizedContent(tapas.name, locale); // Use localized name for repeat
             const repeatRegex = /\(Repeat(?: (\d+))?\)/;
             const match = newName.match(repeatRegex);
 
@@ -1724,14 +1881,24 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                 newName = `${newName} (Repeat)`;
             }
 
+            // Create new multi-language name object for the repeated tapas
+            const newMultiLangName = {};
+            Object.keys(tapas.name).forEach(lang => {
+                newMultiLangName[lang] = (tapas.name[lang] || '').replace(repeatRegex, `(Repeat ${match ? (match[1] ? parseInt(match[1]) + 1 : 2) : ''})`).trim();
+                if (!match) { // If it didn't have a repeat tag, add it
+                    newMultiLangName[lang] = `${tapas.name[lang]} (Repeat)`;
+                }
+            });
+
+
             const newTapasData = {
-                name: newName,
+                name: newMultiLangName, // Use multi-language name
                 startDate: newStartDate,
                 startTime: tapas.startTime,
-                duration: newDurationDays, // Save in days
-                description: tapas.description,
-                goals: tapas.goals, // Carry over goals to new tapas
-                parts: tapas.parts,
+                duration: newDurationDays,
+                description: tapas.description, // Carry over multi-language description
+                goals: tapas.goals, // Carry over multi-language goals
+                parts: tapas.parts, // Carry over multi-language parts
                 crystallizationTime: tapas.crystallizationTime || '',
                 allowRecuperation: tapas.allowRecuperation || false,
                 status: 'active',
@@ -1819,15 +1986,15 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
                 // Prepare static data for public sharing
                 const staticTapasData = {
-                    name: tapas.name,
+                    name: tapas.name, // Save multi-language name
                     sharedAt: new Date(),
                     userId: userId,
                     startDate: tapas.startDate,
                     startTime: tapas.startTime,
                     duration: tapas.duration,
-                    description: tapas.description || null,
-                    goals: tapas.goals || [],
-                    parts: tapas.parts || [],
+                    description: tapas.description || null, // Save multi-language description
+                    goals: tapas.goals || [], // Save multi-language goals
+                    parts: tapas.parts || [], // Save multi-language parts
                     scheduleType: tapas.scheduleType,
                     scheduleInterval: tapas.scheduleInterval,
                     crystallizationTime: tapas.crystallizationTime || null,
@@ -1850,8 +2017,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
             // Use native Share API if available
             if (navigator.share) {
                 await navigator.share({
-                    title: tapas.name,
-                    text: t('appName') + `: ${tapas.name}`,
+                    title: getLocalizedContent(tapas.name, locale),
+                    text: t('appName') + `: ${getLocalizedContent(tapas.name, locale)}`,
                     url: shareUrl,
                 });
                 setMessage(t('shareLinkCopied')); // Message after successful share
@@ -1875,14 +2042,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         try {
             const publicTapasDocRef = doc(publicSharedTapasCollectionRef, tapas.shareReference);
             const updatedSharedData = {
-                name: tapas.name,
+                name: tapas.name, // Update multi-language name
                 sharedAt: new Date(), // Update shared timestamp
                 startDate: tapas.startDate,
                 startTime: tapas.startTime,
                 duration: tapas.duration,
-                description: tapas.description || null,
-                goals: tapas.goals || [],
-                parts: tapas.parts || [],
+                description: tapas.description || null, // Update multi-language description
+                goals: tapas.goals || [], // Update multi-language goals
+                parts: tapas.parts || [], // Update multi-language parts
                 scheduleType: tapas.scheduleType,
                 scheduleInterval: tapas.scheduleInterval,
                 crystallizationTime: tapas.crystallizationTime || null,
@@ -1907,13 +2074,13 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
         try {
             const updatedLocalData = {
-                name: publicSharedTapas.name,
+                name: publicSharedTapas.name, // Update multi-language name
                 startDate: publicSharedTapas.startDate,
                 startTime: publicSharedTapas.startTime,
                 duration: publicSharedTapas.duration,
-                description: publicSharedTapas.description || null,
-                goals: publicSharedTapas.goals || [],
-                parts: publicSharedTapas.parts || [],
+                description: publicSharedTapas.description || null, // Update multi-language description
+                goals: publicSharedTapas.goals || [], // Update multi-language goals
+                parts: publicSharedTapas.parts || [], // Update multi-language parts
                 scheduleType: publicSharedTapas.scheduleType,
                 scheduleInterval: publicSharedTapas.scheduleInterval,
                 crystallizationTime: publicSharedTapas.crystallizationTime || null,
@@ -2046,13 +2213,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     }, [showRecuperationAdvanceMenu, showAcknowledgeNDaysMenu, showUpdateSharedTapasMenu]);
 
 
-    const sharedInfoColor = actualDataIsNewer ? 'orange' : updateAvailable ? 'green' : 'blue';
+    const sharedInfoColor = actualDataIsNewer ? 'orange' : (updateAvailable ? 'green' : 'blue');
+    const sharedInfoBgColor = actualDataIsNewer ? 'orange-500' : (updateAvailable ? 'green-600' : 'blue-500');
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{tapas.name}</h2>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{displayTapasName}</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-3xl font-bold">
                         &times;
                     </button>
@@ -2070,7 +2238,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                                 <div ref={sharedDropdownRef} className="relative inline-block ml-2">
                                     <button
                                         onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
-                                        className={`bg-${sharedInfoColor}-500 text-white px-2 py-1 rounded text-xs font-medium`}
+                                        className={`bg-${sharedInfoBgColor} text-white px-2 py-1 rounded text-xs font-medium`}
                                     >
                                         ...
                                     </button>
@@ -2125,17 +2293,17 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                             {tapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
                         </>
                     )}
-                    {tapas.description && (
+                    {displayDescription && (
                         <div>
                             <strong className="font-semibold">{t('description')}:</strong>
-                            <LexicalHtmlRenderer editorStateHtml={tapas.description} />
+                            <LexicalHtmlRenderer editorStateHtml={displayDescription} />
                         </div>
                     )}
-                    {tapas.goals && tapas.goals.length > 0 ? ( // Display goals if present
+                    {displayGoals && displayGoals.length > 0 ? (
                         <div>
                             <strong className="font-semibold">{t('goals')}:</strong>
                             <ul className="list-disc list-inside ml-4">
-                                {tapas.goals.map((goal, index) => (
+                                {displayGoals.map((goal, index) => (
                                     <li key={`goal-${index}`}>{goal}</li>
                                 ))}
                             </ul>
@@ -2143,11 +2311,11 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     ) : (
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noGoalsDefinedYet')}</p>
                     )}
-                    {tapas.parts && tapas.parts.length > 0 ? (
+                    {displayParts && displayParts.length > 0 ? (
                         <div>
                             <strong className="font-semibold">{t('parts')}:</strong>
-                            <ul className="list-none ml-4 space-y-2"> {/* Changed to list-none to better control spacing with checkboxes */}
-                                {tapas.parts.map((part, index) => (
+                            <ul className="list-none ml-4 space-y-2">
+                                {displayParts.map((part, index) => (
                                     <li key={index} className="flex items-center space-x-2">
                                         {!isSuccessful && !isFailed && tapas.scheduleType !== 'noTapas' && (
                                             <input
@@ -2188,7 +2356,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                                     </button>
                                 )}
                             </div>
-                            <div ref={tapasDropdownRef} className="relative"> {/* "..." button container */}
+                            <div ref={tapasDropdownRef} className="relative">
                                 <button
                                     onClick={() => setShowRecuperationAdvanceMenu(!showRecuperationAdvanceMenu)}
                                     className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-colors duration-200 text-lg font-medium"
@@ -2332,7 +2500,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
                 {confirmDelete && (
                     <div className="mt-6 p-4 border rounded-lg bg-red-50 border-red-300 dark:bg-red-900 dark:border-red-700">
-                        <p className="text-center mb-3 text-red-800 dark:text-red-100">{t('confirmDeletion')} "<strong className="font-semibold">{tapas.name}</strong>" {t('below')}:</p>
+                        <p className="text-center mb-3 text-red-800 dark:text-red-100">{t('confirmDeletion')} "<strong className="font-semibold">{getLocalizedContent(tapas.name, locale)}</strong>" {t('below')}:</p>
                         <input
                             type="text"
                             value={confirmName}
@@ -2361,7 +2529,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
                         <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                             <h3 className="text-xl font-bold mb-4">{t('markTapasAsFailed')}</h3>
-                            <p className="mb-4 text-gray-700 dark:text-gray-300">{t('sureMarkFailed', tapas.name)}</p>
+                            <p className="mb-4 text-gray-700 dark:text-gray-300">{t('sureMarkFailed', getLocalizedContent(tapas.name, locale))}</p>
                             <label htmlFor="failureCause" className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('causeOptional')}</label>
                             <textarea
                                 id="failureCause"
@@ -2458,7 +2626,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
                         <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                             <h3 className="text-xl font-bold mb-4">{t('repeatTapas')}</h3>
-                            <p className="mb-4 text-gray-700 dark:text-gray-300">{t('sureRepeat', tapas.name)}</p>
+                            <p className="mb-4 text-gray-700 dark:text-gray-300">{t('sureRepeat', getLocalizedContent(tapas.name, locale))}</p>
 
                             <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('repeatOptionLabel')}</label>
                             <div className="mb-4 space-y-2">
@@ -2691,9 +2859,9 @@ const HelpModal = ({ onClose }) => {
             <div className="p-6 rounded-lg shadow-xl max-w-xl w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <h3 className="text-2xl font-bold mb-4">{t('help')}</h3>
 
-                {t('helpContents').map((helpItem) => {
+                {t('helpContents').map((helpItem, index) => {
                     return (
-                        <div className="text-sm mb-4">
+                        <div key={index} className="text-sm mb-4">
                           <p className="text-blue-300"><strong>{helpItem.q}</strong></p>
                           <p>{helpItem.a}</p>
                         </div>
@@ -2761,13 +2929,12 @@ const CleanDataModal = ({ onClose, onCleanConfirmed }) => {
 
 // New ShareView Component
 const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) => {
-    const { db, userId, t } = useContext(AppContext);
+    const { db, userId, t, locale } = useContext(AppContext);
     const [sharedTapas, setSharedTapas] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    // Corrected path for public shared tapas collection
     const publicSharedTapasCollectionRef = collection(db, `artifacts/${appId}/public/data/sharedTapas`);
 
 
@@ -2842,13 +3009,13 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
             }
 
             const newTapasData = {
-                name: sharedTapas.name,
+                name: sharedTapas.name, // Adopt multi-language name
                 startDate: sharedTapas.startDate || new Date(), // New Tapas starts today for the adopting user
                 startTime: sharedTapas.startTime || null,
                 duration: sharedTapas.duration,
-                description: sharedTapas.description || null,
-                goals: sharedTapas.goals || [],
-                parts: sharedTapas.parts || [],
+                description: sharedTapas.description || null, // Adopt multi-language description
+                goals: sharedTapas.goals || [], // Adopt multi-language goals
+                parts: sharedTapas.parts || [], // Adopt multi-language parts
                 crystallizationTime: sharedTapas.crystallizationTime || null,
                 allowRecuperation: sharedTapas.allowRecuperation || false,
                 acknowledgeAfter: sharedTapas.acknowledgeAfter || false,
@@ -2910,8 +3077,14 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
         return null; // Should not happen if error handled above
     }
 
-    const pageTitle = `${sharedTapas.name} - ${t('appName')}`;
-    const pageDescription = sharedTapas.description || `${t('appName')}: ${t('trackPersonalGoals')}`;
+    const displayTapasName = getLocalizedContent(sharedTapas.name, locale);
+    const displayDescription = getLocalizedContent(sharedTapas.description, locale);
+    const displayGoals = getLocalizedContent(sharedTapas.goals, locale);
+    const displayParts = getLocalizedContent(sharedTapas.parts, locale);
+
+
+    const pageTitle = `${displayTapasName} - ${t('appName')}`;
+    const pageDescription = displayDescription || `${t('appName')}: ${t('trackPersonalGoals')}`;
     const pageUrl = `${window.location.origin}?ref=${sharedTapas.id}`;
     const scheduleType = sharedTapas.scheduleType || 'daily';
 
@@ -2932,7 +3105,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
             </Head>
             <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{sharedTapas.name}</h2>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{displayTapasName}</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-3xl font-bold">
                         &times;
                     </button>
@@ -2946,15 +3119,15 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                     <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(sharedTapas.duration / sharedTapas.scheduleInterval))} {t('everyNthDays', sharedTapas.scheduleInterval).toLowerCase()}</p>
                     )}
                     {sharedTapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
-                    {sharedTapas.description && (<div><strong className="font-semibold">{t('description')}:</strong>
-                            <LexicalHtmlRenderer editorStateHtml={sharedTapas.description} />
+                    {displayDescription && (<div><strong className="font-semibold">{t('description')}:</strong>
+                            <LexicalHtmlRenderer editorStateHtml={displayDescription} />
                         </div>
                     )}
-                    {sharedTapas.goals && sharedTapas.goals.length > 0 ? (
+                    {displayGoals && displayGoals.length > 0 ? (
                         <div>
                             <strong className="font-semibold">{t('goals')}:</strong>
                             <ul className="list-disc list-inside ml-4">
-                                {sharedTapas.goals.map((goal, index) => (
+                                {displayGoals.map((goal, index) => (
                                     <li key={`goal-${index}`}>{goal}</li>
                                 ))}
                             </ul>
@@ -2962,11 +3135,11 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                     ) : (
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noGoalsDefinedYet')}</p>
                     )}
-                    {sharedTapas.parts && sharedTapas.parts.length > 0 ? (
+                    {displayParts && displayParts.length > 0 ? (
                         <div>
                             <strong className="font-semibold">{t('parts')}:</strong>
                             <ul className="list-disc list-inside ml-4">
-                                {sharedTapas.parts.map((part, index) => (
+                                {displayParts.map((part, index) => (
                                     <li key={index}>{part}</li>
                                 ))}
                             </ul>
@@ -3009,9 +3182,6 @@ const License = ({ onClose }) => {
         })
     }, [])
  
-    //if (isLoading) return <p>Loading...</p>
-    //if (!data) return <p>No profile data</p>
-
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
@@ -3381,6 +3551,22 @@ const HomePage = () => {
                             exportableData[key] = data[key].toDate().toISOString();
                         } else if (data[key] instanceof Date) {
                              exportableData[key] = data[key].toISOString();
+                        } else if (typeof data[key] === 'object' && !Array.isArray(data[key]) && data[key] !== null) {
+                            // Handle multi-language fields (name, description, goals, parts)
+                            if (key === 'name' || key === 'description') {
+                                exportableData[key] = data[key]; // Store as object {lang: value}
+                            } else if (key === 'goals' || key === 'parts') {
+                                // Convert object of arrays to object of string arrays
+                                const localizedArrays = {};
+                                for (const lang in data[key]) {
+                                    if (Array.isArray(data[key][lang])) {
+                                        localizedArrays[lang] = data[key][lang];
+                                    }
+                                }
+                                exportableData[key] = localizedArrays;
+                            } else {
+                                exportableData[key] = data[key];
+                            }
                         }
                         else {
                             exportableData[key] = data[key];
@@ -3489,15 +3675,32 @@ const HomePage = () => {
                         if (!dataToSave.results) {
                             dataToSave.results = null;
                         }
-                        if (!dataToSave.goals) {
-                            dataToSave.goals = [];
-                        } else if (Array.isArray(dataToSave.goals)) {
-                            // No conversion needed, already array of strings
-                        } else if (typeof dataToSave.goals === 'string') {
-                            dataToSave.goals = dataToSave.goals.split('\n').filter(g => g.trim() !== '');
-                        } else {
-                            dataToSave.goals = [];
+                        // Handle multi-language fields during import
+                        if (dataToSave.name && typeof dataToSave.name === 'string') {
+                            dataToSave.name = { [locale]: dataToSave.name }; // Convert old string to object
+                        } else if (typeof dataToSave.name !== 'object' || dataToSave.name === null) {
+                            dataToSave.name = {}; // Ensure it's an object
                         }
+
+                        if (dataToSave.description && typeof dataToSave.description === 'string') {
+                            dataToSave.description = { [locale]: dataToSave.description };
+                        } else if (typeof dataToSave.description !== 'object' || dataToSave.description === null) {
+                            dataToSave.description = {};
+                        }
+
+                        if (dataToSave.goals && Array.isArray(dataToSave.goals)) {
+                            dataToSave.goals = { [locale]: dataToSave.goals }; // Convert old array to object
+                        } else if (typeof dataToSave.goals !== 'object' || dataToSave.goals === null) {
+                            dataToSave.goals = {};
+                        }
+
+                        if (dataToSave.parts && Array.isArray(dataToSave.parts)) {
+                            dataToSave.parts = { [locale]: dataToSave.parts }; // Convert old array to object
+                        } else if (typeof dataToSave.parts !== 'object' || dataToSave.parts === null) {
+                            dataToSave.parts = {};
+                        }
+
+
                         if (!dataToSave.scheduleType) {
                             dataToSave.scheduleType = 'daily';
                         }
@@ -3634,7 +3837,9 @@ const HomePage = () => {
 
         // If both are 'noTapas', sort by name alphabetically
         if (!isATapas && !isBTapas) {
-            return a.name.localeCompare(b.name);
+            const nameA = getLocalizedContent(a.name, locale);
+            const nameB = getLocalizedContent(b.name, locale);
+            return nameA.localeCompare(nameB);
         }
 
         return 0; // Should not be reached

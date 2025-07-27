@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.0.5 (2025-07-27) =
+
+* added multi-language Tapas texts
+
 #### = 1.0.4 (2025-07-25) =
 
 * added Shared Tapas update and delete functionality

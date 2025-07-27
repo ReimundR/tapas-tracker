@@ -1,9 +1,12 @@
 // Define translations for different languages
 export let translations = {
     en: {
+        "languageName": "English",
         "appName": "Tapas Tracker",
         "hello": "Hello",
         "userId": "User ID",
+        "addLanguage": "add language",
+        "mustBePositiveNumber": "must be positive number",
         "logout": "Logout",
         "active": "Active",
         "history": "History",
@@ -233,9 +236,12 @@ export let translations = {
             ]
     },
     de: {
+        "languageName": "Deutsch",
         "appName": "Tapas Tracker",
         "hello": "Hallo",
         "userId": "Benutzer-ID",
+        "addLanguage": "Sprache hinzufügen",
+        "mustBePositiveNumber": "muss eine positive Zahl sein",
         "logout": "Abmelden",
         "active": "Aktiv",
         "history": "Verlauf",
@@ -465,9 +471,12 @@ export let translations = {
             ]
     },
     ro: {
+        "languageName": "Română",
         "appName": "Urmăritor Tapas",
         "hello": "Salut",
         "userId": "ID utilizator",
+        "addLanguage": "adăugați limba",
+        "mustBePositiveNumber": "trebuie să fie un număr pozitiv",
         "logout": "Deconectare",
         "active": "Active",
         "history": "Istoric",
@@ -697,9 +706,12 @@ export let translations = {
             ]
     },
     it: {
+        "languageName": "Italiano",
         "appName": "Tapas Tracker",
         "hello": "Ciao",
         "userId": "ID utente",
+        "addLanguage": "aggiungere lingua",
+        "mustBePositiveNumber": "deve essere un numero positivo",
         "logout": "Esci",
         "active": "Attive",
         "history": "Cronologia",
@@ -920,9 +932,12 @@ export let translations = {
             ]
     },
     ru: {
+        "languageName": "Русский",
         "appName": "Трекер Тапас",
         "hello": "Привет",
         "userId": "ID пользователя",
+        "addLanguage": "добавить язык",
+        "mustBePositiveNumber": "должно быть положительным числом",
         "logout": "Выйти",
         "active": "Активные",
         "history": "История",
