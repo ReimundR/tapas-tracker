@@ -2180,6 +2180,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     }, [showRecuperationAdvanceMenu, showAcknowledgeNDaysMenu, showUpdateSharedTapasMenu]);
 
 
+    const sharedInfoColor = actualDataIsNewer ? 'orange' : updateAvailable ? 'green' : 'blue';
+
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
@@ -2196,86 +2198,44 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     {tapas.shareReference && (
                         <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                             {t('sharedTapas')}
-                            {actualDataIsNewer && (
-                                <span className="ml-2 text-orange-600 dark:text-orange-400">
-                                    ({t('actualDataIsNewer')})
-                                    <div ref={sharedDropdownRef} className="relative inline-block ml-2">
-                                        <button
-                                            onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
-                                            className="bg-orange-500 text-white px-2 py-1 rounded text-xs font-medium"
-                                        >
-                                            ...
-                                        </button>
-                                        {showUpdateSharedTapasMenu && (
-                                            <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                            <span className={`ml-2 text-${sharedInfoColor}-600 dark:text-${sharedInfoColor}-400`}>
+                                {actualDataIsNewer && ('('+t('actualDataIsNewer')+')')}
+                                {updateAvailable && ('('+t('updateAvailable')+')')}
+                                <div ref={sharedDropdownRef} className="relative inline-block ml-2">
+                                    <button
+                                        onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
+                                        className={`bg-${sharedInfoColor}-500 text-white px-2 py-1 rounded text-xs font-medium`}
+                                    >
+                                        ...
+                                    </button>
+                                    {showUpdateSharedTapasMenu && (
+                                        <div className={`absolute ${actualDataIsNewer || updateAvailable ? 'right' : 'left'}-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100`}>
+                                            {actualDataIsNewer && (
                                                 <button
                                                     onClick={handleUpdateSharedTapas}
                                                     className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                 >
                                                     {t('updateSharedTapas')}
                                                 </button>
-                                                <button
-                                                    onClick={handleDeleteSharedTapas}
-                                                    className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
-                                                >
-                                                    {t('deleteSharedTapasFromPublic')}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </span>
-                            )}
-                            {updateAvailable && (
-                                <span className="ml-2 text-green-600 dark:text-green-400">
-                                    ({t('updateAvailable')})
-                                    <div ref={sharedDropdownRef} className="relative inline-block ml-2">
-                                        <button
-                                            onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
-                                            className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium"
-                                        >
-                                            ...
-                                        </button>
-                                        {showUpdateSharedTapasMenu && (
-                                            <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                                            )}
+                                            {updateAvailable && (
                                                 <button
                                                     onClick={handleUpdateFromSharedTapas}
                                                     className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                                 >
                                                     {t('updateFromShared')}
                                                 </button>
-                                                <button
-                                                    onClick={handleDeleteSharedTapas}
-                                                    className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
-                                                >
-                                                    {t('deleteSharedTapasFromPublic')}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </span>
-                            )}
-                            {tapas.shareReference && publicSharedTapas && !actualDataIsNewer && !updateAvailable && publicSharedTapas.userId === userId && (
-                                <span className="ml-2 text-green-600 dark:text-green-400">
-                                    <div ref={sharedDropdownRef} className="relative inline-block ml-2">
-                                        <button
-                                            onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
-                                            className="bg-green-500 text-white px-2 py-1 rounded text-xs font-medium"
-                                        >
-                                            ...
-                                        </button>
-                                        {showUpdateSharedTapasMenu && (
-                                            <div className="absolute left-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
-                                                <button
-                                                    onClick={handleDeleteSharedTapas}
-                                                    className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
-                                                >
-                                                    {t('deleteSharedTapasFromPublic')}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </span>
-                            )}
+                                            )}
+                                            <button
+                                                onClick={handleDeleteSharedTapas}
+                                                className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
+                                            >
+                                                {t('deleteSharedTapasFromPublic')}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </span>
                         </div>
                     )}
                     {tapas.scheduleType === 'noTapas' && (
