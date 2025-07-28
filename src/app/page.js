@@ -4200,10 +4200,10 @@ const HomePage = () => {
                                                         <button
                                                             key={langCode}
                                                             onClick={() => handleSelectTapasLanguage(langCode)}
-                                                            className={`block w-full text-left px-4 py-2 ${
+                                                            className={`block text-left px-4 py-1 ${
                                                                 selectedTapasLanguage === langCode
-                                                                    ? 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200'
-                                                                    : 'hover:bg-gray-100 dark:hover:bg-gray-600'
+                                                                    ? 'my-1 rounded-xl bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200'
+                                                                    : 'w-full hover:bg-blue-100 dark:hover:bg-blue-600'
                                                             }`}
                                                         >
                                                             {customTapasLanguages[langCode]?.languageName || customTapasLanguages[langCode]}
