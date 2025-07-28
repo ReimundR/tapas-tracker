@@ -547,18 +547,24 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     };
 
     const handleAddNewCustomLanguage = () => {
-        if (!newLangCodeInput.trim() || !newLangNameInput.trim()) {
-            setErrorMessage(t('languageCodeAndNameRequired'));
+        const langName = newLangNameInput.trim();
+        if (!langName) {
+            setErrorMessage(t('languageNameRequired'));
             return;
         }
-        if (availableFormLanguages.includes(newLangCodeInput.toLowerCase()) || translations[newLangCodeInput.toLowerCase()]) {
+
+        let newCode = newLangCodeInput.trim().toLowerCase();
+        if (!newCode) {
+            newCode = langName.substring(0, 2).toLowerCase();
+        }
+
+        if (availableFormLanguages.includes(newCode.toLowerCase()) || translations[newCode.toLowerCase()]) {
             setErrorMessage(t('languageCodeAlreadyExists'));
             return;
         }
 
-        const newCode = newLangCodeInput.toLowerCase();
         setAvailableFormLanguages(prev => [...prev, newCode]);
-        setOtherLanguages(prev => ({ ...prev, [newCode]: newLangNameInput }));
+        setOtherLanguages(prev => ({ ...prev, [newCode]: langName }));
 
         const defaultContent = tapasMultiLanguageData[currentFormLanguage] || { name: '', description: '', goals: '', parts: '' };
         setTapasMultiLanguageData(prev => ({
@@ -609,9 +615,9 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         setSuccessMessage('');
 
         // Validate at least one language has a name
-        const hasNameInAnyLanguage = Object.values(tapasMultiLanguageData).some(langData => langData.name.trim() !== '');
-        if (!hasNameInAnyLanguage) {
-            setErrorMessage(t('nameRequiredInAtLeastOneLanguage'));
+        const hasNameInAllLanguages = Object.values(tapasMultiLanguageData).every(langData => langData.name.trim() !== '');
+        if (!hasNameInAllLanguages) {
+            setErrorMessage(t('nameRequiredInAllLanguages'));
             return;
         }
 
@@ -641,11 +647,10 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         const durationToSave = scheduleType === 'noTapas' ? 0 : parseInt(duration) * getScheduleFactor(scheduleType, scheduleInterval);
 
         // Prepare multi-language data for saving
-        const names = {};
-        const descriptions = {};
-        const goals = {};
-        const parts = {};
-
+        let names = {};
+        let descriptions = {};
+        let goals = {};
+        let parts = {};
         Object.keys(tapasMultiLanguageData).forEach(lang => {
             const data = tapasMultiLanguageData[lang];
             if (data.name) names[lang] = data.name;
@@ -653,6 +658,14 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             if (data.goals) goals[lang] = data.goals.split('\n').filter(g => g.trim() !== '');
             if (data.parts) parts[lang] = data.parts.split('\n').filter(p => p.trim() !== '');
         });
+        if (Object.keys(tapasMultiLanguageData).length === 1) {
+            // Single language store only data
+            const lang = Object.keys(tapasMultiLanguageData)[0];
+            if (names) names = names[lang];
+            if (descriptions) descriptions = descriptions[lang] || null;
+            if (goals) goals = goals[lang] || [];
+            if (parts) parts = parts[lang] || [];
+        }
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const tapasData = {
@@ -986,6 +999,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 </div>
                     </>
                 )}
+                {errorMessage && <p className="text-red-600 mb-4 font-medium">{errorMessage}</p>}
 
                 <div className="col-span-full flex justify-end space-x-3">
                     <button
@@ -1007,25 +1021,25 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             {showOtherLanguageModal && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
                     <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                        <h3 className="text-xl font-bold mb-4">{t('addNewLanguage')}</h3>
+                        <h3 className="text-xl font-bold mb-4">{t('addLanguage')}</h3>
                         {errorMessage && <p className="text-red-600 mb-4 font-medium">{errorMessage}</p>}
-                        <label htmlFor="newLangCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('languageCode')}</label>
-                        <input
-                            type="text"
-                            id="newLangCode"
-                            value={newLangCodeInput}
-                            onChange={(e) => setNewLangCodeInput(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
-                            placeholder="e.g. pt"
-                        />
-                        <label htmlFor="newLangName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('language')}</label>
+                        <label htmlFor="newLangName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('language')} *</label>
                         <input
                             type="text"
                             id="newLangName"
                             value={newLangNameInput}
                             onChange={(e) => setNewLangNameInput(e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
-                            placeholder="e.g. Portugal"
+                            placeholder={t('language')+'...'}
+                        />
+                        <label htmlFor="newLangCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('countryCode')}</label>
+                        <input
+                            type="text"
+                            id="newLangCode"
+                            value={newLangCodeInput}
+                            onChange={(e) => setNewLangCodeInput(e.target.value)}
+                            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
+                            placeholder={t('countryCode')+'...'}
                         />
                         <div className="flex justify-end space-x-4">
                             <button
