@@ -13,24 +13,7 @@ import Head from 'next/head'; // Import Head from next/head for meta tags
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
 import { translations } from "./translations";
-
-let firebaseConfig;
-if (process.env.FIREBASE_WEBAPP_CONFIG) {
-    try {
-        firebaseConfig = JSON.parse(process.env.FIREBASE_WEBAPP_CONFIG);
-    } catch (e) {
-        console.error("Error parsing FIREBASE_WEBAPP_CONFIG:", e);
-    }
-} else {
-    firebaseConfig = {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
-        storageBucket: process.env.NEXT_PUBLIC_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_PUBLIC_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_PUBLIC_APP_ID
-    };
-}
+import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider } from "./helpers";
 
 const __app_id = firebaseConfig.appId;
 const appVersion = process.env.version;
@@ -50,106 +33,29 @@ const LanguageSelect = ({ locale, setLocale }) => {
     );
 };
 
-// Locale Provider component
-const LocaleProvider = ({ children }) => {
-    const [locale, setLocaleState] = useState('en'); // Default to English
+// Helper to get content in the preferred language with fallbacks
+const getLocalizedContent = (contentObject, currentLocale, selectedTapasLanguage = null) => {
+    if (!contentObject) return '';
+    if (typeof contentObject === 'string') return contentObject; // Handle legacy string data
+    if (Array.isArray(contentObject)) return contentObject; // Handle legacy array data (e.g., goals/parts)
 
-    useEffect(() => {
-        // Load saved locale from localStorage
-        const savedLocale = localStorage.getItem('tapas_locale');
-        if (savedLocale && translations[savedLocale]) {
-            setLocaleState(savedLocale);
-        } else {
-            // If no saved locale or invalid, detect browser language
-            const browserLang = navigator.language.split('-')[0];
-            if (translations[browserLang]) {
-                setLocaleState(browserLang);
-            }
-        }
-    }, []);
-
-    const setLocale = (newLocale) => {
-        if (translations[newLocale]) {
-            setLocaleState(newLocale);
-            localStorage.setItem('tapas_locale', newLocale);
-        }
-    };
-
-    const t = useCallback((key, ...args) => {
-        let translatedText = translations[locale][key] || translations.en[key] || key;
-        // Basic string formatting for placeholders like %s
-        if (args.length > 0) {
-            // Replace all %s placeholders with arguments
-            let argIndex = 0;
-            translatedText = translatedText.replace(/%s/g, () => {
-                const arg = args[argIndex];
-                argIndex++;
-                return arg !== undefined ? arg : '';
-            });
-        }
-        return translatedText;
-    }, [locale]);
-
-    return (
-        <LocaleContext.Provider value={{ locale, setLocale, t }}>
-            {children}
-        </LocaleContext.Provider>
-    );
+    // 1. Try selectedTapasLanguage
+    if (selectedTapasLanguage && contentObject[selectedTapasLanguage]) {
+        return contentObject[selectedTapasLanguage];
+    }
+    // 2. Try currentLocale (main app language)
+    if (contentObject[currentLocale]) {
+        return contentObject[currentLocale];
+    }
+    // 3. Fallback to English
+    if (contentObject['en']) {
+        return contentObject['en'];
+    }
+    // 4. Fallback to the first available language
+    const firstAvailableLang = Object.keys(contentObject)[0];
+    return contentObject[firstAvailableLang] || '';
 };
 
-// Theme Context
-const ThemeContext = createContext({
-    theme: 'light',
-    toggleTheme: () => {},
-});
-
-// Theme Provider component
-const ThemeProvider = ({ children }) => {
-    const [theme, setTheme] = useState('light');
-
-    useEffect(() => {
-        // On component mount, check for saved theme in local storage
-        const savedTheme = localStorage.getItem('tapas_theme');
-        if (savedTheme) {
-            setTheme(savedTheme); // Set theme state
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark'); // Add 'dark' class to html element
-            } else {
-                document.documentElement.classList.remove('dark'); // Ensure 'dark' class is removed
-            }
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            // If no saved theme, check system preference
-            setTheme('dark');
-            document.documentElement.classList.add('dark'); // Add 'dark' class for system preference
-        } else {
-            // Default to light mode if no saved theme and no system preference for dark
-            setTheme('light');
-            document.documentElement.classList.remove('dark'); // Ensure 'dark' class is removed
-        }
-    }, []); // Run only once on mount
-
-    // Function to toggle the theme
-    const toggleTheme = () => {
-        setTheme(prevTheme => {
-            const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-            localStorage.setItem('tapas_theme', newTheme); // Save the new theme to local storage
-
-            // Apply/remove the 'dark' class directly to the html element
-            if (newTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-            return newTheme; // Update the theme state
-        });
-    };
-
-    return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
-            {children}
-        </ThemeContext.Provider>
-    );
-};
 
 // Define context for Firebase and user data
 const AppContext = createContext(null);
@@ -339,17 +245,6 @@ const isTapasDateChecked = (checkedDays, date) => {
     });
 };
 
-// Helper to get content in the preferred language with fallbacks
-const getLocalizedContent = (contentObject, currentLocale) => {
-    if (!contentObject) return '';
-    if (typeof contentObject === 'string' || Array.isArray(contentObject)) return contentObject;
-    if (contentObject[currentLocale]) return contentObject[currentLocale];
-    if (contentObject['en']) return contentObject['en']; // Fallback to English
-    // Fallback to the first available language if currentLocale and English are not found
-    const firstAvailableLang = Object.keys(contentObject)[0];
-    return contentObject[firstAvailableLang] || '';
-};
-
 // Component for adding/editing a Tapas
 const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const { db, userId, t, locale } = useContext(AppContext);
@@ -357,9 +252,12 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
     const [currentFormLanguage, setCurrentFormLanguage] = useState(locale); // Language currently being edited in the form
     const [availableFormLanguages, setAvailableFormLanguages] = useState([locale]); // Languages for which data exists in the form
+    const [otherLanguages, setOtherLanguages] = useState({}); // Stores custom language codes and names { 'br': 'Brasilian' }
 
     const firstRef = useRef(null); // Ref for the first input field
     const formContainerRef = useRef(null); // Ref for the form's main container
+    const addLanguageDropdownRef = useRef(null); // Ref for the add language dropdown
+
     const [startDate, setStartDate] = useState('');
     const [startTime, setStartTime] = useState('');
     const [duration, setDuration] = useState('');
@@ -372,7 +270,10 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const [scheduleType, setScheduleType] = useState('daily'); // 'daily', 'weekly', 'everyNthDays', 'noTapas'
     const [scheduleInterval, setScheduleInterval] = useState(''); // For 'everyNthDays'
     const [acknowledgeAfter, setAcknowledgeAfter] = useState(false); // New state for acknowledgeAfter
-    const [showLanguageSelector, setShowLanguageSelector] = useState(false); // State for showing language selector
+    const [showAddLanguageDropdown, setShowAddLanguageDropdown] = useState(false); // State for showing language selector dropdown
+    const [showOtherLanguageModal, setShowOtherLanguageModal] = useState(false); // State for "Other Language" input modal
+    const [newLangCodeInput, setNewLangCodeInput] = useState('');
+    const [newLangNameInput, setNewLangNameInput] = useState('');
 
     // Effect to set form fields when editingTapas prop changes
     useEffect(() => {
@@ -392,7 +293,16 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             const initialLangs = new Set();
 
             // Populate initialMultiLangData with existing translations
-            if (editingTapas.name && typeof editingTapas.name === 'object') {
+            // Handle legacy string data for name, description, goals, parts
+            if (typeof editingTapas.name === 'string') {
+                initialMultiLangData[locale] = {
+                    name: editingTapas.name,
+                    description: editingTapas.description || '',
+                    goals: (Array.isArray(editingTapas.goals) ? editingTapas.goals : []).join('\n'),
+                    parts: (Array.isArray(editingTapas.parts) ? editingTapas.parts : []).join('\n'),
+                };
+                initialLangs.add(locale);
+            } else if (typeof editingTapas.name === 'object' && editingTapas.name !== null) {
                 Object.keys(editingTapas.name).forEach(lang => {
                     initialMultiLangData[lang] = {
                         name: editingTapas.name[lang] || '',
@@ -403,19 +313,16 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     initialLangs.add(lang);
                 });
             } else {
-                // Handle legacy data (single string)
-                initialMultiLangData[locale] = {
-                    name: editingTapas.name || '',
-                    description: editingTapas.description || '',
-                    goals: (editingTapas.goals || []).join('\n'),
-                    parts: (editingTapas.parts || []).join('\n'),
-                };
+                initialMultiLangData[locale] = { name: '', description: '', goals: '', parts: '' };
                 initialLangs.add(locale);
             }
 
             setTapasMultiLanguageData(initialMultiLangData);
             setAvailableFormLanguages(Array.from(initialLangs));
             setCurrentFormLanguage(locale); // Set current editing language to user's locale
+
+            // Load otherLanguages from editingTapas.languages
+            setOtherLanguages(editingTapas.languages || {});
 
             setStartDate(editingTapas.startDate ? new Date(editingTapas.startDate.toDate()).toISOString().split('T')[0] : '');
             setStartTime(editingTapas.startTime || '');
@@ -447,6 +354,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             });
             setAvailableFormLanguages([locale]);
             setCurrentFormLanguage(locale);
+            setOtherLanguages({}); // Reset custom languages
 
             setStartDate('');
             setStartTime('');
@@ -464,12 +372,32 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     useEffect(() => {
         const currentLangData = tapasMultiLanguageData[currentFormLanguage];
         if (currentLangData) {
-            setDescriptionEditorState([null, null]); // Clear previous state to force re-render
-            setTimeout(() => { // Small delay to ensure Lexical re-initializes
-                setDescriptionEditorState([null, currentLangData.description]);
+            // Force Lexical editor to re-render with new content
+            setDescriptionEditorState(null); // Clear state first
+            setTimeout(() => {
+                setDescriptionEditorState(currentLangData.description);
             }, 0);
         }
     }, [currentFormLanguage, tapasMultiLanguageData]);
+
+    // Effect to close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (addLanguageDropdownRef.current && !addLanguageDropdownRef.current.contains(event.target)) {
+                setShowAddLanguageDropdown(false);
+            }
+        };
+
+        if (showAddLanguageDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showAddLanguageDropdown]);
 
 
     // Effect to synchronize duration and endDate when startDate changes
@@ -615,13 +543,64 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             }));
             setCurrentFormLanguage(selectedLang);
         }
-        setShowLanguageSelector(false); // Hide selector after adding
+        setShowAddLanguageDropdown(false); // Hide dropdown after adding
     };
 
-    const currentTapasName = tapasMultiLanguageData[currentFormLanguage]?.name || '';
-    const currentTapasGoals = tapasMultiLanguageData[currentFormLanguage]?.goals || '';
-    const currentTapasParts = tapasMultiLanguageData[currentFormLanguage]?.parts || '';
-    const currentTapasDescription = tapasMultiLanguageData[currentFormLanguage]?.description || '';
+    const handleAddNewCustomLanguage = () => {
+        if (!newLangCodeInput.trim() || !newLangNameInput.trim()) {
+            setErrorMessage(t('languageCodeAndNameRequired'));
+            return;
+        }
+        if (availableFormLanguages.includes(newLangCodeInput.toLowerCase()) || translations[newLangCodeInput.toLowerCase()]) {
+            setErrorMessage(t('languageCodeAlreadyExists'));
+            return;
+        }
+
+        const newCode = newLangCodeInput.toLowerCase();
+        setAvailableFormLanguages(prev => [...prev, newCode]);
+        setOtherLanguages(prev => ({ ...prev, [newCode]: newLangNameInput }));
+
+        const defaultContent = tapasMultiLanguageData[currentFormLanguage] || { name: '', description: '', goals: '', parts: '' };
+        setTapasMultiLanguageData(prev => ({
+            ...prev,
+            [newCode]: { ...defaultContent }
+        }));
+        setCurrentFormLanguage(newCode);
+
+        setNewLangCodeInput('');
+        setNewLangNameInput('');
+        setShowOtherLanguageModal(false);
+        setShowAddLanguageDropdown(false); // Close main dropdown
+        setErrorMessage('');
+    };
+
+    const handleDeleteLanguage = (langToDelete) => {
+        if (availableFormLanguages.length <= 1) {
+            setErrorMessage(t('cannotDeleteLastLanguage'));
+            return;
+        }
+
+        setAvailableFormLanguages(prev => prev.filter(lang => lang !== langToDelete));
+        setTapasMultiLanguageData(prev => {
+            const newTapasData = { ...prev };
+            delete newTapasData[langToDelete];
+            return newTapasData;
+        });
+        setOtherLanguages(prev => {
+            const newOtherLangs = { ...prev };
+            delete newOtherLangs[langToDelete];
+            return newOtherLangs;
+        });
+
+        if (currentFormLanguage === langToDelete) {
+            // Switch to the first available language after deletion
+            setCurrentFormLanguage(availableFormLanguages.filter(lang => lang !== langToDelete)[0]);
+        }
+        setErrorMessage('');
+    };
+
+
+    const currentTapasDataForForm = tapasMultiLanguageData[currentFormLanguage] || { name: '', description: '', goals: '', parts: '' };
 
 
     const handleSubmit = async (e) => {
@@ -636,8 +615,11 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             return;
         }
 
+        // Use the name of the current locale for the main validation
+        const currentLocaleName = tapasMultiLanguageData[locale]?.name || '';
+
         if (scheduleType !== 'noTapas') {
-            if (!name || !startDate || !duration) { // Duration is the source of truth for calculation
+            if (!currentLocaleName || !startDate || !duration) { // Duration is the source of truth for calculation
                 setErrorMessage(t('nameStartDateDurationRequired'));
                 return;
             }
@@ -651,7 +633,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 setErrorMessage(t('scheduleInterval') + ' ' + t('mustBePositiveNumber'));
                 return;
             }
-        } else if (!name || !startDate) {
+        } else if (!currentLocaleName || !startDate) {
             setErrorMessage(t('nameStartDateRequired'));
             return;
         }
@@ -697,6 +679,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             scheduleType: scheduleType,
             scheduleInterval: scheduleType === 'everyNthDays' ? parseInt(scheduleInterval) : null,
             acknowledgeAfter: scheduleType === 'noTapas' ? false : acknowledgeAfter,
+            languages: otherLanguages, // Store custom languages
             version: editingTapas ? (editingTapas.version || 1) + 1 : 1, // Increment version on update, start at 1 for new
         };
 
@@ -715,6 +698,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 });
                 setAvailableFormLanguages([locale]);
                 setCurrentFormLanguage(locale);
+                setOtherLanguages({}); // Reset custom languages
                 setStartDate('');
                 setStartTime('');
                 setDuration('');
@@ -740,23 +724,24 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         setStartDate(`${year}-${month}-${day}`);
     };
 
-    // Available languages for the selector (excluding already added ones)
-    const allAvailableLanguages = Object.keys(translations);
-    const languagesToAdd = allAvailableLanguages.filter(lang => !availableFormLanguages.includes(lang));
+    // Available languages for the selector (excluding already added ones and custom ones)
+    const allKnownLanguages = { ...translations, ...otherLanguages };
+    const languagesToAdd = Object.keys(allKnownLanguages).filter(lang => !availableFormLanguages.includes(lang));
+
 
     return (
         <div ref={formContainerRef} className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
             <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100 flex items-center">
                 {editingTapas ? t('editTapasTitle') : t('addEditTapas')}
-                <div className="relative ml-4">
+                <div className="relative ml-4" ref={addLanguageDropdownRef}>
                     <button
-                        onClick={() => setShowLanguageSelector(!showLanguageSelector)}
+                        onClick={() => setShowAddLanguageDropdown(!showAddLanguageDropdown)}
                         className="ml-2 bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600 transition-colors duration-200"
                     >
                         {t('addLanguage')}
                     </button>
-                    {showLanguageSelector && (
-                        <div className="absolute left-0 mt-2 w-40 rounded-md shadow-lg text-sm bg-white dark:bg-gray-700 z-10">
+                    {showAddLanguageDropdown && (
+                        <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg text-sm bg-white dark:bg-gray-700 z-10">
                             {languagesToAdd.length > 0 ? (
                                 languagesToAdd.map(lang => (
                                     <button
@@ -764,12 +749,19 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                                         onClick={() => handleAddLanguage(lang)}
                                         className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
                                     >
-                                        {translations[lang].languageName}
+                                        {allKnownLanguages[lang].languageName || allKnownLanguages[lang]}
                                     </button>
                                 ))
                             ) : (
                                 <p className="px-4 py-2 text-gray-500 dark:text-gray-400">{t('allLanguagesAdded')}</p>
                             )}
+                            <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                            <button
+                                onClick={() => { setShowOtherLanguageModal(true); setShowAddLanguageDropdown(false); }}
+                                className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
+                            >
+                                {t('otherLanguage')}...
+                            </button>
                         </div>
                     )}
                 </div>
@@ -778,21 +770,31 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             {successMessage && <p className="text-green-600 mb-4 font-medium">{successMessage}</p>}
 
             {/* Language Tabs */}
-            {availableFormLanguages.length > 1 && (
+            {availableFormLanguages.length > 0 && (
                 <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-                    <nav className="-mb-px flex space-x-4" aria-label="Tabs">
+                    <nav className="-mb-px flex flex-wrap space-x-2" aria-label="Tabs">
                         {availableFormLanguages.map(lang => (
-                            <button
-                                key={lang}
-                                onClick={() => setCurrentFormLanguage(lang)}
-                                className={`whitespace-nowrap py-2 px-4 border-b-2 font-medium text-sm ${
-                                    currentFormLanguage === lang
-                                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500'
-                                }`}
-                            >
-                                {translations[lang].languageName}
-                            </button>
+                            <div key={lang} className="flex items-center">
+                                <button
+                                    onClick={() => setCurrentFormLanguage(lang)}
+                                    className={`whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm rounded-t-md ${
+                                        currentFormLanguage === lang
+                                            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500'
+                                    }`}
+                                >
+                                    {translations[lang]?.languageName || otherLanguages[lang] || lang}
+                                </button>
+                                {availableFormLanguages.length > 1 && (
+                                    <button
+                                        onClick={() => handleDeleteLanguage(lang)}
+                                        className="ml-1 text-red-500 hover:text-red-700 text-xs font-bold p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        title={t('deleteLanguage')}
+                                    >
+                                        &times;
+                                    </button>
+                                )}
+                            </div>
                         ))}
                     </nav>
                 </div>
@@ -805,10 +807,10 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         ref={firstRef}
                         type="text"
                         id="name"
-                        value={currentTapasName}
+                        value={currentTapasDataForForm.name}
                         onChange={(e) => handleMultiLanguageInputChange('name', e.target.value)}
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                        required={availableFormLanguages.indexOf(currentFormLanguage) === 0} // Only require for the first language tab
+                        required={currentFormLanguage === locale} // Only require for the primary locale
                     />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -931,7 +933,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
                     <RichTextEditor
                         key={`${editingTapas ? editingTapas.id : 'new-tapas'}-${currentFormLanguage}`} // Key to force remount on language change
-                        initialContent={currentTapasDescription}
+                        initialContent={currentTapasDataForForm.description}
                         onEditorStateChange={handleDescriptionChange}
                     />
                 </div>
@@ -939,7 +941,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     <label htmlFor="goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('goals0n')}</label>
                     <textarea
                         id="goals"
-                        value={currentTapasGoals}
+                        value={currentTapasDataForForm.goals}
                         onChange={(e) => handleMultiLanguageInputChange('goals', e.target.value)}
                         rows="3"
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
@@ -949,7 +951,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     <label htmlFor="parts" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('parts0n')}</label>
                     <textarea
                         id="parts"
-                        value={currentTapasParts}
+                        value={currentTapasDataForForm.parts}
                         onChange={(e) => handleMultiLanguageInputChange('parts', e.target.value)}
                         rows="3"
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
@@ -1001,6 +1003,47 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     </button>
                 </div>
             </form>
+
+            {showOtherLanguageModal && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                    <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                        <h3 className="text-xl font-bold mb-4">{t('addNewLanguage')}</h3>
+                        {errorMessage && <p className="text-red-600 mb-4 font-medium">{errorMessage}</p>}
+                        <label htmlFor="newLangCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('languageCode')}</label>
+                        <input
+                            type="text"
+                            id="newLangCode"
+                            value={newLangCodeInput}
+                            onChange={(e) => setNewLangCodeInput(e.target.value)}
+                            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
+                            placeholder="e.g. pt"
+                        />
+                        <label htmlFor="newLangName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('language')}</label>
+                        <input
+                            type="text"
+                            id="newLangName"
+                            value={newLangNameInput}
+                            onChange={(e) => setNewLangNameInput(e.target.value)}
+                            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
+                            placeholder="e.g. Portugal"
+                        />
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                onClick={() => { setShowOtherLanguageModal(false); setErrorMessage(''); }}
+                                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
+                            >
+                                {t('cancel')}
+                            </button>
+                            <button
+                                onClick={handleAddNewCustomLanguage}
+                                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200"
+                            >
+                                {t('add')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1050,7 +1093,7 @@ const getSharedTapasInfo = async (shareReference, db) => {
 
 
 // Component to display a list of Tapas
-const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter, sharedTapasInfoMap }) => {
+const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter, sharedTapasInfoMap, selectedTapasLanguage }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -1214,22 +1257,18 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                         const sharedInfo = sharedTapasInfoMap[tapasItem.id] || { userId: null, version: null };
 
                         // Get localized name for display in the list
-                        const displayTapasName = getLocalizedContent(tapasItem.name, locale);
+                        const displayTapasName = getLocalizedContent(tapasItem.name, locale, selectedTapasLanguage);
 
                         // Calculate undone parts for active tapas
                         const undoneParts = [];
-                        if (tapasItem.status === 'active' && tapasItem.parts && tapasItem.parts.length > 0) {
+                        if (tapasItem.status === 'active' && tapasItem.parts) {
                             const todayDateString = formatDateNoTimeToISO(new Date());
                             const checkedPartsForToday = tapasItem.checkedPartsByDate?.[todayDateString] || [];
                             
                             // Get localized parts for display
-                            const currentLangParts = getLocalizedContent(tapasItem.parts, locale);
-                            const englishParts = getLocalizedContent(tapasItem.parts, 'en');
-                            const defaultParts = Object.values(tapasItem.parts)[0] || [];
+                            const partsToDisplay = getLocalizedContent(tapasItem.parts, locale, selectedTapasLanguage);
 
-                            const partsToDisplay = currentLangParts.length > 0 ? currentLangParts : (englishParts.length > 0 ? englishParts : defaultParts);
-
-                            if (checkedPartsForToday.length > 0) {
+                            if (Array.isArray(partsToDisplay) && checkedPartsForToday.length > 0) {
                                 partsToDisplay.forEach((part, index) => {
                                     if (!checkedPartsForToday.includes(index)) {
                                         undoneParts.push(part);
@@ -1343,7 +1382,7 @@ const ResultsModal = ({ tapas, onClose, onSaveResults }) => {
 
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfoMap }) => { // Added setSelectedTapas prop
+const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfoMap, selectedTapasLanguage }) => { // Added setSelectedTapas prop
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -1415,10 +1454,10 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     const isFailed = tapas.status === 'failed';
 
     // Get localized content for display
-    const displayTapasName = getLocalizedContent(tapas.name, locale);
-    const displayDescription = getLocalizedContent(tapas.description, locale);
-    const displayGoals = getLocalizedContent(tapas.goals, locale);
-    const displayParts = getLocalizedContent(tapas.parts, locale);
+    const displayTapasName = getLocalizedContent(tapas.name, locale, selectedTapasLanguage);
+    const displayDescription = getLocalizedContent(tapas.description, locale, selectedTapasLanguage);
+    const displayGoals = getLocalizedContent(tapas.goals, locale, selectedTapasLanguage);
+    const displayParts = getLocalizedContent(tapas.parts, locale, selectedTapasLanguage);
 
 
     // Fetch public shared tapas data if shareReference exists
@@ -1691,7 +1730,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
     const handleDelete = async () => {
         // Use the default language name for confirmation
-        const defaultName = getLocalizedContent(tapas.name, 'en');
+        const defaultName = getLocalizedContent(tapas.name, locale);
         if (confirmName === defaultName) {
             try {
                 await deleteDoc(tapasRef);
@@ -1772,30 +1811,25 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     }
                 }
 
-                let newName = getLocalizedContent(tapas.name, locale); // Use localized name for repeat
-                const repeatRegex = /\(Repeat(?: (\d+))?\)/;
-                const match = newName.match(repeatRegex);
-
-                if (match) {
-                    if (match[1]) {
-                        const currentRepeatNum = parseInt(match[1]);
-                        newName = newName.replace(repeatRegex, `(Repeat ${currentRepeatNum + 1})`);
-                    } else {
-                        newName = newName.replace('(Repeat)', '(Repeat 2)');
-                    }
-                } else {
-                    newName = `${newName} (Repeat)`;
-                }
-
                 // Create new multi-language name object for the repeated tapas
                 const newMultiLangName = {};
-                Object.keys(tapas.name).forEach(lang => {
-                    newMultiLangName[lang] = (tapas.name[lang] || '').replace(repeatRegex, `(Repeat ${match ? (match[1] ? parseInt(match[1]) + 1 : 2) : ''})`).trim();
-                    if (!match) { // If it didn't have a repeat tag, add it
-                        newMultiLangName[lang] = `${tapas.name[lang]} (Repeat)`;
-                    }
-                });
+                const repeatRegex = /\(Repeat(?: (\d+))?\)/;
 
+                Object.keys(tapas.name).forEach(lang => {
+                    let currentName = tapas.name[lang] || '';
+                    const match = currentName.match(repeatRegex);
+                    if (match) {
+                        if (match[1]) {
+                            const currentRepeatNum = parseInt(match[1]);
+                            currentName = currentName.replace(repeatRegex, `(Repeat ${currentRepeatNum + 1})`);
+                        } else {
+                            currentName = currentName.replace('(Repeat)', '(Repeat 2)');
+                        }
+                    } else {
+                        currentName = `${currentName} (Repeat)`;
+                    }
+                    newMultiLangName[lang] = currentName;
+                });
 
                 const newTapasData = {
                     name: newMultiLangName, // Use multi-language name
@@ -1819,6 +1853,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     scheduleType: tapas.scheduleType, // Carry over schedule type
                     scheduleInterval: tapas.scheduleInterval, // Carry over schedule interval
                     acknowledgeAfter: tapas.acknowledgeAfter, // Carry over acknowledgeAfter
+                    languages: tapas.languages || {}, // Carry over custom languages
                     version: 1, // New tapas starts with version 1
                 };
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -1863,31 +1898,24 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                 }
             }
 
-            let newName = getLocalizedContent(tapas.name, locale); // Use localized name for repeat
-            const repeatRegex = /\(Repeat(?: (\d+))?\)/;
-            const match = newName.match(repeatRegex);
-
-            if (match) {
-                if (match[1]) {
-                    // Already has (Repeat X) -> increment X
-                    const currentRepeatNum = parseInt(match[1]);
-                    newName = newName.replace(repeatRegex, `(Repeat ${currentRepeatNum + 1})`);
-                } else {
-                    // Has (Repeat) -> change to (Repeat 2)
-                    newName = newName.replace('(Repeat)', '(Repeat 2)');
-                }
-            } else {
-                // No repeat part, add (Repeat)
-                newName = `${newName} (Repeat)`;
-            }
-
             // Create new multi-language name object for the repeated tapas
             const newMultiLangName = {};
+            const repeatRegex = /\(Repeat(?: (\d+))?\)/;
+
             Object.keys(tapas.name).forEach(lang => {
-                newMultiLangName[lang] = (tapas.name[lang] || '').replace(repeatRegex, `(Repeat ${match ? (match[1] ? parseInt(match[1]) + 1 : 2) : ''})`).trim();
-                if (!match) { // If it didn't have a repeat tag, add it
-                    newMultiLangName[lang] = `${tapas.name[lang]} (Repeat)`;
+                let currentName = tapas.name[lang] || '';
+                const match = currentName.match(repeatRegex);
+                if (match) {
+                    if (match[1]) {
+                        const currentRepeatNum = parseInt(match[1]);
+                        currentName = currentName.replace(repeatRegex, `(Repeat ${currentRepeatNum + 1})`);
+                    } else {
+                        currentName = currentName.replace('(Repeat)', '(Repeat 2)');
+                    }
+                } else {
+                    currentName = `${currentName} (Repeat)`;
                 }
+                newMultiLangName[lang] = currentName;
             });
 
 
@@ -1914,6 +1942,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                 scheduleType: tapas.scheduleType || 'daily', // Carry over schedule type
                 scheduleInterval: tapas.scheduleInterval || '', // Carry over schedule interval
                 acknowledgeAfter: tapas.acknowledgeAfter || false, // Carry over acknowledgeAfter
+                languages: tapas.languages || {}, // Carry over custom languages
                 version: 1, // New tapas starts with version 1
             };
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -2000,6 +2029,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                     crystallizationTime: tapas.crystallizationTime || null,
                     acknowledgeAfter: tapas.acknowledgeAfter || false,
                     allowRecuperation: tapas.allowRecuperation || false,
+                    languages: tapas.languages || {}, // Save custom languages
                     sharedCount: (publicSharedTapas?.sharedCount || 0) + 1, // Increment shared count from existing public data if available
                     adoptedCount: (publicSharedTapas?.adoptedCount || 0), // Initialize or preserve from existing public data
                     version: tapas.version || 1, // Use the current local tapas version
@@ -2055,6 +2085,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                 crystallizationTime: tapas.crystallizationTime || null,
                 acknowledgeAfter: tapas.acknowledgeAfter || false,
                 allowRecuperation: tapas.allowRecuperation || false,
+                languages: tapas.languages || {}, // Update custom languages
                 version: tapas.version || 1, // Use the current local tapas version
             };
             await updateDoc(publicTapasDocRef, updatedSharedData);
@@ -2086,6 +2117,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                 crystallizationTime: publicSharedTapas.crystallizationTime || null,
                 acknowledgeAfter: publicSharedTapas.acknowledgeAfter || false,
                 allowRecuperation: publicSharedTapas.allowRecuperation || false,
+                languages: publicSharedTapas.languages || {}, // Update custom languages
                 version: publicSharedTapas.version || 1, // Update local version to shared version
             };
             await updateDoc(tapasRef, updatedLocalData);
@@ -3031,6 +3063,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                 shareReference: sharedTapas.id, // Inherit the share reference
                 scheduleType: sharedTapas.scheduleType || 'daily',
                 scheduleInterval: sharedTapas.scheduleInterval || '',
+                languages: sharedTapas.languages || {}, // Inherit custom languages
                 version: sharedTapas.version || 1, // Inherit the version from shared tapas
             };
 
@@ -3264,6 +3297,9 @@ const HomePage = () => {
     const [editingTapas, setEditingTapas] = useState(null);
     const [showMenu, setShowMenu] = useState(false); // State for menu visibility
     const [showDataMenu, setShowDataMenu] = useState(false); // State for Data submenu visibility
+    const [showTapasLanguageMenu, setShowTapasLanguageMenu] = useState(false); // New state for Tapas Language submenu
+    const [selectedTapasLanguage, setSelectedTapasLanguage] = useState(null); // New state for selected Tapas language
+    const [customTapasLanguages, setCustomTapasLanguages] = useState({}); // New state for custom languages from user preferences
     const [selectedLicense, setSelectedLicense] = useState(false);
     const [selectedLegalNotice, setSelectedLegalNotice] = useState(false);
     const [selectedGDPR, setSelectedGDPR] = useState(false);
@@ -3321,11 +3357,24 @@ const HomePage = () => {
                             setShowLoginPrompt(false);
                         }
                         setCurrentPage('active');
+
+                        // Load user preferences for Tapas language
+                        const userPrefsRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/preferences/tapas`);
+                        const userPrefsSnap = await getDoc(userPrefsRef);
+                        if (userPrefsSnap.exists()) {
+                            const prefs = userPrefsSnap.data();
+                            setSelectedTapasLanguage(prefs.selectedTapasLanguage || null);
+                        } else {
+                            setSelectedTapasLanguage(null);
+                        }
+
                     } else {
                         setUserId(null);
                         setUserDisplayName(null);
                         setIsGuestUser(false); // No user, so not a guest user
                         setShowLoginPrompt(true); // Show login prompt if no user is authenticated
+                        setSelectedTapasLanguage(null); // Clear selected Tapas language
+                        setCustomTapasLanguages({}); // Clear custom languages
                     }
                     setLoadingFirebase(false);
                 });
@@ -3360,6 +3409,20 @@ const HomePage = () => {
             }));
             setTapas(cleanedTapasData);
 
+            // Gather customTapasLanguages from the loaded tapas data
+            const gatheredCustomLangs = {};
+            cleanedTapasData.forEach(tapasItem => {
+                if (tapasItem.languages) {
+                    for (const langCode in tapasItem.languages) {
+                        if (tapasItem.languages.hasOwnProperty(langCode) && !translations[langCode]) {
+                            gatheredCustomLangs[langCode] = tapasItem.languages[langCode];
+                        }
+                    }
+                }
+            });
+            setCustomTapasLanguages(gatheredCustomLangs);
+
+
             // Fetch shared tapas info for all tapas items here
             const newSharedTapasInfoMap = {};
             for (const tapasItem of cleanedTapasData) {
@@ -3382,9 +3445,10 @@ const HomePage = () => {
     useEffect(() => {
         const handleClickOutside = (event) => {
             // Close menu if it's open and the click is outside the menu itself
-            if (showMenu && !event.target.parentElement.classList.contains('absolute')) {
+            if (showMenu && !event.target.closest('#main-menu')) { // Use closest to check if click is inside the menu
                 setShowMenu(false);
                 setShowDataMenu(false); // Close submenu too
+                setShowTapasLanguageMenu(false); // Close Tapas Language submenu
             }
             setStatusMessage('');
         };
@@ -3523,6 +3587,8 @@ const HomePage = () => {
             setCurrentPage('active'); // Reset page
             setFirebaseError('');
             setShowMenu(false); // Close menu after logout
+            setSelectedTapasLanguage(null); // Clear selected Tapas language on logout
+            setCustomTapasLanguages({}); // Clear custom languages on logout
         } catch (error) {
             console.error("Error logging out:", error);
             setFirebaseError(`${t('logoutFailed')} ${error.message}`);
@@ -3700,6 +3766,11 @@ const HomePage = () => {
                             dataToSave.parts = {};
                         }
 
+                        // Handle custom languages
+                        if (dataToSave.languages && typeof dataToSave.languages !== 'object') {
+                            dataToSave.languages = {};
+                        }
+
 
                         if (!dataToSave.scheduleType) {
                             dataToSave.scheduleType = 'daily';
@@ -3812,6 +3883,24 @@ const HomePage = () => {
         }
     };
 
+    const handleSelectTapasLanguage = async (langCode) => {
+        const newSelectedLang = selectedTapasLanguage === langCode ? null : langCode;
+        setSelectedTapasLanguage(newSelectedLang);
+        setShowTapasLanguageMenu(false); // Close submenu
+
+        if (db && userId) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const userPrefsRef = doc(db, `artifacts/${appId}/users/${userId}/preferences/tapas`);
+            try {
+                await setDoc(userPrefsRef, { selectedTapasLanguage: newSelectedLang }, { merge: true });
+            } catch (error) {
+                console.error("Error saving selected Tapas language preference:", error);
+                setStatusMessage("Error saving Tapas language preference.");
+            }
+        }
+    };
+
+    const tapasLanguagesForMenu = Object.keys(customTapasLanguages).filter(lang => lang !== locale);
 
     const activeTapas = tapas.filter(tapas => tapas.status === 'active').sort((a, b) => {
         // Custom sorting logic for active tapas
@@ -3837,8 +3926,8 @@ const HomePage = () => {
 
         // If both are 'noTapas', sort by name alphabetically
         if (!isATapas && !isBTapas) {
-            const nameA = getLocalizedContent(a.name, locale);
-            const nameB = getLocalizedContent(b.name, locale);
+            const nameA = getLocalizedContent(a.name, locale, selectedTapasLanguage);
+            const nameB = getLocalizedContent(b.name, locale, selectedTapasLanguage);
             return nameA.localeCompare(nameB);
         }
 
@@ -4054,7 +4143,7 @@ const HomePage = () => {
                                         )}
                                         <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
                                         <button
-                                            onClick={() => setShowDataMenu(!showDataMenu)}
+                                            onClick={() => { setShowDataMenu(!showDataMenu); setShowTapasLanguageMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
                                         >
                                             {t('data')}
@@ -4080,6 +4169,43 @@ const HomePage = () => {
                                                 >
                                                     {t('cleanData')}
                                                 </button>
+                                            </div>
+                                        )}
+                                        <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
+                                        <button
+                                            onClick={() => { setShowTapasLanguageMenu(!showTapasLanguageMenu); setShowDataMenu(false); }}
+                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
+                                        >
+                                            {t('tapasLanguage')}
+                                            <svg className={`w-4 h-4 transform transition-transform ${showTapasLanguageMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </button>
+                                        {showTapasLanguageMenu && (
+                                            <div className="pl-4">
+                                                {tapasLanguagesForMenu.length > 0 ? (
+                                                    tapasLanguagesForMenu.map(langCode => (
+                                                        <button
+                                                            key={langCode}
+                                                            onClick={() => handleSelectTapasLanguage(langCode)}
+                                                            className={`block w-full text-left px-4 py-2 ${
+                                                                selectedTapasLanguage === langCode
+                                                                    ? 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200'
+                                                                    : 'hover:bg-gray-100 dark:hover:bg-gray-600'
+                                                            }`}
+                                                        >
+                                                            {customTapasLanguages[langCode]?.languageName || customTapasLanguages[langCode]}
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <p className="px-4 py-2 text-gray-500 dark:text-gray-400">{t('noOtherLanguages')}</p>
+                                                )}
+                                                {selectedTapasLanguage && (
+                                                    <button
+                                                        onClick={() => handleSelectTapasLanguage(null)}
+                                                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                                                    >
+                                                        {t('clearX', '')}
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                         <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
@@ -4162,7 +4288,7 @@ const HomePage = () => {
                     ) : (
                         <>
                             {currentPage === 'active' && (
-                                <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} />
+                                <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} selectedTapasLanguage={selectedTapasLanguage} />
                             )}
                             {currentPage === 'history' && (
                                 <TapasList
@@ -4174,6 +4300,7 @@ const HomePage = () => {
                                     setHistoryStatusFilter={setHistoryStatusFilter}
                                     historyTimeFilter={historyTimeFilter}
                                     setHistoryTimeFilter={setHistoryTimeFilter}
+                                    selectedTapasLanguage={selectedTapasLanguage}
                                 />
                             )}
                             {currentPage === 'statistics' && (
@@ -4183,7 +4310,7 @@ const HomePage = () => {
                                 <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }} editingTapas={editingTapas} onCancelEdit={handleCancelEdit} />
                             )}
                             {selectedTapas && currentPage === 'detail' && (
-                                <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas} setSelectedTapas={setSelectedTapas} />
+                                <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas} setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage} />
                             )}
                             {selectedLicense && (
                                 <License onClose={handleCloseLicense} />
