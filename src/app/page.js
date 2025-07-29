@@ -2212,8 +2212,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                 return (
                     <li key={range.single.getTime()}>
                         {range.single.toLocaleDateString()}
-                        {range.isRecuperated && <span className="text-green-500 ml-2">({t('recuperatedDays').toLowerCase().replace('days', '')})</span>}
-                        {range.isAdvanced && <span className="text-purple-500 ml-2">({t('advancedDays').toLowerCase().replace('days', '')})</span>}
+                        {range.isRecuperated && <span className="text-green-500 ml-2">({t('recuperated')})</span>}
+                        {range.isAdvanced && <span className="text-purple-500 ml-2">({t('advanced')})</span>}
                     </li>
                 );
             } else {
