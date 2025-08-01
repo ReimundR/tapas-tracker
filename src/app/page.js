@@ -2259,8 +2259,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     }, [showRecuperationAdvanceMenu, showAcknowledgeNDaysMenu, showUpdateSharedTapasMenu]);
 
 
-    const sharedInfoColor = actualDataIsNewer ? 'orange' : (updateAvailable ? 'green' : 'blue');
-    const sharedInfoBgColor = actualDataIsNewer ? 'orange-500' : (updateAvailable ? 'green-600' : 'blue-500');
+    const sharedInfoColor = actualDataIsNewer ? 'orange' : (updateAvailable ? 'green' : 'gray');
+    const sharedInfoBgColor = actualDataIsNewer ? 'bg-orange-500' : (updateAvailable ? 'bg-green-600' : 'bg-gray-400 dark:bg-gray-600');
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
@@ -2284,7 +2284,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                                 <div ref={sharedDropdownRef} className="relative inline-block ml-2">
                                     <button
                                         onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
-                                        className={`bg-${sharedInfoBgColor} text-white px-2 py-1 rounded text-xs font-medium`}
+                                        className={`${sharedInfoBgColor} text-white px-2 py-1 rounded text-xs font-medium`}
                                     >
                                         ...
                                     </button>
