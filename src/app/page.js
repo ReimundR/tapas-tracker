@@ -1464,6 +1464,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     const isTodayValid = startDateObj <= today && (noTapas || today <= endDateObj);
     const isYesterdayValid = startDateObj <= yesterday && (noTapas || yesterday <= endDateObj);
     const isPeriodEndOrOver = !noTapas && today >= endDateObj;
+    const isPeriodOver = !noTapas && today > endDateObj;
     const isSuccessful = tapas.status === 'successful';
     const isFailed = tapas.status === 'failed';
 
@@ -1981,7 +1982,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         if (checkedUnitsCount >= totalUnits) {
             await updateDoc(tapasRef, { status: 'successful' });
             setMessage(t('tapasAutoMarkedSuccessful'));
-        } else {
+        } else if (isPeriodOver) {
             // If period is over but not all units checked, suggest marking as failed
             setMessage(t('tapasPeriodOverNotAllDaysChecked')); // Re-using this message
         }
