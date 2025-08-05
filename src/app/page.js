@@ -1157,12 +1157,12 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
         const yesterdayPending = isYesterdayWithinDuration && !isYesterdayChecked;
 
         if (yesterdayPending) {
-            pendingStatus = { statusText: t((isWeekly ? 'lastWeek' : 'yesterday') + 'Pending'), statusClass: 'text-red-600' };
+            pendingStatus = { statusText: t((isWeekly ? 'lastWeekX' : 'yesterdayX'), t('pending')).toLowerCase(), statusClass: 'text-red-600' };
         } else if (todayPending && !tapasItem.acknowledgeAfter) {
             const isTodayPending = !isWeekly || today.getTime() == getStartOfDayUTC(new Date()).getTime();
-            const pendingDay = isTodayPending ? 'today' : 'thisWeek';
+            const pendingDay = isTodayPending ? 'todayX' : 'thisWeekX';
             const pendingColor = isTodayPending ? 'text-orange-600' : 'text-gray-600';
-            pendingStatus = { statusText: t(pendingDay + 'Pending'), statusClass: pendingColor };
+            pendingStatus = { statusText: t(pendingDay, t('pending')).toLowerCase(), statusClass: pendingColor };
         }
 
         let leftOutDaysCount = 0;
@@ -1451,10 +1451,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
     const today = getTapasDay(new Date(), tapas, startDateObj);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-    const yesterday = getStartOfDayUTC(new Date(today.getTime() - (daysDelta * timeDayMs))); // Calculate from UTC today
-    const tomorrow = getStartOfDayUTC(new Date(today.getTime() + (daysDelta * timeDayMs))); // Calculate from UTC today
+    const beforeYesterday = getStartOfDayUTC(new Date(today.getTime() - 2 * daysDelta * timeDayMs)); // Calculate from UTC today
+    const yesterday = getStartOfDayUTC(new Date(today.getTime() - daysDelta * timeDayMs)); // Calculate from UTC today
+    const tomorrow = getStartOfDayUTC(new Date(today.getTime() + daysDelta * timeDayMs)); // Calculate from UTC today
 
     const isTodayChecked = isDateChecked(today);
+    const isBeforeYesterdayChecked = isDateChecked(beforeYesterday);
     const isYesterdayChecked = isDateChecked(yesterday);
     const isTomorrowChecked = isDateChecked(tomorrow);
 
@@ -2391,7 +2393,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                                         onClick={() => handleMarkUnitFinished(today)}
                                         className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
                                     >
-                                        {t((tapas.scheduleType === 'weekly' ? 'thisWeek' : 'today') + 'Finished')}
+                                        {tapas.scheduleType === 'weekly' ? t('thisWeekX', t('finishedW')) : t('todayX', t('finishedD'))}
                                     </button>
                                 )}
                                 {!isYesterdayChecked && isYesterdayValid && (
@@ -2399,7 +2401,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                                         onClick={() => handleMarkUnitFinished(yesterday)}
                                         className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
                                     >
-                                        {t((tapas.scheduleType === 'weekly' ? 'lastWeek' : 'yesterday') + 'Finished')}
+                                        {tapas.scheduleType === 'weekly' ? t('lastWeekX', t('finishedW')) : t('yesterdayX', t('finishedD'))}
                                     </button>
                                 )}
                             </div>
@@ -2417,15 +2419,23 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                                                 onClick={() => handleRecuperateUnit(yesterday)}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                             >
-                                                {t(tapas.scheduleType === 'weekly' ? 'lastWeekRecuperated' : 'yesterdayRecuperated')}
+                                                {tapas.scheduleType === 'weekly' ? t('lastWeekX', t('recuperatedW')) : t('yesterdayX', t('recuperatedD'))}
                                             </button>
                                         )}
-                                        {(tapas.allowRecuperation && (!isTodayChecked || !isTomorrowChecked) && today >= startDateObj && today <= endDateObj) && (
+                                        {(tapas.allowRecuperation && !isBeforeYesterdayChecked && beforeYesterday >= startDateObj && beforeYesterday <= endDateObj) && (
+                                            <button
+                                                onClick={() => handleRecuperateUnit(beforeYesterday)}
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                            >
+                                                {tapas.scheduleType === 'weekly' ? t('beforeLastWeekX', t('recuperatedW')) : t('beforeYesterdayX', t('recuperatedD'))}
+                                            </button>
+                                        )}
+                                        {((!isTodayChecked || !isTomorrowChecked) && today >= startDateObj && today <= endDateObj) && (
                                             <button
                                                 onClick={handleAdvanceUnits}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                             >
-                                                {t(tapas.scheduleType === 'weekly' ? 'thisNextWeekFinishedInAdvance' : 'todayTomorrowFinishedInAdvance')}
+                                                {t((tapas.scheduleType === 'weekly' ? 'thisNextWeek' : 'todayTomorrow') + 'FinishedInAdvance')}
                                             </button>
                                         )}
                                         <button
