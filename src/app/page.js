@@ -1292,6 +1292,8 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                         }
 
                         const dayOfWeek = tapasItem.startDate?.toDate().toLocaleDateString(locale, { weekday: "long" });
+                        const checkedUnitsCount = tapasItem.checkedDays ? getUniqueCheckedDays(tapasItem.checkedDays).length : 0;
+                        const totalUnits = Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType));
 
                         return (
                             <div
@@ -1314,13 +1316,16 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                                     <>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {t('duration')}: {Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType))} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
+                                            {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
                                         </p>
                                         {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
                                         )}
-                                        {tapasItem.status === 'active' && (
+                                        {tapasItem.status === 'active' && daysRemaining <= tapasItem.duration && (
                                             <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
+                                        )}
+                                        {tapasItem.status === 'active' && daysRemaining > tapasItem.duration && (
+                                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">{t('startsIn')}: {daysRemaining-tapasItem.duration+1} {t('days')}</p>
                                         )}
                                     </>
                                 )}
@@ -3959,12 +3964,17 @@ const HomePage = () => {
         return 0; // Should not be reached
     });
 
-    // History tapas are already filtered by status and time in TapasList component
-    // We only pass the base history tapas here, and let TapasList apply its internal filters.
+    // History filter by end date latest first
     const baseHistoryTapas = tapas.filter(tapas => tapas.status !== 'active').sort((a,b) => {
-        const dateA = a.completionDate ? a.completionDate.toDate() : a.createdAt.toDate();
-        const dateB = b.completionDate ? b.completionDate.toDate() : b.createdAt.toDate();
-        return dateB - dateA; // Sort descending by completion/creation date
+        const endDateA = getTapasDatesInfo(b).endDate;
+        const endDateB = getTapasDatesInfo(a).endDate;
+
+        // Handle cases where endDate might be null or invalid (shouldn't happen for active tapas normally)
+        if (!endDateA && !endDateB) return 0;
+        if (!endDateA) return 1; // Null end date goes to the end
+        if (!endDateB) return -1; // Null end date goes to the end
+
+        return endDateA.getTime() - endDateB.getTime(); // Sort by end date ascending (earliest first)
     });
 
     if (loadingFirebase) {
