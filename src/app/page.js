@@ -1321,10 +1321,10 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                                         {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
                                         )}
-                                        {tapasItem.status === 'active' && daysRemaining <= tapasItem.duration && (
+                                        {tapasItem.status === 'active' && daysRemaining < tapasItem.duration && (
                                             <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
                                         )}
-                                        {tapasItem.status === 'active' && daysRemaining > tapasItem.duration && (
+                                        {tapasItem.status === 'active' && daysRemaining >= tapasItem.duration && (
                                             <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">{t('startsIn')}: {daysRemaining-tapasItem.duration+1} {t('days')}</p>
                                         )}
                                     </>
