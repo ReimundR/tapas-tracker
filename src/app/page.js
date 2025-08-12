@@ -250,6 +250,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const { db, userId, t, locale } = useContext(AppContext);
 
     const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
+    const [tapasDataInitialized, setTapasDataInitialized] = useState(false);
     const [currentFormLanguage, setCurrentFormLanguage] = useState(locale); // Language currently being edited in the form
     const [availableFormLanguages, setAvailableFormLanguages] = useState([locale]); // Languages for which data exists in the form
     const [otherLanguages, setOtherLanguages] = useState({}); // Stores custom language codes and names { 'br': 'Brasilian' }
@@ -262,7 +263,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     const [startTime, setStartTime] = useState('');
     const [duration, setDuration] = useState('');
     const [endDate, setEndDate] = useState(''); // New state for end date
-    const [descriptionEditorState, setDescriptionEditorState] = useState(null); // Lexical EditorState
     const [crystallizationTime, setCrystallizationTime] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -347,6 +347,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             } else {
                 setEndDate('');
             }
+            setTapasDataInitialized(true);
         } else {
             // Reset form for new tapas
             setTapasMultiLanguageData({
@@ -367,18 +368,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             setAcknowledgeAfter(false);
         }
     }, [editingTapas, locale]);
-
-    // Update description editor when currentFormLanguage or multi-language data changes
-    useEffect(() => {
-        const currentLangData = tapasMultiLanguageData[currentFormLanguage];
-        if (currentLangData) {
-            // Force Lexical editor to re-render with new content
-            setDescriptionEditorState(null); // Clear state first
-            setTimeout(() => {
-                setDescriptionEditorState(currentLangData.description);
-            }, 0);
-        }
-    }, [currentFormLanguage, tapasMultiLanguageData]);
 
     // Effect to close dropdown when clicking outside
     useEffect(() => {
@@ -823,7 +812,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         value={currentTapasDataForForm.name}
                         onChange={(e) => handleMultiLanguageInputChange('name', e.target.value)}
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                        required={currentFormLanguage === locale} // Only require for the primary locale
+                        required
                     />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -945,7 +934,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                 <div className="col-span-full">
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
                     <RichTextEditor
-                        key={`${editingTapas ? editingTapas.id : 'new-tapas'}-${currentFormLanguage}`} // Key to force remount on language change
+                        key={`${currentFormLanguage}-${tapasDataInitialized}`} // Key to force remount on language change
                         initialContent={currentTapasDataForForm.description}
                         onEditorStateChange={handleDescriptionChange}
                     />

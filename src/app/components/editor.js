@@ -12,8 +12,7 @@ import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $insertNodes } from 'lexical';
+import { $getRoot, $insertNodes, $createParagraphNode } from 'lexical';
 import { $generateNodesFromDOM } from '@lexical/html';
 import AutoLinkPlugin from "../../plugins/AutoLinkPlugin";
 import ToolbarPlugin from "../../plugins/ToolbarPlugin";
@@ -62,24 +61,6 @@ const editorConfig = {
     ]
 };
 
-const LoadInitialContent = ({ initialContent }) => {
-    const [editor] = useLexicalComposerContext();
-
-    useEffect(() => {
-        if (!initialContent) { return; }
-
-        editor.update(() => {
-            const parser = new DOMParser();
-            const dom = parser.parseFromString(initialContent, "text/html");
-            const nodes = $generateNodesFromDOM(editor, dom);
-
-            $getRoot().clear();
-            $insertNodes(nodes);
-        });
-    }, [editor, initialContent]);
-    return null;
-};
-
 // Locale Context
 export const LocaleContext = createContext({
     locale: 'en',
@@ -91,14 +72,27 @@ export const LocaleContext = createContext({
 export const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
     const { t } = useContext(LocaleContext);
 
+    // This function will be used to create the initial state of the editor.
+    // It is wrapped in a useMemo to ensure it's only created once.
     const initialConfig = {
         ...editorConfig,
-        //editorState: initialEditorState, // Load initial state
+        editorState: (editor) => {
+            const root = $getRoot();
+            if (initialContent) {
+                const parser = new DOMParser();
+                const dom = parser.parseFromString(initialContent, "text/html");
+                const nodes = $generateNodesFromDOM(editor, dom);
+                root.clear();
+                $insertNodes(nodes);
+            } else {
+                root.clear();
+                root.append($createParagraphNode());
+            }
+        },
     };
 
     return (
         <LexicalComposer initialConfig={initialConfig}>
-            <LoadInitialContent initialContent={initialContent} />
             <div className="relative border border-gray-300 dark:border-gray-600 rounded-md">
                 <ToolbarPlugin />
                 <div className="editor-inner">
