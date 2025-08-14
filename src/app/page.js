@@ -3104,10 +3104,8 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
 
     if (loading) {
         return (
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-                <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                    <p className="text-center">{t('loadingTapas')}</p>
-                </div>
+            <div className="flex justify-center items-center h-screen">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
             </div>
         );
     }
@@ -3968,8 +3966,8 @@ const HomePage = () => {
 
     if (loadingFirebase) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-black text-white">
-                <div className="text-indigo-400 text-3xl font-bold animate-pulse">{t('loadingApp')}</div>
+            <div className="flex justify-center items-center h-screen">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
             </div>
         );
     }
