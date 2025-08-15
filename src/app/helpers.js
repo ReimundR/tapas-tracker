@@ -75,7 +75,7 @@ export const ThemeContext = createContext({
 
 // Theme Provider component
 export const ThemeProvider = ({ children }) => {
-    const [theme, setTheme] = useState('light');
+    const [theme, setTheme] = useState('');
 
     useEffect(() => {
         // On component mount, check for saved theme in local storage

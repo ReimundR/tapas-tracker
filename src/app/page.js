@@ -3349,7 +3349,7 @@ const HomePage = () => {
 
 
     const { locale, setLocale, t } = useContext(LocaleContext);
-    const { toggleTheme } = useContext(ThemeContext);
+    const { theme, toggleTheme } = useContext(ThemeContext);
 
 
     // Initialize Firebase and handle authentication
@@ -3964,12 +3964,8 @@ const HomePage = () => {
         return endDateA.getTime() - endDateB.getTime(); // Sort by end date ascending (earliest first)
     });
 
-    if (loadingFirebase) {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
-            </div>
-        );
+    if (loadingFirebase && !theme) {
+        return ;
     }
 
     // Only show login prompt if userId is null or if it's a guest user, and Firebase is done loading, and showLoginPrompt is true
@@ -4100,16 +4096,15 @@ const HomePage = () => {
                     }
                 `}</style>
 
-                {/* Header */}
                 <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 shadow-md">
                     <div className="container mx-auto flex justify-between items-center relative">
                         <h1 className="text-3xl font-bold">{t('appName')}</h1>
                         <div className="flex items-center space-x-4">
-                            {/* Theme Toggle */}
                             <button
                                 onClick={toggleTheme}
                                 className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors duration-200 text-white focus:outline-none focus:ring-2 focus:ring-white"
                                 aria-label="Toggle light/dark mode"
+                                disabled={loadingFirebase}
                             >
                                 {/* The theme is managed by the parent ThemeProvider via document.documentElement.classList.add('dark') */}
                                 {/* This button's icon will reflect the *current* state of the 'dark' class on <html> */}
@@ -4126,11 +4121,15 @@ const HomePage = () => {
 
                             <LanguageSelect locale={locale} setLocale={setLocale} />
 
-                            {userDisplayName && (
-                                <span className="text-sm bg-indigo-700 px-3 py-1 rounded-full opacity-80 hidden md:inline-block">
-                                    {t('hello')}, {userDisplayName.split(' ')[0]}!
-                                </span>
-                            )}
+                            <span className="text-sm bg-indigo-700 px-3 py-1 rounded-full opacity-80 hidden md:inline-block">
+                                <div className="flex">{t('hello')},&nbsp;
+                                {userDisplayName ? (
+                                    <>{userDisplayName.split(' ')[0]}!</>
+                                ) : (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-300"></div>
+                                )}
+                                </div>
+                            </span>
                             
                             <div className="relative" id="main-menu">
                                 <button
@@ -4152,6 +4151,7 @@ const HomePage = () => {
                                             <button
                                                 onClick={handleLogout}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                disabled={loadingFirebase}
                                             >
                                                 {t('logout')}
                                             </button>
@@ -4159,6 +4159,7 @@ const HomePage = () => {
                                             <button
                                                 onClick={() => { setShowLoginPrompt(true); setShowMenu(false); }}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                disabled={loadingFirebase}
                                             >
                                                 {t('signIn')}
                                             </button>
@@ -4167,6 +4168,7 @@ const HomePage = () => {
                                         <button
                                             onClick={() => { setShowDataMenu(!showDataMenu); setShowTapasLanguageMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
+                                            disabled={loadingFirebase}
                                         >
                                             {t('data')}
                                             <svg className={`w-4 h-4 transform transition-transform ${showDataMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -4197,6 +4199,7 @@ const HomePage = () => {
                                         <button
                                             onClick={() => { setShowTapasLanguageMenu(!showTapasLanguageMenu); setShowDataMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
+                                            disabled={loadingFirebase}
                                         >
                                             {t('tapasLanguage')}
                                             <svg className={`w-4 h-4 transform transition-transform ${showTapasLanguageMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -4272,6 +4275,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'history' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
+                            disabled={loadingFirebase}
                         >
                             {t('history')}
                         </button>
@@ -4280,6 +4284,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'statistics' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
+                            disabled={loadingFirebase}
                         >
                             {t('statistics')}
                         </button>
@@ -4289,6 +4294,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-2xl font-medium transition-colors duration-200 font-bold ${
                                 currentPage === 'add' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
+                            disabled={loadingFirebase}
                         >
                             +
                         </button>
@@ -4309,7 +4315,12 @@ const HomePage = () => {
                         />
                     ) : (
                         <>
-                            {currentPage === 'active' && (
+                            {currentPage === 'active' && loadingFirebase && (
+                                <div className="flex justify-center items-center h-screen">
+                                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
+                                </div>
+                            )}
+                            {currentPage === 'active' && !loadingFirebase && (
                                 <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} selectedTapasLanguage={selectedTapasLanguage} />
                             )}
                             {currentPage === 'history' && (

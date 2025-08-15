@@ -1,5 +1,12 @@
 # Changelog
 
+#### = 1.0.6 (2025-08-15) =
+
+* added loading animation
+* show app on loading
+* added show "start in" for future Tapas
+* show progress in list
+
 #### = 1.0.5 (2025-07-27) =
 
 * added multi-language Tapas texts
