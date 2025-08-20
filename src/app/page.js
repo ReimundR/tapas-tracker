@@ -866,17 +866,17 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                     </div>
                 </div>
                 {scheduleType !== 'noTapas' && (
-                    <>
-                <div className="col-span-1">
-                    <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('startTime')} ({t('causeOptional').split('(')[0].trim().toLowerCase()})</label>
-                    <input
-                        type="time"
-                        id="startTime"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                    />
-                </div>
+                    <div className="col-span-1">
+                        <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('startTime')} ({t('causeOptional').split('(')[0].trim().toLowerCase()})</label>
+                        <input
+                            type="time"
+                            id="startTime"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
+                        />
+                    </div>
+                )}
                 <div className="col-span-1">
                     <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {t('duration')} [{scheduleType === 'weekly' ? t('weeks').toLowerCase() : t('days').toLowerCase()}]
@@ -888,7 +888,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                             value={duration}
                             onChange={handleChangeDuration}
                             className="block w-full px-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                            required
+                            required={scheduleType !== 'noTapas'}
                             min="1"
                         />
                         <button
@@ -917,19 +917,19 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     />
                 </div>
-                <div className="col-span-full flex items-center mt-2">
-                    <input
-                        type="checkbox"
-                        id="acknowledgeAfter"
-                        checked={acknowledgeAfter}
-                        onChange={(e) => setAcknowledgeAfter(e.target.checked)}
-                        className="form-checkbox h-5 w-5 text-indigo-600 rounded"
-                    />
-                    <label htmlFor="acknowledgeAfter" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {t('acknowledgeAfter')}
-                    </label>
-                </div>
-                    </>
+                {scheduleType !== 'noTapas' && (
+                    <div className="col-span-full flex items-center mt-2">
+                        <input
+                            type="checkbox"
+                            id="acknowledgeAfter"
+                            checked={acknowledgeAfter}
+                            onChange={(e) => setAcknowledgeAfter(e.target.checked)}
+                            className="form-checkbox h-5 w-5 text-indigo-600 rounded"
+                        />
+                        <label htmlFor="acknowledgeAfter" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {t('acknowledgeAfter')}
+                        </label>
+                    </div>
                 )}
                 <div className="col-span-full">
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
@@ -1493,7 +1493,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
     // Load checkedPartsSelection from database on mount/tapas change
     useEffect(() => {
-        if (noTapas || !todayDateString) {
+        if (!todayDateString) {
             setCheckedPartsSelection({});
             return;
         }
@@ -2360,7 +2360,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                             <ul className="list-none ml-4 space-y-2">
                                 {displayParts.map((part, index) => (
                                     <li key={index} className="flex items-center space-x-2">
-                                        {!isSuccessful && !isFailed && tapas.scheduleType !== 'noTapas' && (
+                                        {!isSuccessful && !isFailed && (
                                             <input
                                                 type="checkbox"
                                                 checked={!!checkedPartsSelection[index]}
