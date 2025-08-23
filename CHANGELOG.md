@@ -1,5 +1,11 @@
 # Changelog
 
+#### = 1.0.7 (2025-08-23) =
+
+* fixed Tapas repeat option
+* readded parts checking for noTapas type
+* show app during initial data loading
+
 #### = 1.0.6 (2025-08-15) =
 
 * added loading animation

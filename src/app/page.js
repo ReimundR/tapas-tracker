@@ -392,8 +392,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
     // Effect to synchronize duration and endDate when startDate changes
     useEffect(() => {
         if (scheduleType === 'noTapas') {
-            setDuration('');
-            setEndDate('');
             setScheduleInterval('');
             setAllowRecuperation(false);
             setAcknowledgeAfter(false);
@@ -436,9 +434,9 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         setDuration(newDuration);
         if (startDate && newDuration && !isNaN(parseInt(newDuration)) && parseInt(newDuration) > 0) {
             const start = new Date(startDate);
-            start.setHours(0, 0, 0, 0);
+            //start.setHours(0, 0, 0, 0);
             const end = new Date(start);
-            const actualDays = parseInt(newDuration) * getScheduleFactor(scheduleType, scheduleInterval);
+            const actualDays = (parseInt(newDuration)-1) * getScheduleFactor(scheduleType, scheduleInterval);
             end.setDate(start.getDate() + actualDays);
             setEndDate(end.toISOString().split('T')[0]);
         } else {
@@ -633,7 +631,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
             return;
         }
 
-        const durationToSave = scheduleType === 'noTapas' ? 0 : parseInt(duration) * getScheduleFactor(scheduleType, scheduleInterval);
+        const durationToSave = !duration ? 0 : parseInt(duration) * getScheduleFactor(scheduleType, scheduleInterval);
 
         // Prepare multi-language data for saving
         let names = {};
@@ -1056,7 +1054,7 @@ const getTapasDatesInfo = (tapasItem) => {
     const today = getStartOfDayUTC(new Date());
     
     // For 'noTapas' scheduleType, duration and dates are not applicable
-    if (tapasItem.scheduleType === 'noTapas') {
+    if (!tapasItem.duration) {
         return { endDate: null, daysRemaining: null, daysOver: null };
     }
 
@@ -1064,7 +1062,6 @@ const getTapasDatesInfo = (tapasItem) => {
     
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + tapasItem.duration - 1);
-    endDate.setHours(0, 0, 0, 0);
 
     const diffTime = endDate.getTime() - today.getTime();
     const daysOver = Math.ceil(diffTime / timeDayMs);
@@ -1102,11 +1099,11 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
 
     // Helper to get detailed status for active tapas display
     const getDetailedStatus = useCallback((tapasItem) => {
-        const noTapas = tapasItem.scheduleType === 'noTapas';
-        const startDate = noTapas ? null : getStartOfDayUTC(tapasItem.startDate.toDate());
+        const noDuration = tapasItem.duration === null || tapasItem.duration <= 0;
+        const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
         const today = getTapasDay(new Date(), tapasItem, startDate);
 
-        if (noTapas) {
+        if (noDuration) {
             const uniqueCheckedDays = getUniqueCheckedDays(tapasItem.checkedDays);
             let statusText = '';
             const dates = { "Week": 7, "Month": 30, "Year": 365 };
@@ -1301,7 +1298,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                                     )}
                                     {tapasItem.status === 'active' && tapasItem.scheduleType !== 'noTapas' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
                                 </h3>
-                                {tapasItem.scheduleType !== 'noTapas' && (
+                                {tapasItem.duration !== null && tapasItem.duration > 0 && (
                                     <>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -1329,9 +1326,9 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                                     <p className={`text-sm font-bold mt-1 ${statusClass}`}>{statusText}</p>
                                 )}
                                 {/* Display undone parts for active tapas */}
-                                {tapasItem.status === 'active' && undoneParts.length > 0 && tapasItem.scheduleType !== 'noTapas' && (
+                                {tapasItem.status === 'active' && undoneParts.length > 0 && (
                                     <div className="mt-2">
-                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Unerledigte Teile für heute:</p>
+                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('undonePartsToday')}:</p>
                                         <ul className="list-disc list-inside ml-4 text-sm text-gray-600 dark:text-gray-400">
                                             {undoneParts.map((part, idx) => (
                                                 <li key={idx}>{part}</li>
@@ -1425,7 +1422,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     }
 
     const noTapas = tapas.scheduleType === 'noTapas';
-    const totalUnits = noTapas ? 0 : Math.ceil(tapas.duration / getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval));
+    const noDuration = tapas.duration === null || tapas.duration <= 0;
+    const totalUnits = noDuration ? 0 : Math.ceil(tapas.duration / getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval));
     const checkedUnitsCount = tapas.checkedDays ? getUniqueCheckedDays(tapas.checkedDays).length : 0; // Use unique count
 
     // Check if a specific date has been checked
@@ -1457,10 +1455,10 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     const todayDateString = formatDateNoTimeToISO(today);
 
     // Check if the tapas period is over
-    const isTodayValid = startDateObj <= today && (noTapas || today <= endDateObj);
-    const isYesterdayValid = startDateObj <= yesterday && (noTapas || yesterday <= endDateObj);
-    const isPeriodEndOrOver = !noTapas && today >= endDateObj;
-    const isPeriodOver = !noTapas && today > endDateObj;
+    const isTodayValid = startDateObj <= today && (noDuration || today <= endDateObj);
+    const isYesterdayValid = startDateObj <= yesterday && (noDuration || yesterday <= endDateObj);
+    const isPeriodEndOrOver = !noDuration && today >= endDateObj;
+    const isPeriodOver = !noDuration && today > endDateObj;
     const isSuccessful = tapas.status === 'successful';
     const isFailed = tapas.status === 'failed';
 
@@ -1791,6 +1789,87 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         setNewRepeatDuration('');
     };
 
+    const updateRepeatName = (name) => {
+        let currentName = name;
+        const repeatRegex = /\(Repeat(?: (\d+))?\)/;
+        const match = currentName.match(repeatRegex);
+        if (match) {
+            if (match[1]) {
+                const currentRepeatNum = parseInt(match[1]);
+                currentName = currentName.replace(repeatRegex, `(Repeat ${currentRepeatNum + 1})`);
+            } else {
+                currentName = currentName.replace('(Repeat)', '(Repeat 2)');
+            }
+        } else {
+            currentName = `${currentName} (Repeat)`;
+        }
+        return currentName;
+    };
+
+    const repeatTapas = () => {
+        let newDurationDays = tapas.duration; // Default to original duration in days
+        let newStartDate = getStartOfDayUTC(new Date()); // New tapas starts today in UTC
+
+        if (repeatOption === 'newDuration') {
+            if (isNaN(parseInt(newRepeatDuration)) || parseInt(newRepeatDuration) <= 0) {
+                setMessage(t('invalidNewDuration'));
+                return;
+            }
+            newDurationDays = parseInt(newRepeatDuration);
+            if (tapas.scheduleType === 'weekly') {
+                newDurationDays *= 7; // Convert weeks to days for storage
+            }
+        } else if (repeatOption === 'untilEndDate') {
+            const diffTime = endDateObj.getTime() - newStartDate.getTime();
+            const diffDays = Math.ceil(diffTime / timeDayMs);
+            if (diffDays > 0) {
+                newDurationDays = diffDays;
+            } else {
+                setMessage(t('originalEndDateInPast'));
+                return;
+            }
+        }
+
+        // Create new multi-language name object for the repeated tapas
+        let newMultiLangName;
+        if (typeof tapas.name === 'string') {
+            newMultiLangName = updateRepeatName(tapas.name);
+        } else {
+            newMultiLangName = {};
+            Object.keys(tapas.name).forEach(lang => {
+                newMultiLangName[lang] = updateRepeatName(tapas.name[lang] || '');
+            });
+        }
+
+        const newTapasData = {
+            name: newMultiLangName, // Use multi-language name
+            startDate: newStartDate,
+            startTime: tapas.startTime,
+            duration: newDurationDays,
+            description: tapas.description, // Carry over multi-language description
+            goals: tapas.goals, // Carry over multi-language goals
+            parts: tapas.parts, // Carry over multi-language parts
+            crystallizationTime: tapas.crystallizationTime || '',
+            allowRecuperation: tapas.allowRecuperation || false,
+            status: 'active',
+            checkedDays: [],
+            failureCause: null,
+            recuperatedDays: [], // Reset for new tapas
+            advancedDays: [], // Reset for new tapas
+            createdAt: new Date(),
+            userId: userId,
+            checkedPartsByDate: {},
+            results: null, // New tapas starts with no results
+            shareReference: tapas.shareReference || null, // Carry over share reference if exists
+            scheduleType: tapas.scheduleType || 'daily', // Carry over schedule type
+            scheduleInterval: tapas.scheduleInterval || '', // Carry over schedule interval
+            acknowledgeAfter: tapas.acknowledgeAfter || false, // Carry over acknowledgeAfter
+            languages: tapas.languages || {}, // Carry over custom languages
+            version: 1, // New tapas starts with version 1
+        };
+        return newTapasData;
+    };
+
     const confirmFail = async () => {
         try {
             await updateDoc(tapasRef, { status: 'failed', failureCause: failureCause || null });
@@ -1798,75 +1877,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
             setShowFailDialog(false);
 
             if (repeatOption !== 'none') {
-                let newDurationDays = tapas.duration; // Default to original duration in days
-                let newStartDate = getStartOfDayUTC(new Date()); // New tapas starts today in UTC
-
-                if (repeatOption === 'newDuration') {
-                    if (isNaN(parseInt(newRepeatDuration)) || parseInt(newRepeatDuration) <= 0) {
-                        setMessage(t('invalidNewDuration'));
-                        return;
-                    }
-                    newDurationDays = parseInt(newRepeatDuration);
-                    if (tapas.scheduleType === 'weekly') {
-                        newDurationDays *= 7; // Convert weeks to days for storage
-                    }
-                } else if (repeatOption === 'untilEndDate') {
-                    // Calculate duration until original end date (if it's in the future)
-                    const diffTime = endDateObj.getTime() - newStartDate.getTime();
-                    const diffDays = Math.ceil(diffTime / timeDayMs);
-                    if (diffDays > 0) {
-                        newDurationDays = diffDays;
-                    } else {
-                        setMessage(t('originalEndDateInPast'));
-                        return;
-                    }
-                }
-
-                // Create new multi-language name object for the repeated tapas
-                const newMultiLangName = {};
-                const repeatRegex = /\(Repeat(?: (\d+))?\)/;
-
-                Object.keys(tapas.name).forEach(lang => {
-                    let currentName = tapas.name[lang] || '';
-                    const match = currentName.match(repeatRegex);
-                    if (match) {
-                        if (match[1]) {
-                            const currentRepeatNum = parseInt(match[1]);
-                            currentName = currentName.replace(repeatRegex, `(Repeat ${currentRepeatNum + 1})`);
-                        } else {
-                            currentName = currentName.replace('(Repeat)', '(Repeat 2)');
-                        }
-                    } else {
-                        currentName = `${currentName} (Repeat)`;
-                    }
-                    newMultiLangName[lang] = currentName;
-                });
-
-                const newTapasData = {
-                    name: newMultiLangName, // Use multi-language name
-                    startDate: newStartDate,
-                    startTime: tapas.startTime,
-                    duration: newDurationDays,
-                    description: tapas.description, // Carry over multi-language description
-                    goals: tapas.goals, // Carry over multi-language goals
-                    parts: tapas.parts, // Carry over multi-language parts
-                    crystallizationTime: tapas.crystallizationTime,
-                    status: 'active',
-                    checkedDays: [],
-                    failureCause: null,
-                    recuperatedDays: [], // Reset for new tapas
-                    advancedDays: [], // Reset for new tapas
-                    createdAt: new Date(),
-                    userId: userId,
-                    checkedPartsByDate: {}, // New tapas starts with no checked parts
-                    results: null, // New tapas starts with no results
-                    shareReference: tapas.shareReference || null, // Carry over share reference if exists
-                    scheduleType: tapas.scheduleType, // Carry over schedule type
-                    scheduleInterval: tapas.scheduleInterval, // Carry over schedule interval
-                    acknowledgeAfter: tapas.acknowledgeAfter, // Carry over acknowledgeAfter
-                    languages: tapas.languages || {}, // Carry over custom languages
-                    version: 1, // New tapas starts with version 1
-                };
+                const newTapasData = repeatTapas();
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
                 setMessage(t('failedTapasRepeated'));
@@ -1885,77 +1896,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
     const confirmRepeat = async () => {
         try {
-            let newDurationDays = tapas.duration; // Default to original duration in days
-            let newStartDate = getStartOfDayUTC(new Date()); // New tapas starts today in UTC
-
-            if (repeatOption === 'newDuration') {
-                if (isNaN(parseInt(newRepeatDuration)) || parseInt(newRepeatDuration) <= 0) {
-                    setMessage(t('invalidNewDuration'));
-                    return;
-                }
-                newDurationDays = parseInt(newRepeatDuration);
-                if (tapas.scheduleType === 'weekly') {
-                    newDurationDays *= 7; // Convert weeks to days for storage
-                }
-            } else if (repeatOption === 'untilEndDate') {
-                const originalEndDateAsDate = endDateObj; // Already calculated
-                const diffTime = originalEndDateAsDate.getTime() - newStartDate.getTime();
-                const diffDays = Math.ceil(diffTime / timeDayMs);
-                if (diffDays > 0) {
-                    newDurationDays = diffDays;
-                } else {
-                    setMessage(t('originalEndDateInPast'));
-                    return;
-                }
-            }
-
-            // Create new multi-language name object for the repeated tapas
-            const newMultiLangName = {};
-            const repeatRegex = /\(Repeat(?: (\d+))?\)/;
-
-            Object.keys(tapas.name).forEach(lang => {
-                let currentName = tapas.name[lang] || '';
-                const match = currentName.match(repeatRegex);
-                if (match) {
-                    if (match[1]) {
-                        const currentRepeatNum = parseInt(match[1]);
-                        currentName = currentName.replace(repeatRegex, `(Repeat ${currentRepeatNum + 1})`);
-                    } else {
-                        currentName = currentName.replace('(Repeat)', '(Repeat 2)');
-                    }
-                } else {
-                    currentName = `${currentName} (Repeat)`;
-                }
-                newMultiLangName[lang] = currentName;
-            });
-
-
-            const newTapasData = {
-                name: newMultiLangName, // Use multi-language name
-                startDate: newStartDate,
-                startTime: tapas.startTime,
-                duration: newDurationDays,
-                description: tapas.description, // Carry over multi-language description
-                goals: tapas.goals, // Carry over multi-language goals
-                parts: tapas.parts, // Carry over multi-language parts
-                crystallizationTime: tapas.crystallizationTime || '',
-                allowRecuperation: tapas.allowRecuperation || false,
-                status: 'active',
-                checkedDays: [],
-                failureCause: null,
-                recuperatedDays: [], // Reset for new tapas
-                advancedDays: [], // Reset for new tapas
-                createdAt: new Date(),
-                userId: userId,
-                checkedPartsByDate: {},
-                results: null, // New tapas starts with no results
-                shareReference: tapas.shareReference || null, // Carry over share reference if exists
-                scheduleType: tapas.scheduleType || 'daily', // Carry over schedule type
-                scheduleInterval: tapas.scheduleInterval || '', // Carry over schedule interval
-                acknowledgeAfter: tapas.acknowledgeAfter || false, // Carry over acknowledgeAfter
-                languages: tapas.languages || {}, // Carry over custom languages
-                version: 1, // New tapas starts with version 1
-            };
+            const newTapasData = repeatTapas();
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
             setMessage(t('tapasRepeatedSuccessfully'));
@@ -2315,21 +2256,21 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                             </span>
                         </div>
                     )}
-                    {tapas.scheduleType === 'noTapas' && (
-                        <>
-                            <p><strong className="font-semibold">{t('startDate')}:</strong> {tapas.startDate?.toDate().toLocaleDateString()}
-                            </p>
-                            <p><strong className="font-semibold">{t('schedule')}:</strong> {t(tapas.scheduleType)}</p>
-                        </>
-                    )}
-                    {tapas.scheduleType !== 'noTapas' && (
-                        <>
+                    {noDuration ? (
+                        <p><strong className="font-semibold">{t('startDate')}:</strong> {tapas.startDate?.toDate().toLocaleDateString()}</p>
+                    ) : (<>
                             <p><strong className="font-semibold">{t('timeframe')}:</strong> {tapas.startDate?.toDate().toLocaleDateString()} - {endDate?.toLocaleDateString()}
                             </p>
                             {tapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {tapas.startTime}</p>}
                             <p>
                                 <strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(tapas.duration / getTotalUnits(tapas.scheduleType))} {t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
                             </p>
+                        </>
+                    )}
+                    {tapas.scheduleType === 'noTapas' ? (
+                        <p><strong className="font-semibold">{t('schedule')}:</strong> {t(tapas.scheduleType)}</p>
+                    ) : (
+                        <>
                             {tapas.scheduleType === 'everyNthDays' && (
                             <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(tapas.duration / tapas.scheduleInterval))} {t('everyNthDays', tapas.scheduleInterval).toLowerCase()}</p>
                             )}
