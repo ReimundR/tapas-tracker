@@ -1103,7 +1103,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
         const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
         const today = getTapasDay(new Date(), tapasItem, startDate);
 
-        if (noDuration) {
+        if (noDuration || (tapasItem.scheduleType === 'noTapas' && tapasItem.checkedDays)) {
             const uniqueCheckedDays = getUniqueCheckedDays(tapasItem.checkedDays);
             let statusText = '';
             const dates = { "Week": 7, "Month": 30, "Year": 365 };
