@@ -1104,22 +1104,24 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
         const today = getTapasDay(new Date(), tapasItem, startDate);
 
         if (noDuration || (tapasItem.scheduleType === 'noTapas' && tapasItem.checkedDays)) {
-            const uniqueCheckedDays = getUniqueCheckedDays(tapasItem.checkedDays);
             let statusText = '';
-            const dates = { "Week": 7, "Month": 30, "Year": 365 };
-            let lastChecked = 0;
-            Object.keys(dates).forEach(name => {
-                const duration = dates[name];
-                const date = getStartOfDayUTC(new Date(today.getTime() - (duration * timeDayMs)));
-                const checkedDates = countCheckedSince(uniqueCheckedDays, date);
-                if (checkedDates > lastChecked || (!statusText && duration==365)) {
-                    if (statusText) {
-                        statusText += ' ~ '
+            if (noDuration) {
+                const uniqueCheckedDays = getUniqueCheckedDays(tapasItem.checkedDays);
+                const dates = { "Week": 7, "Month": 30, "Year": 365 };
+                let lastChecked = 0;
+                Object.keys(dates).forEach(name => {
+                    const duration = dates[name];
+                    const date = getStartOfDayUTC(new Date(today.getTime() - (duration * timeDayMs)));
+                    const checkedDates = countCheckedSince(uniqueCheckedDays, date);
+                    if (checkedDates > lastChecked || (!statusText && duration==365)) {
+                        if (statusText) {
+                            statusText += ' ~ '
+                        }
+                        statusText += t('last' + name) + ': ' + checkedDates;
                     }
-                    statusText += t('last' + name) + ': ' + checkedDates;
-                }
-                lastChecked = checkedDates;
-            });
+                    lastChecked = checkedDates;
+                });
+            }
             return { statusText: statusText, statusClass: 'text-gray-600 dark:text-gray-400' }; // No pending status for 'noTapas'
         }
 
