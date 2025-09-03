@@ -1303,9 +1303,15 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                                 {tapasItem.duration !== null && tapasItem.duration > 0 && (
                                     <>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
-                                        </p>
+                                        {!statusText && tapasItem.scheduleType === 'noTapas' && checkedUnitsCount==0 ? (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                {t('duration')}: {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
+                                            </p>
+                                        ) : (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
+                                            </p>
+                                        )}
                                         {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
                                         )}
