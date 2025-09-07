@@ -6,7 +6,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef, Suspense } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
 import Head from 'next/head'; // Import Head from next/head for meta tags
@@ -60,6 +60,104 @@ const getLocalizedContent = (contentObject, currentLocale, selectedTapasLanguage
 // Define context for Firebase and user data
 const AppContext = createContext(null);
 
+
+// Config
+const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
+    const [dateAspects, setDateAspects] = useState([]);
+    const [dateAspectDaysBefore, setDateAspectDaysBefore] = useState(7);
+    const [dateAspectDaysAfter, setDateAspectDaysAfter] = useState(1);
+    const [newAspectName, setNewAspectName] = useState('');
+    const [newAspectPercentage, setNewAspectPercentage] = useState('');
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const configRef = doc(db, `artifacts/${appId}/users/${userId}/config/appConfig`);
+
+    useEffect(() => {
+        const unsub = onSnapshot(configRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setDateAspects(data.dateAspects || []);
+                setDateAspectDaysBefore(data.dateAspectDaysBefore || 7);
+                setDateAspectDaysAfter(data.dateAspectDaysAfter || 1);
+            } else {
+                // Set default values if the document doesn't exist
+                setDateAspects([]);
+                setDateAspectDaysBefore(7);
+                setDateAspectDaysAfter(1);
+            }
+        });
+        return () => unsub();
+    }, [db]);
+
+    const handleAddAspect = async () => {
+        if (newAspectName && newAspectPercentage) {
+            const newAspect = { name: newAspectName, percentage: parseFloat(newAspectPercentage) };
+            try {
+                await setDoc(configRef, { dateAspects: arrayUnion(newAspect) }, { merge: true });
+                setNewAspectName('');
+                setNewAspectPercentage('');
+            } catch (e) {
+                console.error("Error adding date aspect: ", e);
+            }
+        }
+    };
+
+    const handleRemoveAspect = async (aspect) => {
+        try {
+            await setDoc(configRef, { dateAspects: arrayRemove(aspect) }, { merge: true });
+        } catch (e) {
+            console.error("Error removing date aspect: ", e);
+        }
+    };
+
+    const handleUpdateDays = async () => {
+        try {
+            await setDoc(configRef, { dateAspectDaysBefore: dateAspectDaysBefore, dateAspectDaysAfter: dateAspectDaysAfter }, { merge: true });
+        } catch (e) {
+            console.error("Error updating days: ", e);
+        }
+
+        const config = {};
+        config.dateAspects = dateAspects;
+        config.dateAspectDaysBefore = dateAspectDaysBefore;
+        config.dateAspectDaysAfter = dateAspectDaysAfter;
+        setConfig(config);
+
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 p-6 rounded-lg shadow-lg w-full max-w-2xl">
+                <h2 className="text-xl font-bold mb-4">{t('config')}</h2>
+                <div className="mb-4">
+                    <h3 className="font-semibold mb-2">{t('dateAspects')}</h3>
+                    <div className="flex gap-2 mb-2">
+                        <input type="text" value={newAspectName} onChange={(e) => setNewAspectName(e.target.value)} placeholder={t('aspectName')} className="flex-grow p-2 border rounded" />
+                        <input type="number" value={newAspectPercentage} onChange={(e) => setNewAspectPercentage(e.target.value)} placeholder={t('percentage')} className="w-24 p-2 border rounded" />
+                        <button onClick={handleAddAspect} className="px-4 py-2 bg-blue-500 text-white rounded">{t('add')}</button>
+                    </div>
+                    <ul className="list-disc pl-5">
+                        {dateAspects.map((aspect, index) => (
+                            <li key={index} className="flex justify-between items-center my-1">{aspect.name}: {aspect.percentage}% <button onClick={() => handleRemoveAspect(aspect)} className="text-red-500">{t('remove')}</button></li>
+                        ))}
+                    </ul>
+                </div>
+                <div className="mb-4">
+                    <h3 className="font-semibold mb-2">{t('dateAspectTimeframe')}</h3>
+                    <div className="flex gap-4">
+                        <label className="flex items-center">{t('daysBefore')}: <input type="number" value={dateAspectDaysBefore} onChange={(e) => setDateAspectDaysBefore(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
+                        <label className="flex items-center">{t('daysAfter')}: <input type="number" value={dateAspectDaysAfter} onChange={(e) => setDateAspectDaysAfter(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">{t('dateAspectHint')}</p>
+                </div>
+                <div className="flex justify-end">
+                    <button onClick={handleUpdateDays} className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded">{t('close')}</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // Component for a custom confirmation dialog
 const ConfirmDialog = ({ message, onConfirm, onCancel, confirmText, cancelText }) => {
@@ -1050,7 +1148,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
 };
 
 // Helper function to calculate end date and remaining days
-const getTapasDatesInfo = (tapasItem) => {
+const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
     const today = getStartOfDayUTC(new Date());
     
     // For 'noTapas' scheduleType, duration and dates are not applicable
@@ -1067,7 +1165,37 @@ const getTapasDatesInfo = (tapasItem) => {
     const daysOver = Math.ceil(diffTime / timeDayMs);
     const daysRemaining = Math.max(0, daysOver);
 
-    return { endDate, daysRemaining, daysOver };
+    // date aspects
+    let aspectDates = '';
+    if (tapasItem.duration && config?.dateAspects) {
+        const daysBefore = config.dateAspectDaysBefore || 7;
+        const daysAfter = config.dateAspectDaysAfter || 1;
+        const tomorrowTime = new Date(today.getTime() + timeDayMs).getTime();
+        const todayTime = today.getTime();
+        for (const dateAspect of config.dateAspects) {
+            const aspectDays = tapasItem.duration * dateAspect.percentage / 100;
+            const aspectDate = new Date(startDate);
+            aspectDate.setTime(startDate.getTime() + aspectDays * timeDayMs);
+            const aspectDiff = (aspectDate.getTime() - today.getTime()) / timeDayMs;
+            if (aspectDiff >= -daysBefore && aspectDiff <= daysAfter) {
+                const aspectDateUTC = getStartOfDayUTC(aspectDate).getTime();
+                let adate;
+                if (aspectDateUTC === todayTime) {
+                    adate = t('today');
+                } else if (aspectDateUTC == tomorrowTime) {
+                    adate = t('tomorrow');
+                } else {
+                    adate = aspectDate.toLocaleDateString();
+                }
+                if (aspectDates) {
+                    aspectDates += ', ';
+                }
+                aspectDates += dateAspect.name + ': ' + adate;
+            }
+        }
+    }
+
+    return { endDate, daysRemaining, daysOver, aspectDates };
 };
 
 // Helper to get shared tapas info (userId and version)
@@ -1093,7 +1221,7 @@ const getSharedTapasInfo = async (shareReference, db) => {
 
 
 // Component to display a list of Tapas
-const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter, sharedTapasInfoMap, selectedTapasLanguage }) => {
+const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter, historyNameFilter, setHistoryNameFilter, sharedTapasInfoMap, selectedTapasLanguage }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -1206,8 +1334,15 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                 return completionDate >= filterDate;
             });
         }
+
+        // Apply name filter
+        if (historyNameFilter) {
+            const sname = historyNameFilter.toLowerCase();
+            filtered = filtered.filter(tapas => tapas.name.toLowerCase().indexOf(sname) !== -1);
+        }
+
         return filtered;
-    }, [historyStatusFilter, historyTimeFilter]);
+    }, [historyStatusFilter, historyTimeFilter, historyNameFilter]);
 
     const displayedTapas = showFilters ? filterTapas(tapas) : tapas;
 
@@ -1246,6 +1381,15 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                                 <option value="2years">{t('2years')}</option>
                             </select>
                         </div>
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="text"
+                                placeholder={t('searchByName')+"..."}
+                                value={historyNameFilter}
+                                onChange={(e) => setHistoryNameFilter(e.target.value)}
+                                className="px-3 py-2 rounded-md border border-gray-300 w-full"
+                            />                        
+                        </div>
                     </div>
                 </div>
             )}
@@ -1254,7 +1398,7 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Added responsive grid classes */}
                     {displayedTapas.map((tapasItem) => {
-                        const { endDate, daysRemaining, daysOver } = getTapasDatesInfo(tapasItem);
+                        const { endDate, daysRemaining, daysOver, aspectDates } = getTapasDatesInfo(tapasItem, config, t);
                         const { statusText, statusClass } = getDetailedStatus(tapasItem); 
                         const sharedInfo = sharedTapasInfoMap[tapasItem.id] || { userId: null, version: null };
 
@@ -1332,9 +1476,11 @@ const TapasList = ({ tapas, onSelectTapas, showFilters = false, historyStatusFil
                                 {tapasItem.status === 'failed' && (
                                     <p className="text-sm font-medium text-red-600 mt-2">{t('status')}: {t('failed')}</p>
                                 )}
-                                {/* Display new statuses for active tapas */}
                                 {tapasItem.status === 'active' && statusText && (
                                     <p className={`text-sm font-bold mt-1 ${statusClass}`}>{statusText}</p>
+                                )}
+                                {aspectDates && (
+                                    <p className={`text-sm font-bold mt-1`}>{aspectDates}</p>
                                 )}
                                 {/* Display undone parts for active tapas */}
                                 {tapasItem.status === 'active' && undoneParts.length > 0 && (
@@ -3261,6 +3407,7 @@ const GDPR = ({ onClose }) => {
 // Main App Component (now the default export for pages/index.js)
 const HomePage = () => {
     const [currentPage, setCurrentPage] = useState('active');
+    const [config, setConfig] = useState({});
     const [tapas, setTapas] = useState([]);
     const [selectedTapas, setSelectedTapas] = useState(null);
     const [editingTapas, setEditingTapas] = useState(null);
@@ -3291,6 +3438,7 @@ const HomePage = () => {
     // History filters
     const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
     const [historyTimeFilter, setHistoryTimeFilter] = useState('all');
+    const [historyNameFilter, setHistoryNameFilter] = useState('');
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -3298,7 +3446,7 @@ const HomePage = () => {
     const [showAboutModal, setShowAboutModal] = useState(false); // State for About modal
     const [showHelpModal, setShowHelpModal] = useState(false); // State for Help modal
     const [showCleanDataModal, setShowCleanDataModal] = useState(false); // State for Clean Data modal
-
+    const [showConfigModal, setShowConfigModal] = useState(false);
 
     const { locale, setLocale, t } = useContext(LocaleContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
@@ -3337,6 +3485,15 @@ const HomePage = () => {
                             setSelectedTapasLanguage(null);
                         }
 
+                        // Load config
+                        const configRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/config/appConfig`);
+                        const configSnap = await getDoc(configRef);
+                        if (configSnap.exists()) {
+                            const config = configSnap.data();
+                            setConfig(config || {});
+                        } else {
+                            setConfig({});
+                        }
                     } else {
                         setUserId(null);
                         setUserDisplayName(null);
@@ -3344,6 +3501,7 @@ const HomePage = () => {
                         setShowLoginPrompt(true); // Show login prompt if no user is authenticated
                         setSelectedTapasLanguage(null); // Clear selected Tapas language
                         setCustomTapasLanguages({}); // Clear custom languages
+                        setConfig({}); // Clear config
                     }
                     setLoadingFirebase(false);
                 });
@@ -4149,6 +4307,12 @@ const HomePage = () => {
                                         )}
                                         <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
                                         <button
+                                            onClick={() => setShowConfigModal(true)}
+                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        >
+                                            {t('config')}
+                                        </button>
+                                        <button
                                             onClick={() => { setShowTapasLanguageMenu(!showTapasLanguageMenu); setShowDataMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
                                             disabled={loadingFirebase}
@@ -4273,7 +4437,7 @@ const HomePage = () => {
                                 </div>
                             )}
                             {currentPage === 'active' && !loadingFirebase && (
-                                <TapasList tapas={activeTapas} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} selectedTapasLanguage={selectedTapasLanguage} />
+                                <TapasList tapas={activeTapas} config={config} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} selectedTapasLanguage={selectedTapasLanguage} />
                             )}
                             {currentPage === 'history' && (
                                 <TapasList
@@ -4285,6 +4449,8 @@ const HomePage = () => {
                                     setHistoryStatusFilter={setHistoryStatusFilter}
                                     historyTimeFilter={historyTimeFilter}
                                     setHistoryTimeFilter={setHistoryTimeFilter}
+                                    historyNameFilter={historyNameFilter}
+                                    setHistoryNameFilter={setHistoryNameFilter}
                                     selectedTapasLanguage={selectedTapasLanguage}
                                 />
                             )}
@@ -4341,6 +4507,7 @@ const HomePage = () => {
                 {showAboutModal && <AboutModal onClose={() => setShowAboutModal(false)} />}
                 {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
                 {showCleanDataModal && <CleanDataModal onClose={() => setShowCleanDataModal(false)} onCleanConfirmed={handleCleanDataConfirmed} />}
+                {showConfigModal && <ConfigModal onClose={() => setShowConfigModal(false)} db={db} userId={userId} t={t} setConfig={setConfig} />}
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
             </div>
         </AppContext.Provider>

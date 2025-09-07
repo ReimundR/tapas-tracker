@@ -1,5 +1,10 @@
 # Changelog
 
+#### = 1.0.8 (2025-09-07) =
+
+* added date aspects config
+* added history filter by name
+
 #### = 1.0.7 (2025-08-23) =
 
 * fixed Tapas repeat option
