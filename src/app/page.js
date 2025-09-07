@@ -1166,8 +1166,8 @@ const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
     const daysRemaining = Math.max(0, daysOver);
 
     // date aspects
-    let aspectDates = '';
-    if (tapasItem.duration && config?.dateAspects) {
+    let aspectDates = [];
+    if (Object.keys(config).length > 0 && tapasItem.duration && config?.dateAspects) {
         const daysBefore = config.dateAspectDaysBefore || 7;
         const daysAfter = config.dateAspectDaysAfter || 1;
         const tomorrowTime = new Date(today.getTime() + timeDayMs).getTime();
@@ -1187,10 +1187,7 @@ const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
                 } else {
                     adate = aspectDate.toLocaleDateString();
                 }
-                if (aspectDates) {
-                    aspectDates += ', ';
-                }
-                aspectDates += dateAspect.name + ': ' + adate;
+                aspectDates.push(dateAspect.name + ': ' + adate);
             }
         }
     }
@@ -1232,20 +1229,26 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
         const today = getTapasDay(new Date(), tapasItem, startDate);
 
         if (noDuration || (tapasItem.scheduleType === 'noTapas' && tapasItem.checkedDays)) {
-            let statusText = '';
+            let statusText = [];
             if (noDuration) {
                 const uniqueCheckedDays = getUniqueCheckedDays(tapasItem.checkedDays);
                 const dates = { "Week": 7, "Month": 30, "Year": 365 };
                 let lastChecked = 0;
+                let statusZero = '';
                 Object.keys(dates).forEach(name => {
                     const duration = dates[name];
                     const date = getStartOfDayUTC(new Date(today.getTime() - (duration * timeDayMs)));
                     const checkedDates = countCheckedSince(uniqueCheckedDays, date);
-                    if (checkedDates > lastChecked || (!statusText && duration==365)) {
-                        if (statusText) {
-                            statusText += ' ~ '
+                    const status = t('last' + name) + ': ' + checkedDates;
+                    if (checkedDates == 0 && !statusText.length) {
+                        statusZero = status;
+                    }
+                    if (checkedDates > lastChecked || (!statusText.length && duration==365)) {
+                        if (statusZero) {
+                            statusText.push(statusZero);
+                            statusZero = '';
                         }
-                        statusText += t('last' + name) + ': ' + checkedDates;
+                        statusText.push(status);
                     }
                     lastChecked = checkedDates;
                 });
@@ -1253,7 +1256,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
             return { statusText: statusText, statusClass: 'text-gray-600 dark:text-gray-400' }; // No pending status for 'noTapas'
         }
 
-        let pendingStatus = { statusText: '', statusClass: '' };
+        let pendingStatus = { statusText: [], statusClass: '' };
 
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + tapasItem.duration - 1);
@@ -1273,12 +1276,14 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
         const yesterdayPending = isYesterdayWithinDuration && !isYesterdayChecked;
 
         if (yesterdayPending) {
-            pendingStatus = { statusText: t((isWeekly ? 'lastWeekX' : 'yesterdayX'), t('pending')).toLowerCase(), statusClass: 'text-red-600' };
+            const statusText = t((isWeekly ? 'lastWeekX' : 'yesterdayX'), t('pending')).toLowerCase();
+            pendingStatus = { statusText: [statusText], statusClass: 'text-red-600' };
         } else if (todayPending && !tapasItem.acknowledgeAfter) {
             const isTodayPending = !isWeekly || today.getTime() == getStartOfDayUTC(new Date()).getTime();
             const pendingDay = isTodayPending ? 'todayX' : 'thisWeekX';
             const pendingColor = isTodayPending ? 'text-orange-600' : 'text-gray-600';
-            pendingStatus = { statusText: t(pendingDay, t('pending')).toLowerCase(), statusClass: pendingColor };
+            const statusText = t(pendingDay, t('pending')).toLowerCase();
+            pendingStatus = { statusText: [statusText], statusClass: pendingColor };
         }
 
         let leftOutDaysCount = 0;
@@ -1290,8 +1295,9 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
             }
             loopDate.setDate(loopDate.getDate() + daysDelta);
         }
-        if (!pendingStatus.statusText && leftOutDaysCount > 0) {
-            pendingStatus = { statusText: `${leftOutDaysCount} ${t((isWeekly ? 'weeks' : 'days') + 'LeftOut')}`, statusClass: 'text-gray-600' };
+        if (!pendingStatus.statusText.length && leftOutDaysCount > 0) {
+            const statusText = `${leftOutDaysCount} ${t((isWeekly ? 'weeks' : 'days') + 'LeftOut')}`;
+            pendingStatus = { statusText: [statusText], statusClass: 'text-gray-600' };
         }
 
         return pendingStatus;
@@ -1447,7 +1453,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                 {tapasItem.duration !== null && tapasItem.duration > 0 && (
                                     <>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
-                                        {!statusText && tapasItem.scheduleType === 'noTapas' && checkedUnitsCount==0 ? (
+                                        {!statusText.length && tapasItem.scheduleType === 'noTapas' && checkedUnitsCount==0 ? (
                                             <p className="text-sm text-gray-600 dark:text-gray-400">
                                                 {t('duration')}: {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
                                             </p>
@@ -1476,11 +1482,15 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                 {tapasItem.status === 'failed' && (
                                     <p className="text-sm font-medium text-red-600 mt-2">{t('status')}: {t('failed')}</p>
                                 )}
-                                {tapasItem.status === 'active' && statusText && (
-                                    <p className={`text-sm font-bold mt-1 ${statusClass}`}>{statusText}</p>
+                                {tapasItem.status === 'active' && statusText.length > 0 && (
+                                    <p className={`text-sm font-bold mt-1 ${statusClass}`}>
+                                        {statusText.map((text, idx) => <span key={idx} className="pr-3">{text}</span>)}
+                                    </p>
                                 )}
-                                {aspectDates && (
-                                    <p className={`text-sm font-bold mt-1`}>{aspectDates}</p>
+                                {aspectDates && aspectDates.length > 0 && (
+                                    <p className={`text-sm font-bold mt-1`}>
+                                        {aspectDates.map((aspect, idx) => <span key={idx} className="pr-3">{aspect}</span>)}
+                                    </p>
                                 )}
                                 {/* Display undone parts for active tapas */}
                                 {tapasItem.status === 'active' && undoneParts.length > 0 && (
