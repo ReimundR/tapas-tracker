@@ -1176,8 +1176,8 @@ const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
             const aspectDays = tapasItem.duration * dateAspect.percentage / 100;
             const aspectDate = new Date(startDate);
             aspectDate.setTime(startDate.getTime() + aspectDays * timeDayMs);
-            const aspectDiff = (aspectDate.getTime() - today.getTime()) / timeDayMs;
-            if (aspectDiff >= -daysBefore && aspectDiff <= daysAfter) {
+            const aspectDiff = Math.round((aspectDate.getTime() - today.getTime()) / timeDayMs);
+            if ((aspectDiff < 0 && -aspectDiff <= daysAfter) || (aspectDiff > 0 && aspectDiff <= daysBefore)) {
                 const aspectDateUTC = getStartOfDayUTC(aspectDate).getTime();
                 let adate;
                 if (aspectDateUTC === todayTime) {
