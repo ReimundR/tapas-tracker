@@ -159,6 +159,128 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
     );
 };
 
+const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedTapas }) => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
+    const deltaName = tapas.scheduleType === 'weekly' ? t('weeks') : t('days');
+
+    const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
+    const [numberOfDays, setNumberOfDays] = useState(1);
+    const [startDate, setStartDate] = useState(new Date(today.getTime() - (numberOfDays - 1) * timeDayMs).toISOString().split('T')[0]);
+    const [status, setStatus] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const calculateDates = useCallback((type, value) => {
+        if (type === 'days') {
+            const days = parseInt(value, 10);
+            if (!isNaN(days)) {
+                setNumberOfDays(days);
+                const end = new Date(endDate);
+                const start = new Date(end.getTime() - (days - 1) * daysDelta * timeDayMs);
+                setStartDate(start.toISOString().split('T')[0]);
+            }
+        } else if (type === 'end') {
+            const end = new Date(value + 'T23:59:59.999Z');
+            setEndDate(value);
+            const start = new Date(end.getTime() - (numberOfDays - 1) * daysDelta * timeDayMs);
+            setStartDate(start.toISOString().split('T')[0]);
+        } else if (type === 'start') {
+            const start = new Date(value);
+            setStartDate(value);
+            const end = new Date(start.getTime() + (numberOfDays - 1) * daysDelta * timeDayMs);
+            setEndDate(end.toISOString().split('T')[0]);
+        }
+    }, [endDate, numberOfDays]);
+
+    const handleAcknowledge = async () => {
+        setIsLoading(true);
+        try {
+            const startDateObj = getStartOfDayUTC(tapas.startDate.toDate());
+            const endDateObj = tapas.duration > 0 ? new Date(startDateObj) : null;
+            if (endDateObj) {
+                endDateObj.setDate(startDateObj.getDate() + tapas.duration - 1);
+            }
+
+            let unitsToAcknowledge = [];
+            const currentRefDate = getTapasDay(new Date(startDate), tapas, startDateObj);
+
+            //for (let i = numberOfDays - 1; i >= 2; i--) {
+            for (let i = 0; i < numberOfDays; i++) {
+                const dateToAcknowledge = getStartOfDayUTC(new Date(currentRefDate.getTime() + (i * daysDelta * timeDayMs)));
+                
+                // Ensure the date is within the tapas duration
+                if (dateToAcknowledge < startDateObj || (endDateObj && dateToAcknowledge > endDateObj)) {
+                    continue; // Skip if outside duration
+                }
+
+                if (!isTapasDateChecked(tapas.checkedDays, dateToAcknowledge)) {
+                    unitsToAcknowledge.push(Timestamp.fromDate(dateToAcknowledge));
+                }
+            }
+
+            const updatedCheckedDays = getUniqueCheckedDays([...(tapas.checkedDays || []), ...unitsToAcknowledge]);
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, tapas.id);
+            let update;
+            if (status === 'recuperated') {
+                const updatedRecuperatedDays = getUniqueCheckedDays([...(tapas.recuperatedDays || []), ...unitsToAcknowledge]);
+                update = { checkedDays: updatedCheckedDays, recuperatedDays: updatedRecuperatedDays };
+            } else if (status === 'advanced') {
+                const updatedAdvancedDays = getUniqueCheckedDays([...(tapas.advancedDays || []), ...unitsToAcknowledge]);
+                update = { checkedDays: updatedCheckedDays, advancedDays: updatedAdvancedDays };
+            } else {
+                update = { checkedDays: updatedCheckedDays };
+            }
+            await updateDoc(tapasRef, update);
+            setSelectedTapas(prev => ({ ...prev, ...update }));
+            onClose(`${t('acknowledgedSuccessfully')} ${numberOfDays} ${deltaName.toLowerCase()}.`);
+        } catch (e) {
+            console.error("Error acknowledging tapas: ", e);
+            alert("Failed to acknowledge tapas.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 p-6 rounded-lg shadow-lg w-full max-w-md">
+                <h2 className="text-xl capitalize font-bold mb-4">{t('acknowledgeN', deltaName)}</h2>
+                <div className="flex flex-col gap-4">
+                    <div className="flex gap-2 items-center">
+                        <label className="w-1/3">{t('startDate')}:</label>
+                        <input type="date" value={startDate} onChange={(e) => calculateDates('start', e.target.value)} className="flex-1 p-2 dark:bg-gray-700 border rounded" />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <label className="w-1/3">{t('endDate')}:</label>
+                        <input type="date" value={endDate} onChange={(e) => calculateDates('end', e.target.value)} className="flex-1 p-2 dark:bg-gray-700 border rounded" />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <label className="w-1/3">{t('numberOf')} {deltaName}:</label>
+                        <input type="number" value={numberOfDays} min="1" onChange={(e) => calculateDates('days', e.target.value)} className="flex-1 p-2 dark:bg-gray-700 border rounded" />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                        <label className="w-1/3">Status:</label>
+                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="flex-1 p-2 dark:bg-gray-700 border rounded">
+                            <option value="">-</option>
+                            <option value="recuperated">{t('recuperated')}</option>
+                            <option value="advanced">{t('advanced')}</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                    <button onClick={() => onClose('')} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-500 rounded">{t('cancel')}</button>
+                    <button onClick={handleAcknowledge} disabled={isLoading} className="capitalize px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
+                        {isLoading ? '...' : t('acknowledgeN', '')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Component for a custom confirmation dialog
 const ConfirmDialog = ({ message, onConfirm, onCancel, confirmText, cancelText }) => {
     return (
@@ -1554,7 +1676,7 @@ const ResultsModal = ({ tapas, onClose, onSaveResults }) => {
 
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfoMap, selectedTapasLanguage }) => { // Added setSelectedTapas prop
+const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage }) => { // Added setSelectedTapas prop
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -1568,11 +1690,13 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     const [checkedPartsSelection, setCheckedPartsSelection] = useState({}); // { index: true, ... } for parts checked today (transient)
     const [showRepeatDialog, setShowRepeatDialog] = useState(false); // New state for repeat dialog
     const [showRecuperationAdvanceMenu, setShowRecuperationAdvanceMenu] = useState(false); // State for dropdown menu
-    const [showAcknowledgeNDaysMenu, setShowAcknowledgeNDaysMenu] = useState(false); // New state for acknowledge N days menu
-    const [acknowledgeNDaysInput, setAcknowledgeNDaysInput] = useState(''); // Input for N days
     const [showResultsModal, setShowResultsModal] = useState(false); // State for results modal
     const [publicSharedTapas, setPublicSharedTapas] = useState(null); // State for public shared tapas data
     const [showUpdateSharedTapasMenu, setShowUpdateSharedTapasMenu] = useState(false); // State for update shared tapas menu
+
+    if (initMessage && message != initMessage) {
+        setMessage(initMessage);
+    }
 
     const sharedDropdownRef = useRef(null); // Ref for the main detail container to detect outside clicks
     const tapasDropdownRef = useRef(null); // Ref for the main detail container to detect outside clicks
@@ -1697,6 +1821,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
 
     const handleMarkUnitFinished = async (dateToMark) => {
+        setInitMessage('');
         let successMessageKey;
 
         const dateForCheckedDays = getStartOfDayUTC(dateToMark);
@@ -1736,6 +1861,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleRecuperateUnit = async (dateToRecuperate) => {
+        setInitMessage('');
         if (!tapas.allowRecuperation) return;
 
         let dateForCheckedDays;
@@ -1768,6 +1894,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleAdvanceUnits = async () => {
+        setInitMessage('');
         if (!tapas.allowRecuperation) return;
 
         const datesToMark = [];
@@ -1806,46 +1933,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         }
     };
 
-    const handleAcknowledgeLastNUnits = async (nUnits) => {
-        if (isNaN(nUnits) || nUnits <= 0) {
-            setMessage("Please enter a valid number.");
-            return;
-        }
-
-        let unitsToAcknowledge = [];
-        const currentRefDate = getTapasDay(new Date(), tapas, startDateObj);
-        const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-
-        for (let i = nUnits - 1; i >= 2; i--) {
-            const dateToAcknowledge = getStartOfDayUTC(new Date(currentRefDate.getTime() - (i * daysDelta * timeDayMs)));
-            
-            // Ensure the date is within the tapas duration
-            if (dateToAcknowledge < startDateObj || dateToAcknowledge > endDateObj) {
-                continue; // Skip if outside duration
-            }
-
-            if (!isTapasDateChecked(tapas.checkedDays, dateToAcknowledge)) {
-                unitsToAcknowledge.push(Timestamp.fromDate(dateToAcknowledge));
-            }
-        }
-
-        const updatedCheckedDays = getUniqueCheckedDays([...(tapas.checkedDays || []), ...unitsToAcknowledge]);
-
-        try {
-            await updateDoc(tapasRef, { checkedDays: updatedCheckedDays });
-            setMessage(`Successfully acknowledged last ${nUnits} ${tapas.scheduleType === 'weekly' ? t('weeks').toLowerCase() : t('days').toLowerCase()}.`);
-            setSelectedTapas(prev => ({ ...prev, checkedDays: updatedCheckedDays }));
-        } catch (error) {
-            console.error("Error acknowledging last N units:", error);
-            setMessage(`Error acknowledging units: ${error.message}`);
-        } finally {
-            setShowAcknowledgeNDaysMenu(false);
-            setAcknowledgeNDaysInput('');
-        }
+    const showAcknowledgeDateRangeMenu = () => {
+        setShowDateRangeModal(true);
     };
 
-
     const handleClearLastUnit = async () => {
+        setInitMessage('');
         if (!tapas.checkedDays || tapas.checkedDays.length === 0) {
             setMessage(t('noDayToClear')); // Re-using noDayToClear
             setShowRecuperationAdvanceMenu(false);
@@ -1905,6 +1998,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
 
     const handleDelete = async () => {
+        setInitMessage('');
         // Use the default language name for confirmation
         const defaultName = getLocalizedContent(tapas.name, locale);
         if (confirmName === defaultName) {
@@ -1925,6 +2019,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleDeleteSharedTapas = async () => {
+        setInitMessage('');
         if (!tapas.shareReference || !publicSharedTapas || publicSharedTapas.userId !== userId) {
             setMessage(t('notOwnerOfSharedTapas'));
             return;
@@ -1943,6 +2038,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleMarkFailed = async () => {
+        setInitMessage('');
         setShowFailDialog(true);
         // Ensure repeatOption is reset when opening the fail dialog
         setRepeatOption('none');
@@ -1950,6 +2046,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleRepeat = () => {
+        setInitMessage('');
         setShowRepeatDialog(true);
         // Set a sensible default for the repeat dialog
         setRepeatOption('sameDuration');
@@ -2038,6 +2135,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const confirmFail = async () => {
+        setInitMessage('');
         try {
             await updateDoc(tapasRef, { status: 'failed', failureCause: failureCause || null });
             setMessage(t('tapasMarkedAsFailed'));
@@ -2062,6 +2160,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const confirmRepeat = async () => {
+        setInitMessage('');
         try {
             const newTapasData = repeatTapas();
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -2080,6 +2179,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
 
 
     const checkDailyProgress = async () => {
+        setInitMessage('');
         if (tapas.scheduleType === 'noTapas' || !isPeriodEndOrOver || isSuccessful || isFailed) return;
 
         // Automatically mark as successful if all units checked (unique count) and period is over
@@ -2098,6 +2198,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     }, [tapas]);
 
     const handleSaveResults = async (results) => {
+        setInitMessage('');
         try {
             await updateDoc(tapasRef, { results: results });
             setSelectedTapas(prevTapas => ({ ...prevTapas, results: results })); // Immediately update local state
@@ -2109,6 +2210,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleShareTapas = async () => {
+        setInitMessage('');
         if (tapas.scheduleType === 'noTapas') {
             setMessage(t('noShareNoTapas'));
             return;
@@ -2183,6 +2285,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleUpdateSharedTapas = async () => {
+        setInitMessage('');
         if (!tapas.shareReference || !publicSharedTapas || publicSharedTapas.userId !== userId) {
             setMessage(t('notOwnerOfSharedTapas'));
             return;
@@ -2217,6 +2320,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
     };
 
     const handleUpdateFromSharedTapas = async () => {
+        setInitMessage('');
         if (!tapas.shareReference || publicSharedTapas.userId === userId || !publicSharedTapas) {
             setMessage(t('notSharedTapasOrOwner'));
             return;
@@ -2343,7 +2447,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         const handleClickOutside = (event) => {
             if (tapasDropdownRef.current && !tapasDropdownRef.current.contains(event.target)) {
                 setShowRecuperationAdvanceMenu(false);
-                setShowAcknowledgeNDaysMenu(false);
             }
             if (sharedDropdownRef.current && !sharedDropdownRef.current.contains(event.target)) {
                 setShowUpdateSharedTapasMenu(false);
@@ -2351,7 +2454,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         };
 
         // Attach the event listener to the document body when any dropdown is open
-        if (showRecuperationAdvanceMenu || showAcknowledgeNDaysMenu || showUpdateSharedTapasMenu) {
+        if (showRecuperationAdvanceMenu || showUpdateSharedTapasMenu) {
             document.addEventListener('mousedown', handleClickOutside);
         } else {
             document.removeEventListener('mousedown', handleClickOutside);
@@ -2361,7 +2464,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showRecuperationAdvanceMenu, showAcknowledgeNDaysMenu, showUpdateSharedTapasMenu]);
+    }, [showRecuperationAdvanceMenu, showUpdateSharedTapasMenu]);
 
 
     const sharedInfoColor = actualDataIsNewer ? 'orange' : (updateAvailable ? 'green' : 'gray');
@@ -2541,29 +2644,11 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, sharedTapasInfo
                                             </button>
                                         )}
                                         <button
-                                            onClick={() => setShowAcknowledgeNDaysMenu(!showAcknowledgeNDaysMenu)}
+                                            onClick={showAcknowledgeDateRangeMenu}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                         >
-                                            {t('acknowledgeLastN', 'N', t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days'))}
+                                            {t('acknowledgeN', t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days'))}
                                         </button>
-                                        {showAcknowledgeNDaysMenu && (
-                                            <div className="px-4 py-2">
-                                                <input
-                                                    type="number"
-                                                    value={acknowledgeNDaysInput}
-                                                    onChange={(e) => setAcknowledgeNDaysInput(e.target.value)}
-                                                    placeholder={t('count') + " " + t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days')}
-                                                    className="w-full px-2 py-1 border rounded-md shadow-sm bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                                                    min="1"
-                                                />
-                                                <button
-                                                    onClick={() => handleAcknowledgeLastNUnits(parseInt(acknowledgeNDaysInput))}
-                                                    className="mt-2 w-full bg-indigo-500 text-white px-3 py-1 rounded-md hover:bg-indigo-600"
-                                                >
-                                                    {t('confirm')}
-                                                </button>
-                                            </div>
-                                        )}
                                         <button
                                             onClick={handleClearLastUnit}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -3420,6 +3505,7 @@ const HomePage = () => {
     const [config, setConfig] = useState({});
     const [tapas, setTapas] = useState([]);
     const [selectedTapas, setSelectedTapas] = useState(null);
+    const [tapasDetailMessage, setTapasDetailMessage] = useState('');
     const [editingTapas, setEditingTapas] = useState(null);
     const [showMenu, setShowMenu] = useState(false); // State for menu visibility
     const [showDataMenu, setShowDataMenu] = useState(false); // State for Data submenu visibility
@@ -3457,10 +3543,17 @@ const HomePage = () => {
     const [showHelpModal, setShowHelpModal] = useState(false); // State for Help modal
     const [showCleanDataModal, setShowCleanDataModal] = useState(false); // State for Clean Data modal
     const [showConfigModal, setShowConfigModal] = useState(false);
-
+    const [showAcknowledgeDateRangeModal, setShowAcknowledgeDateRangeModal] = useState(false);
+    
     const { locale, setLocale, t } = useContext(LocaleContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
 
+    const closeAcknowledgeDateRangeModal = useCallback((message) => {
+        setShowAcknowledgeDateRangeModal(false);
+        if (message) {
+            setTapasDetailMessage(message);
+        }
+    }, []);
 
     // Initialize Firebase and handle authentication
     useEffect(() => {
@@ -3614,11 +3707,13 @@ const HomePage = () => {
     const handleSelectTapas = (tapasItem) => {
         setPageBeforeDetail(currentPage); // Store current page before opening detail
         setSelectedTapas(tapasItem);
+        setTapasDetailMessage(null);
         setCurrentPage('detail');
     };
 
     const handleCloseTapasDetail = () => {
         setSelectedTapas(null);
+        setTapasDetailMessage(null);
         setCurrentPage(pageBeforeDetail); // Go back to the page that was active before
     };
 
@@ -4471,7 +4566,7 @@ const HomePage = () => {
                                 <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }} editingTapas={editingTapas} onCancelEdit={handleCancelEdit} />
                             )}
                             {selectedTapas && currentPage === 'detail' && (
-                                <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas} setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage} />
+                                <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas} setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage} setShowDateRangeModal={setShowAcknowledgeDateRangeModal} initMessage={tapasDetailMessage} setInitMessage={setTapasDetailMessage} />
                             )}
                             {selectedLicense && (
                                 <License onClose={handleCloseLicense} />
@@ -4518,6 +4613,7 @@ const HomePage = () => {
                 {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
                 {showCleanDataModal && <CleanDataModal onClose={() => setShowCleanDataModal(false)} onCleanConfirmed={handleCleanDataConfirmed} />}
                 {showConfigModal && <ConfigModal onClose={() => setShowConfigModal(false)} db={db} userId={userId} t={t} setConfig={setConfig} />}
+                {showAcknowledgeDateRangeModal && <AcknowledgeDateRangeModal onClose={closeAcknowledgeDateRangeModal} tapas={selectedTapas} setSelectedTapas={setSelectedTapas} db={db} userId={userId} t={t} />}
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
             </div>
         </AppContext.Provider>

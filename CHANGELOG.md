@@ -4,6 +4,7 @@
 
 * added date aspects config
 * added history filter by name
+* added acknowledge days/weeks
 
 #### = 1.0.7 (2025-08-23) =
 
