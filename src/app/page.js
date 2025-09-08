@@ -3129,10 +3129,10 @@ const Statistics = ({ allTapas }) => {
                     </p>
                     <p>
                     {countActiveRecuperations > 0 && (
-                        <span className="capitalize">{t('recuperated')}: {countActiveRecuperations}x ({avgActiveRecuperationsPerc}%)</span>
+                        <span className="capitalize">{t('recuperated')}: <span className="font-bold">{countActiveRecuperations}x ({avgActiveRecuperationsPerc}%)</span></span>
                     )}
                     {countActiveAdvanced > 0 && (
-                        <span className="px-5 capitalize">{t('advanced')}: {countActiveAdvanced}x ({avgActiveAdvancedPerc}%)</span>
+                        <span className="px-5 capitalize">{t('advanced')}: <span className="font-bold">{countActiveAdvanced}x ({avgActiveAdvancedPerc}%)</span></span>
                     )}
                     </p>
                 </div>
@@ -3146,10 +3146,10 @@ const Statistics = ({ allTapas }) => {
                     </p>
                     <p>
                     {countSuccessfulRecuperations > 0 && (
-                        <span className="capitalize">{t('recuperated')}: {countSuccessfulRecuperations}x ({avgSuccessfulRecuperationsPerc}%)</span>
+                        <span className="capitalize">{t('recuperated')}: <span className="font-bold">{countSuccessfulRecuperations}x ({avgSuccessfulRecuperationsPerc}%)</span></span>
                     )}
                     {countSuccessfulAdvanced > 0 && (
-                        <span className="px-5 capitalize">{t('advanced')}: {countSuccessfulAdvanced}x ({avgSuccessfulAdvancedPerc}%)</span>
+                        <span className="px-5 capitalize">{t('advanced')}: <span className="font-bold">{countSuccessfulAdvanced}x ({avgSuccessfulAdvancedPerc}%)</span></span>
                     )}
                     </p>
                 </div>
@@ -3166,10 +3166,10 @@ const Statistics = ({ allTapas }) => {
                     </p>
                     <p>
                     {countFailedRecuperations > 0 && (
-                        <span className="capitalize">{t('recuperated')}: {countFailedRecuperations}x ({avgFailedRecuperationsPerc}%)</span>
+                        <span className="capitalize">{t('recuperated')}: <span className="font-bold">{countFailedRecuperations}x ({avgFailedRecuperationsPerc}%)</span></span>
                     )}
                     {countFailedAdvanced > 0 && (
-                        <span className="px-5 capitalize">{t('advanced')}: {countFailedAdvanced}x ({avgFailedAdvancedPerc}%)</span>
+                        <span className="px-5 capitalize">{t('advanced')}: <span className="font-bold">{countFailedAdvanced}x ({avgFailedAdvancedPerc}%)</span></span>
                     )}
                     </p>
                 </div>
