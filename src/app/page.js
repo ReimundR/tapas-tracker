@@ -265,7 +265,9 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
                         <label className="w-1/3">Status:</label>
                         <select value={status} onChange={(e) => setStatus(e.target.value)} className="flex-1 p-2 dark:bg-gray-700 border rounded">
                             <option value="">-</option>
-                            <option value="recuperated">{t('recuperated')}</option>
+                            {tapas.allowRecuperation && (
+                                <option value="recuperated">{t('recuperated')}</option>
+                            )}
                             <option value="advanced">{t('advanced')}</option>
                         </select>
                     </div>
@@ -1459,7 +1461,17 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 
             filtered = filtered.filter(tapas => {
                 const completionDate = tapas.completionDate ? tapas.completionDate.toDate() : tapas.createdAt.toDate();
-                return completionDate >= filterDate;
+                if (completionDate >= filterDate) {
+                    return true;
+                }
+
+                if (!tapas.duration) {
+                    return false;
+                }
+
+                const endDate = new Date(tapas.startDate.toDate());
+                endDate.setDate(endDate.getDate() + tapas.duration - 1);
+                return endDate >= filterDate;
             });
         }
 
@@ -2619,7 +2631,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                                 </button>
                                 {showRecuperationAdvanceMenu && (
                                     <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
-                                        {(tapas.allowRecuperation && !isYesterdayChecked && yesterday >= startDateObj && yesterday <= endDateObj) && (
+                                        {tapas.allowRecuperation && !isYesterdayChecked && yesterday >= startDateObj && yesterday <= endDateObj && (
                                             <button
                                                 onClick={() => handleRecuperateUnit(yesterday)}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -2627,7 +2639,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                                                 {tapas.scheduleType === 'weekly' ? t('lastWeekX', t('recuperatedW')) : t('yesterdayX', t('recuperatedD'))}
                                             </button>
                                         )}
-                                        {(tapas.allowRecuperation && !isBeforeYesterdayChecked && beforeYesterday >= startDateObj && beforeYesterday <= endDateObj) && (
+                                        {tapas.allowRecuperation && !isBeforeYesterdayChecked && beforeYesterday >= startDateObj && beforeYesterday <= endDateObj && (
                                             <button
                                                 onClick={() => handleRecuperateUnit(beforeYesterday)}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -2635,7 +2647,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                                                 {tapas.scheduleType === 'weekly' ? t('beforeLastWeekX', t('recuperatedW')) : t('beforeYesterdayX', t('recuperatedD'))}
                                             </button>
                                         )}
-                                        {((!isTodayChecked || !isTomorrowChecked) && today >= startDateObj && today <= endDateObj) && (
+                                        {tapas.scheduleType !== 'noTapas' && (!isTodayChecked || !isTomorrowChecked) && today >= startDateObj && today <= endDateObj && (
                                             <button
                                                 onClick={handleAdvanceUnits}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -2649,12 +2661,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                                         >
                                             {t('acknowledgeN', t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days'))}
                                         </button>
-                                        <button
-                                            onClick={handleClearLastUnit}
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
-                                        >
-                                            {t('clearX', t('last' + (tapas.scheduleType === 'weekly' ? 'Week': 'Day')))}
-                                        </button>
+                                        {tapas.checkedDays && tapas.checkedDays.length > 0 && (
+                                            <button
+                                                onClick={handleClearLastUnit}
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                            >
+                                                {t('clearX', t('last' + (tapas.scheduleType === 'weekly' ? 'Week': 'Day')))}
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -2961,13 +2975,13 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
 const Statistics = ({ allTapas }) => {
     const { t } = useContext(AppContext);
     const [statisticsTimeFilter, setStatisticsTimeFilter] = useState('all');
+    const today = getStartOfDayUTC(new Date());
 
     const filterTapasByTime = useCallback((tapasList) => {
         if (statisticsTimeFilter === 'all') {
             return tapasList;
         }
 
-        const today = new Date();
         let filterDate = new Date();
 
         switch (statisticsTimeFilter) {
@@ -2990,7 +3004,17 @@ const Statistics = ({ allTapas }) => {
 
         return tapasList.filter(tapas => {
             const completionDate = tapas.status !== 'active' && tapas.completionDate ? tapas.completionDate.toDate() : tapas.createdAt.toDate();
-            return completionDate >= filterDate;
+            if (completionDate >= filterDate) {
+                return true;
+            }
+
+            if (!tapas.duration) {
+                return false;
+            }
+
+            const endDate = new Date(tapas.startDate.toDate());
+            endDate.setDate(endDate.getDate() + tapas.duration - 1);
+            return endDate >= filterDate;
         });
     }, [statisticsTimeFilter]);
 
@@ -2998,7 +3022,8 @@ const Statistics = ({ allTapas }) => {
 
     const successfulTapas = filteredTapas.filter(tapas => tapas.status === 'successful');
     const failedTapas = filteredTapas.filter(tapas => tapas.status === 'failed');
-    const activeTapas = filteredTapas.filter(tapas => tapas.status === 'active' && tapas.scheduleType !== 'noTapas');
+    const activeTapas = filteredTapas.filter(tapas => tapas.status === 'active' && tapas.scheduleType !== 'noTapas' && tapas.startDate.toDate() <= today);
+    const pendingTapas = filteredTapas.filter(tapas => tapas.status === 'active' && tapas.scheduleType !== 'noTapas' && tapas.startDate.toDate() > today);
 
     const calculateAverageDuration = (tapasList) => {
         if (tapasList.length === 0) return 0;
@@ -3006,9 +3031,56 @@ const Statistics = ({ allTapas }) => {
         return (totalDuration / tapasList.length).toFixed(1);
     };
 
+    const countRecuperations = (tapasList) => {
+        if (tapasList.length === 0) return 0;
+        const totalRecDuration = tapasList.reduce((sum, tapas) => sum + tapas.recuperatedDays.length, 0);
+        return totalRecDuration;
+    };
+
+    const calculateAverageRecuperations = (tapasList, active=false) => {
+        if (tapasList.length === 0) return 0;
+        const totalRecDuration = tapasList.reduce((sum, tapas) => sum + tapas.recuperatedDays.length, 0);
+        let totalDuration;
+        if (active) {
+            totalDuration = tapasList.reduce((sum, tapas) => sum + Math.min(tapas.duration, (today - tapas.startDate.toDate()) / timeDayMs + 1), 0);
+        } else {
+            totalDuration = tapasList.reduce((sum, tapas) => sum + tapas.duration, 0);
+        }
+        return (totalRecDuration / totalDuration * 100).toFixed(1);
+    };
+
+    const countAdvanced = (tapasList) => {
+        if (tapasList.length === 0) return 0;
+        const totalRecDuration = tapasList.reduce((sum, tapas) => sum + tapas.advancedDays.length, 0);
+        return totalRecDuration;
+    };
+
+    const calculateAverageAdvanced = (tapasList) => {
+        if (tapasList.length === 0) return 0;
+        const totalRecDuration = tapasList.reduce((sum, tapas) => sum + tapas.advancedDays.length, 0);
+        const totalDuration = tapasList.reduce((sum, tapas) => sum + tapas.duration, 0);
+        return (totalRecDuration / totalDuration * 100).toFixed(1);
+    };
+
     const avgSuccessfulDuration = calculateAverageDuration(successfulTapas);
     const avgFailedDuration = calculateAverageDuration(failedTapas);
     const avgActiveDuration = calculateAverageDuration(activeTapas);
+
+    const countSuccessfulRecuperations = countRecuperations(successfulTapas);
+    const countFailedRecuperations = countRecuperations(failedTapas);
+    const countActiveRecuperations = countRecuperations(activeTapas);
+
+    const avgSuccessfulRecuperationsPerc = calculateAverageRecuperations(successfulTapas);
+    const avgFailedRecuperationsPerc = calculateAverageRecuperations(failedTapas);
+    const avgActiveRecuperationsPerc = calculateAverageRecuperations(activeTapas, true);
+
+    const countSuccessfulAdvanced = countAdvanced(successfulTapas);
+    const countFailedAdvanced = countAdvanced(failedTapas);
+    const countActiveAdvanced = countAdvanced(activeTapas);
+
+    const avgSuccessfulAdvancedPerc = calculateAverageAdvanced(successfulTapas);
+    const avgFailedAdvancedPerc = calculateAverageAdvanced(failedTapas);
+    const avgActiveAdvancedPerc = calculateAverageAdvanced(activeTapas);
 
     const calculateAverageCompletion = (tapasList) => {
         if (tapasList.length === 0) return 0;
@@ -3047,21 +3119,59 @@ const Statistics = ({ allTapas }) => {
                 {/* Active Tapas Statistics */}
                 <div className="p-4 rounded-lg shadow bg-green-50 text-green-800 dark:bg-green-900 dark:text-green-100">
                     <h3 className="text-xl font-semibold mb-2">{t('activeTapasCount')}</h3>
-                    <p>{t('count')}: <span className="font-bold">{activeTapas.length}</span></p>
-                    <p>{t('avgDuration')}: <span className="font-bold">{avgActiveDuration} {t('days').toLowerCase()}</span></p>
+                    <p>{t('count')}: <span className="font-bold">{activeTapas.length}</span>
+                    {pendingTapas.length > 0 && (
+                        <span className="font-bold"> ({t('pending')} {pendingTapas.length})</span>
+                    )}
+                    {activeTapas.length > 0 && (
+                        <span className="px-5">{t('avgDuration')}: <span className="font-bold">{avgActiveDuration} {t('days').toLowerCase()}</span></span>
+                    )}
+                    </p>
+                    <p>
+                    {countActiveRecuperations > 0 && (
+                        <span className="capitalize">{t('recuperated')}: {countActiveRecuperations}x ({avgActiveRecuperationsPerc}%)</span>
+                    )}
+                    {countActiveAdvanced > 0 && (
+                        <span className="px-5 capitalize">{t('advanced')}: {countActiveAdvanced}x ({avgActiveAdvancedPerc}%)</span>
+                    )}
+                    </p>
                 </div>
 
                 <div className="p-4 rounded-lg shadow bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
                     <h3 className="text-xl font-semibold mb-2">{t('successfulTapasCount')}</h3>
-                    <p>{t('count')}: <span className="font-bold">{successfulTapas.length}</span></p>
-                    <p>{t('avgDuration')}: <span className="font-bold">{avgSuccessfulDuration} {t('days').toLowerCase()}</span></p>
+                    <p>{t('count')}: <span className="font-bold">{successfulTapas.length}</span>
+                    {successfulTapas.length > 0 && (
+                        <span className="px-5">{t('avgDuration')}: <span className="font-bold">{avgSuccessfulDuration} {t('days').toLowerCase()}</span></span>
+                    )}
+                    </p>
+                    <p>
+                    {countSuccessfulRecuperations > 0 && (
+                        <span className="capitalize">{t('recuperated')}: {countSuccessfulRecuperations}x ({avgSuccessfulRecuperationsPerc}%)</span>
+                    )}
+                    {countSuccessfulAdvanced > 0 && (
+                        <span className="px-5 capitalize">{t('advanced')}: {countSuccessfulAdvanced}x ({avgSuccessfulAdvancedPerc}%)</span>
+                    )}
+                    </p>
                 </div>
 
                 <div className="p-4 rounded-lg shadow bg-red-50 text-red-800 dark:bg-red-900 dark:text-red-100">
                     <h3 className="text-xl font-semibold mb-2">{t('failedTapasCount')}</h3>
-                    <p>{t('count')}: <span className="font-bold">{failedTapas.length}</span></p>
-                    <p>{t('avgDuration')}: <span className="font-bold">{avgFailedDuration} {t('days').toLowerCase()}</span></p>
-                    <p>{t('avgDone')}: <span className="font-bold">{avgFailedCompletionPercentage}%</span></p>
+                    <p>{t('count')}: <span className="font-bold">{failedTapas.length}</span>
+                    {failedTapas.length > 0 && (
+                        <>
+                        <span className="px-5">{t('avgDuration')}: <span className="font-bold">{avgFailedDuration} {t('days').toLowerCase()}</span></span>
+                        <span>{t('avgDone')}: <span className="font-bold">{avgFailedCompletionPercentage}%</span></span>
+                        </>
+                    )}
+                    </p>
+                    <p>
+                    {countFailedRecuperations > 0 && (
+                        <span className="capitalize">{t('recuperated')}: {countFailedRecuperations}x ({avgFailedRecuperationsPerc}%)</span>
+                    )}
+                    {countFailedAdvanced > 0 && (
+                        <span className="px-5 capitalize">{t('advanced')}: {countFailedAdvanced}x ({avgFailedAdvancedPerc}%)</span>
+                    )}
+                    </p>
                 </div>
             </div>
         </div>
