@@ -1600,7 +1600,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
                                         )}
                                         {tapasItem.status === 'active' && daysOver == 0 && daysRemaining <= 1 && (
-                                            <p className="text-sm font-medium text-yellow-200 mt-2">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('lastDay')}</p>
+                                            <p className="text-sm font-medium text-yellow-200 mt-2">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
                                         )}
                                         {tapasItem.status === 'active' && daysOver >= 0 && daysRemaining > 0 && daysRemaining < tapasItem.duration && (
                                             <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
