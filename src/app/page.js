@@ -1294,8 +1294,9 @@ const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
     if (Object.keys(config).length > 0 && tapasItem.duration && config?.dateAspects) {
         const daysBefore = config.dateAspectDaysBefore || 7;
         const daysAfter = config.dateAspectDaysAfter || 1;
-        const tomorrowTime = new Date(today.getTime() + timeDayMs).getTime();
         const todayTime = today.getTime();
+        const yesterdayTime = todayTime - timeDayMs;
+        const tomorrowTime = todayTime + timeDayMs;
         for (const dateAspect of config.dateAspects) {
             const aspectDays = tapasItem.duration * dateAspect.percentage / 100;
             const aspectDate = new Date(startDate);
@@ -1308,8 +1309,12 @@ const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
                     adate = t('today');
                 } else if (aspectDateUTC == tomorrowTime) {
                     adate = t('tomorrow');
+                } else if (aspectDateUTC == yesterdayTime) {
+                    adate = t('yesterday', '');
                 } else {
-                    adate = aspectDate.toLocaleDateString();
+                    adate = aspectDate.toLocaleDateString() + ' (';
+                    adate += aspectDiff > 0 ? t('inXDays', aspectDiff) : t('beforeXDays', -aspectDiff);
+                    adate += ')';
                 }
                 aspectDates.push(dateAspect.name + ': ' + adate);
             }
