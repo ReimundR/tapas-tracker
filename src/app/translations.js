@@ -201,7 +201,7 @@ export let translations = {
         "about": "About",
         "appVersion": "App Version",
         "tapasWebsite": "Tapas Tracker Website",
-        "aboutDescription": "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently."+
+        "aboutDescription": "Tapas Tracker is a personal development tool designed to help you track and achieve your spiritual Tapas or goals consistently."+
             "  Tapas or also known as Tapasya is a form of Yogic practice and part of the ten Yamas and Niyamas."+
             "  The application allows you to track your Tapas success or failure, sepcify flexibly the parts of the Tapas, its goals and add results after the end of the Tapas or in case of a Tapas failure the cause for it."+
             "  History and Statistics help analysing your Tapasya and plan repetitions of failed or successful Tapas, respectively."+
@@ -462,7 +462,7 @@ export let translations = {
         "about": "Über uns",
         "appVersion": "App-Version",
         "tapasWebsite": "Tapas Tracker Webseite",
-        "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Ihnen hilft, Ihre Tapas oder Ziele konsequent zu verfolgen und zu erreichen."+
+        "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Ihnen hilft, Ihre spirituellen Tapas oder Ziele konsequent zu verfolgen und zu erreichen."+
             "  Tapas oder auch bekannt unter Tapasya ist eine Form der Yoga-Praxis und Teil der zehn Yamas und Niyamas."+
             "  Die Anwendung ermöglicht es Ihnen, Ihren Tapas-Erfolg oder -Misserfolg zu verfolgen, die einzelnen Tapas-Teile und Ziele flexibel zu spezifizieren und Ergebnisse nach dem Ende des Tapas oder im Falle eines Tapas-Misserfolgs die Ursache dafür hinzuzufügen."+
             "  Verlauf und Statistiken helfen Ihnen, Ihr Tapasya zu analysieren und Wiederholungen fehlgeschlagener bzw. erfolgreicher Tapas zu planen."+
@@ -723,7 +723,7 @@ export let translations = {
         "about": "Despre",
         "appVersion": "Versiunea aplicației",
         "tapasWebsite": "Site-ul Tapas Tracker",
-        "aboutDescription": "Tapas Tracker este un instrument de dezvoltare personală conceput pentru a te ajuta să urmărești și să-ți atingi Tapas-urile sau obiectivele în mod constant."+
+        "aboutDescription": "Tapas Tracker este un instrument de dezvoltare personală conceput pentru a te ajuta să urmărești și să-ți atingi Tapas-urile spirituale sau obiectivele în mod constant."+
         "  Tapas sau cunoscută și sub numele de Tapasya este o formă de practică yoghină și face parte din cele zece Yama și Niyama."+
         "  Aplicația îți permite să urmărești succesul sau eșecul Tapas-ului tău, să specifici flexibil părțile Tapas-ului, obiectivele acestuia și să adaugi rezultate după încheierea Tapas-ului sau, în cazul unui eșec Tapas, cauza acestuia."+
         "  Istoricul și statisticile ajută la analizarea Tapas-ului tău și la planificarea repetărilor Tapas-urilor eșuate sau de succes, respectiv."+
@@ -984,7 +984,7 @@ export let translations = {
         "about": "Informazioni",
         "appVersion": "Versione dell'app",
         "tapasWebsite": "Sito web di Tapas Tracker",
-        "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas o obiettivi in ​​modo coerente."+
+        "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas spirituali o obiettivi in ​​modo coerente."+
         "  Tapas o anche conosciuto come Tapasya è una forma di pratica yoga e fa parte dei dieci Yama e Niyama."+
         "  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa."+
         "  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite."+
@@ -1236,7 +1236,7 @@ export let translations = {
         "about": "О программе",
         "appVersion": "Версия приложения",
         "tapasWebsite": "Веб-сайт Tapas Tracker",
-        "aboutDescription": "Tapas Tracker — это инструмент для личного развития, призванный помочь вам отслеживать и последовательно достигать ваших тапасов или целей."+
+        "aboutDescription": "Tapas Tracker — это инструмент для личного развития, призванный помочь вам отслеживать и последовательно достигать ваших духовный тапасов или целей."+
         "  Тапас или также известный как Тапасья — это форма йогической практики и часть десяти Ям и Ниям."+
         "  Приложение позволяет вам отслеживать успехи или неудачи в тапасах, гибко определять части тапаса, его цели и добавлять результаты после окончания тапаса или, в случае неудачи тапаса, причину ее возникновения."+
         "  История и статистика помогают анализировать вашу тапасью и планировать повторения неудачных или успешных тапасов соответственно."+
