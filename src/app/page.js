@@ -1881,13 +1881,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         setInitMessage('');
         if (!tapas.allowRecuperation) return;
 
-        let dateForCheckedDays;
-        if (tapas.scheduleType === 'weekly') {
-            dateForCheckedDays = getStartOfWeekUTC(dateToRecuperate);
-        } else {
-            dateForCheckedDays = getStartOfDayUTC(dateToRecuperate);
-        }
-
+        const dateForCheckedDays = getTapasDay(dateToRecuperate, tapas, startDateObj);
         if (isDateChecked(dateForCheckedDays) || dateForCheckedDays < startDateObj || dateForCheckedDays > endDateObj) {
             setMessage(t('notApplicableAlreadyCheckedOrOutsideDuration'));
             return;
