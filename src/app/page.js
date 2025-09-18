@@ -1611,7 +1611,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                             <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
                                         )}
                                         {tapasItem.status === 'active' && daysRemaining >= tapasItem.duration && (
-                                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">{t('startsIn')}: {daysRemaining-tapasItem.duration+1} {t('days')}</p>
+                                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">{t('startsIn')}: {daysRemaining-tapasItem.duration} {t('days')}</p>
                                         )}
                                     </>
                                 )}
@@ -2724,15 +2724,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         </button>
                     )}
 
-                    {/* Results button for successful tapas */}
-                    {isSuccessful && (
-                        <button
-                            onClick={() => setShowResultsModal(true)}
-                            className="bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-orange-600 transition-colors duration-200 text-lg font-medium"
-                        >
-                            {tapas.results ? t('updateResults') : t('addResults')}
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setShowResultsModal(true)}
+                        className="bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-orange-600 transition-colors duration-200 text-lg font-medium"
+                    >
+                        {t('addResults')}
+                    </button>
 
                     {tapas.scheduleType !== 'noTapas' && (
                         <button
