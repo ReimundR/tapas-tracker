@@ -382,7 +382,7 @@ export let translations = {
         "overallProgress": "Fortschritt",
         "guestUser": "Gastnutzer",
         "startTime": "Startzeit",
-        "startsIn": "Start in",
+        "startsIn": "Beginnt in",
         "description": "Beschreibung",
         "parts": "Teile",
         "noPartsDefinedYet": "Noch keine Teile definiert",

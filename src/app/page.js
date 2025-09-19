@@ -1571,6 +1571,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                         const dayOfWeek = tapasItem.startDate?.toDate().toLocaleDateString(locale, { weekday: "long" });
                         const checkedUnitsCount = tapasItem.checkedDays ? getUniqueCheckedDays(tapasItem.checkedDays).length : 0;
                         const totalUnits = Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType));
+                        const daysToStart = daysRemaining - tapasItem.duration;
 
                         return (
                             <div
@@ -1607,11 +1608,13 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                         {tapasItem.status === 'active' && daysOver == 0 && daysRemaining <= 1 && (
                                             <p className="text-sm font-medium text-yellow-200 mt-2">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
                                         )}
-                                        {tapasItem.status === 'active' && daysOver >= 0 && daysRemaining > 0 && daysRemaining < tapasItem.duration && (
+                                        {tapasItem.status === 'active' && daysOver >= 0 && daysRemaining > 0 && daysToStart < 0 && (
                                             <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
                                         )}
-                                        {tapasItem.status === 'active' && daysRemaining >= tapasItem.duration && (
-                                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">{t('startsIn')}: {daysRemaining-tapasItem.duration} {t('days')}</p>
+                                        {tapasItem.status === 'active' && daysToStart >= 0 && (
+                                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">
+                                                {t('startsIn')}: {daysToStart == 0 ? t('todayX','') : daysToStart == 1 ? t('tomorrow') : daysToStart} {daysToStart > 1 ? t('days') : ''}
+                                            </p>
                                         )}
                                     </>
                                 )}
