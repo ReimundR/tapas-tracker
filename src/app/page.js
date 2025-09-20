@@ -9,6 +9,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, sig
 import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
+import { Tooltip } from 'react-tooltip';
 import Head from 'next/head'; // Import Head from next/head for meta tags
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
@@ -382,7 +383,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
     useEffect(() => {
         if (!resultsColRef) return;
         setIsLoading(true);
-        if (tapas.results) {
+        if (typeof tapas.results !== 'number' && tapas.results) {
             const res = [{ id: null, content: tapas.results, date: null , dateChanged: null }];
             setResults(res);
             setIsLoading(false);
@@ -400,6 +401,10 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
                 });
 
                 setResults(sortedWithFallback);
+                if (tapas.results !== sortedWithFallback.length) {
+                    tapas.results = sortedWithFallback.length;
+                    clearOldResults(tapas.results);
+                }
                 setIsLoading(false);
             }, (error) => {
                 console.error("Error getting results: ", error);
@@ -409,7 +414,15 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
 
             return () => unsub();
         }
-    }, []);//resultsColRef, setTapasDetailMessage]);
+    }, []);
+
+    const addResultsInfo = async (value) => {
+        if (typeof tapas.results !== 'number') {
+            tapas.results = 0;
+        }
+        tapas.results += value;
+        await clearOldResults(tapas.results);
+    };
 
     const handleAddNewResult = async (newContent, date, changedDate) => {
         try {
@@ -418,11 +431,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
                 date: date,
                 changedDate: changedDate,
             });
-            if (date === null) {
-                // update old result -> clear the old one
-                tapas.results = null;
-                await clearOldResults();
-            }
+            await addResultsInfo(1);
             setTapasDetailMessage(t('resultAdded'));
         } catch (e) {
             console.error("Error adding document: ", e);
@@ -448,6 +457,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
         try {
             const resultRef = doc(resultsColRef, resultId);
             await deleteDoc(resultRef);
+            await addResultsInfo(-1);
             setTapasDetailMessage(t('resultDeleted'));
         } catch (e) {
             console.error("Error deleting result: ", e);
@@ -1729,6 +1739,8 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 
     return (
         <div className="space-y-4">
+            <Tooltip anchorSelect=".recupHint" content={t('allowRecuperation')}></Tooltip>
+            <Tooltip anchorSelect=".resultsHint" content={t('results')}></Tooltip>
             {showFilters && (
                 <div className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
                     <div className="flex flex-col sm:flex-row justify-around items-center gap-4">
@@ -1806,7 +1818,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                         const dayOfWeek = tapasItem.startDate?.toDate().toLocaleDateString(locale, { weekday: "long" });
                         const checkedUnitsCount = tapasItem.checkedDays ? getUniqueCheckedDays(tapasItem.checkedDays).length : 0;
                         const totalUnits = Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType));
-                        const daysToStart = daysRemaining - tapasItem.duration;
+                        const daysToStart = daysRemaining - (tapasItem.duration-1);
 
                         return (
                             <div
@@ -1827,7 +1839,13 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                 </h3>
                                 {tapasItem.duration !== null && tapasItem.duration > 0 && (
                                     <>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">{t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}
+                                            {tapasItem.startTime && (
+                                                <span className="ml-3 font-semibold text-indigo-700 dark:text-indigo-500">{tapasItem.startTime}</span>
+                                            )}
+                                        </p>
+                                        <div className="flex justify-between items-center">
                                         {!statusText.length && tapasItem.scheduleType === 'noTapas' && checkedUnitsCount==0 ? (
                                             <p className="text-sm text-gray-600 dark:text-gray-400">
                                                 {t('duration')}: {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
@@ -1837,19 +1855,32 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                                 {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
                                             </p>
                                         )}
+                                        <p className="text-sm text-gray-500">
+                                        {tapasItem.allowRecuperation && (
+                                            <span className="recupHint ml-3">{t('allowRecuperation')[0]}</span>
+                                        )}
+                                        {tapasItem.results > 0 && (
+                                            <span className="resultsHint ml-3">{t('results')[0]}</span>
+                                        )}
+                                        </p>
+                                        </div>
                                         {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
                                         )}
-                                        {tapasItem.status === 'active' && daysOver == 0 && daysRemaining <= 1 && (
-                                            <p className="text-sm font-medium text-yellow-200 mt-2">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
-                                        )}
-                                        {tapasItem.status === 'active' && daysOver >= 0 && daysRemaining > 0 && daysToStart < 0 && (
-                                            <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
-                                        )}
-                                        {tapasItem.status === 'active' && daysToStart >= 0 && (
-                                            <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">
-                                                {t('startsIn')}: {daysToStart == 0 ? t('todayX','') : daysToStart == 1 ? t('tomorrow') : daysToStart} {daysToStart > 1 ? t('days') : ''}
-                                            </p>
+                                        {tapasItem.status === 'active' && daysOver >= 0 && (
+                                            <>
+                                            {daysRemaining <= 1 && (
+                                                <p className="text-sm font-medium text-yellow-200 mt-2">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
+                                            )}
+                                            {daysRemaining > 1 && daysToStart < 0 && (
+                                                <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
+                                            )}
+                                            {daysToStart >= 0 && (
+                                                <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">
+                                                    {daysToStart >=2 ? t('startsIn')+':' : t('startsIn').split(' ')[0]} {daysToStart == 0 ? t('todayX','') : daysToStart == 1 ? t('tomorrow') : daysToStart} {daysToStart > 1 ? t('days') : ''}
+                                                </p>
+                                            )}
+                                            </>
                                         )}
                                     </>
                                 )}
@@ -2409,11 +2440,11 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         checkDailyProgress();
     }, [tapas]);
 
-    const handleClearOldResults = async () => {
+    const handleClearOldResults = async (results) => {
         setInitMessage('');
         try {
-            await updateDoc(tapasRef, { results: null });
-            setSelectedTapas(prevTapas => ({ ...prevTapas, results: null })); // Immediately update local state
+            await updateDoc(tapasRef, { results: results });
+            setSelectedTapas(prevTapas => ({ ...prevTapas, results: results })); // Immediately update local state
         } catch (error) {
             console.error("Error saving results:", error);
             setMessage("Error saving results.");
@@ -2884,8 +2915,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         setTapasDetailMessage={setMessage}//setTapasDetailMessage}
                         clearOldResults={handleClearOldResults}
                     />
-
-                    {!tapas.results && (isSuccessful || isFailed) && <p className="italic text-gray-500 dark:text-gray-400">{t('noResultsDefinedYet')}</p>}
 
                     {tapas.scheduleType !== 'noTapas' && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
                         <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t(tapas.scheduleType === 'weekly' ? 'weeksChecked' : 'daysChecked')}
