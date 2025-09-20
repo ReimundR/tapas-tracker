@@ -347,19 +347,19 @@ const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, on
                 </div>
                 <div className="flex justify-between gap-2 mt-6">
                     {!isNew && (
-                        <button onClick={handleDelete} disabled={isLoading} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-red-400">
-                            {isLoading ? 'Deleting...' : 'Delete'}
+                        <button onClick={handleDelete} disabled={isLoading} className="capitalize px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-red-400">
+                            {t('deleteX', '') + (isLoading ? '...' : '')}
                         </button>)
                     }
                     <div className="flex gap-2">
                         <button onClick={onClose} className="px-4 py-2 bg-gray-300 text-gray-700 hover:bg-gray-400 rounded">{t('cancel')}</button>
                         {isNew ? (
-                            <button onClick={handleAddNew} disabled={isLoading} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
-                                {isLoading ? 'Adding...' : t('add')}
+                            <button onClick={handleAddNew} disabled={isLoading || !content} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
+                                {t('add') + (isLoading ? '...' : '')}
                             </button>
                         ) : (
-                            <button onClick={handleUpdate} disabled={isLoading} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
-                                {isLoading ? 'Updating...' : 'Update'}
+                            <button onClick={handleUpdate} disabled={isLoading || !content} className="capitalize px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
+                                {t('updateX', '') + (isLoading ? '...' : '')}
                             </button>
                         )}
                     </div>
@@ -412,10 +412,6 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
     }, []);//resultsColRef, setTapasDetailMessage]);
 
     const handleAddNewResult = async (newContent, date, changedDate) => {
-        if (!newContent || !newContent.trim()) {
-            setTapasDetailMessage("Cannot save an empty result.");
-            return;
-        }
         try {
             await addDoc(resultsColRef, {
                 content: newContent,
@@ -427,7 +423,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
                 tapas.results = null;
                 await clearOldResults();
             }
-            setTapasDetailMessage("New result added successfully!");
+            setTapasDetailMessage(t('resultAdded'));
         } catch (e) {
             console.error("Error adding document: ", e);
             setTapasDetailMessage("Failed to add new result.");
@@ -441,7 +437,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
                 content: newContent,
                 changedDate: newDate,
             });
-            setTapasDetailMessage("Result updated successfully!");
+            setTapasDetailMessage(t('resultUpdated'));
         } catch (e) {
             console.error("Error updating result: ", e);
             setTapasDetailMessage("Failed to update result.");
@@ -452,7 +448,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
         try {
             const resultRef = doc(resultsColRef, resultId);
             await deleteDoc(resultRef);
-            setTapasDetailMessage("Result deleted successfully.");
+            setTapasDetailMessage(t('resultDeleted'));
         } catch (e) {
             console.error("Error deleting result: ", e);
             setTapasDetailMessage("Failed to delete result.");
@@ -476,7 +472,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
                 </button>
                 </div>
                 {isLoading ? (
-                    <div className="text-gray-500 dark:text-gray-400">Loading results...</div>
+                    <div className="text-gray-500 dark:text-gray-400">{t('loadingX', t('results'))}...</div>
                 ) : (
                     <div className="space-y-2">
                         {sortedResults.length === 0 ? (
@@ -493,7 +489,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
                                 >
                                     {showDates && (
                                         <span className="absolute top-2 left-2 text-xs font-mono text-gray-600 dark:text-gray-400">
-                                            {res.date ? res.date.toDate().toLocaleDateString() : 'No Date'}{res.changedDate ? ' (edited)' : ''}
+                                            {res.date ? res.date.toDate().toLocaleDateString() : t('noDate')}{res.changedDate ? ' (' + t('edited') + ')' : ''}
                                         </span>
                                     )}
                                     <div className={`${showDates ? 'mt-4' : ''}`}>
@@ -1461,7 +1457,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
                         type="submit"
                         className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
                     >
-                        {editingTapas ? t('updateTapas') : t('addTapas')}
+                        {editingTapas ? t('updateX', t('tapas')) : t('addTapas')}
                     </button>
                 </div>
             </form>
@@ -2952,7 +2948,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         onClick={() => setConfirmDelete(true)}
                         className="bg-gray-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-gray-600 transition-colors duration-200 text-lg font-medium"
                     >
-                        {t('deleteTapas')}
+                        {t('deleteX', t('tapas'))}
                     </button>
                 </div>
 
