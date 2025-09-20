@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.0.9 (2025-09-20) =
+
+* added results history view and editor
+
 #### = 1.0.8 (2025-09-07) =
 
 * added date aspects config

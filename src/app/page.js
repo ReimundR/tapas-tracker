@@ -283,6 +283,245 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
     );
 };
 
+const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, onUpdate, onDelete }) => {
+    const isNew = result === null;
+    const [content, setContent] = useState(result ? result.content : '');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleAddNew = async () => {
+        setIsLoading(true);
+        try {
+            const newDate = Timestamp.fromDate(new Date());
+            await onAddNew(content, newDate, null);
+            onClose();
+        } catch (e) {
+            console.error("Error adding result: ", e);
+            alert("Failed to add result.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleUpdate = async () => {
+        setIsLoading(true);
+        try {
+            const newDate = Timestamp.fromDate(new Date());
+            if (result.id === null) {
+                await onAddNew(content, null, newDate);
+            } else {
+                await onUpdate(result.id, content, newDate);
+            }
+            onClose();
+        } catch (e) {
+            console.error("Error updating result: ", e);
+            alert("Failed to update result.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        setIsLoading(true);
+        try {
+            await onDelete(result.id);
+            onClose();
+        } catch (e) {
+            console.error("Error deleting result: ", e);
+            alert("Failed to delete result.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
+                <h2 className="text-xl font-bold mb-4">{t((isNew ? 'add' : 'update') + 'Results')} </h2>
+                <div className="flex flex-col gap-4">
+                    <textarea
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        className="w-full p-2 border rounded-md"
+                        rows="5"
+                    />
+                </div>
+                <div className="flex justify-between gap-2 mt-6">
+                    {!isNew && (
+                        <button onClick={handleDelete} disabled={isLoading} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-red-400">
+                            {isLoading ? 'Deleting...' : 'Delete'}
+                        </button>)
+                    }
+                    <div className="flex gap-2">
+                        <button onClick={onClose} className="px-4 py-2 bg-gray-300 text-gray-700 hover:bg-gray-400 rounded">{t('cancel')}</button>
+                        {isNew ? (
+                            <button onClick={handleAddNew} disabled={isLoading} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
+                                {isLoading ? 'Adding...' : t('add')}
+                            </button>
+                        ) : (
+                            <button onClick={handleUpdate} disabled={isLoading} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
+                                {isLoading ? 'Updating...' : 'Update'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearOldResults }) => {
+    const [results, setResults] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showEditResultModal, setShowEditResultModal] = useState(false);
+    const [selectedResult, setSelectedResult] = useState(null);
+
+    const resultsColRef = tapas ? collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapas.id, 'results') : null;
+    const sortedResults = [...results].sort((a, b) => (a.date ? a.date.toMillis() : 0) - (b.date ? b.date.toMillis() : 0));
+    const showDates = sortedResults.length > 1;
+
+    useEffect(() => {
+        if (!resultsColRef) return;
+        setIsLoading(true);
+        if (tapas.results) {
+            const res = [{ id: null, content: tapas.results, date: null , dateChanged: null }];
+            setResults(res);
+            setIsLoading(false);
+        } else {
+            const unsub = onSnapshot(query(resultsColRef, orderBy('date')), (snapshot) => {
+                const resultsData = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
+
+                const sortedWithFallback = resultsData.sort((a, b) => {
+                    const dateA = a.date ? a.date.toMillis() : 0;
+                    const dateB = b.date ? b.date.toMillis() : 0;
+                    return dateA - dateB;
+                });
+
+                setResults(sortedWithFallback);
+                setIsLoading(false);
+            }, (error) => {
+                console.error("Error getting results: ", error);
+                setIsLoading(false);
+                setTapasDetailMessage("Failed to load results.");
+            });
+
+            return () => unsub();
+        }
+    }, []);//resultsColRef, setTapasDetailMessage]);
+
+    const handleAddNewResult = async (newContent, date, changedDate) => {
+        if (!newContent || !newContent.trim()) {
+            setTapasDetailMessage("Cannot save an empty result.");
+            return;
+        }
+        try {
+            await addDoc(resultsColRef, {
+                content: newContent,
+                date: date,
+                changedDate: changedDate,
+            });
+            if (date === null) {
+                // update old result -> clear the old one
+                tapas.results = null;
+                await clearOldResults();
+            }
+            setTapasDetailMessage("New result added successfully!");
+        } catch (e) {
+            console.error("Error adding document: ", e);
+            setTapasDetailMessage("Failed to add new result.");
+        }
+    };
+
+    const handleUpdateResult = async (resultId, newContent, newDate) => {
+        try {
+            const resultRef = doc(resultsColRef, resultId);
+            await updateDoc(resultRef, {
+                content: newContent,
+                changedDate: newDate,
+            });
+            setTapasDetailMessage("Result updated successfully!");
+        } catch (e) {
+            console.error("Error updating result: ", e);
+            setTapasDetailMessage("Failed to update result.");
+        }
+    };
+
+    const handleDeleteResult = async (resultId) => {
+        try {
+            const resultRef = doc(resultsColRef, resultId);
+            await deleteDoc(resultRef);
+            setTapasDetailMessage("Result deleted successfully.");
+        } catch (e) {
+            console.error("Error deleting result: ", e);
+            setTapasDetailMessage("Failed to delete result.");
+        }
+    };
+
+    return (
+        <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Historical Results Timeline */}
+            <div className="flex-1 overflow-y-auto rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+                <div className="flex justify-between space-x-2">
+                <h3 className="text-m font-bold text-gray-700 dark:text-gray-300">{t('results')}:</h3>
+                <button
+                    onClick={() => {
+                        setSelectedResult(null);
+                        setShowEditResultModal(!showEditResultModal);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 my-1 rounded text-xs font-medium"
+                >
+                    +
+                </button>
+                </div>
+                {isLoading ? (
+                    <div className="text-gray-500 dark:text-gray-400">Loading results...</div>
+                ) : (
+                    <div className="space-y-2">
+                        {sortedResults.length === 0 ? (
+                            <div className="italic text-gray-500 dark:text-gray-400">{t('noResultsDefinedYet')}</div>
+                        ) : (
+                            sortedResults.map((res, index) => (
+                                <div
+                                    key={res.id}
+                                    className="relative px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer transition-colors duration-200"
+                                    onClick={() => {
+                                        setSelectedResult(res);
+                                        setShowEditResultModal(true);
+                                    }}
+                                >
+                                    {showDates && (
+                                        <span className="absolute top-2 left-2 text-xs font-mono text-gray-600 dark:text-gray-400">
+                                            {res.date ? res.date.toDate().toLocaleDateString() : 'No Date'}{res.changedDate ? ' (edited)' : ''}
+                                        </span>
+                                    )}
+                                    <div className={`${showDates ? 'mt-4' : ''}`}>
+                                        <p>{res.content}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </div>
+            {showEditResultModal && (
+                <EditResultModal
+                    onClose={() => setShowEditResultModal(false)}
+                    db={db}
+                    t={t}
+                    userId={userId}
+                    tapasId={tapas.id}
+                    result={selectedResult}
+                    onAddNew={handleAddNewResult}
+                    onUpdate={handleUpdateResult}
+                    onDelete={handleDeleteResult}
+                />
+            )}
+        </div>
+    );
+};
+
 // Component for a custom confirmation dialog
 const ConfirmDialog = ({ message, onConfirm, onCancel, confirmText, cancelText }) => {
     return (
@@ -1654,47 +1893,6 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
     );
 };
 
-// Component for adding/updating results
-const ResultsModal = ({ tapas, onClose, onSaveResults }) => {
-    const { t } = useContext(AppContext);
-    const [resultsText, setResultsText] = useState(tapas.results || '');
-
-    const handleSave = () => {
-        onSaveResults(resultsText);
-        // onClose(); // We no longer close the modal after save to allow for immediate review
-    };
-
-    return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                <h3 className="text-xl font-bold mb-4">{tapas.results ? t('updateResults') : t('addResults')}</h3>
-                <textarea
-                    value={resultsText}
-                    onChange={(e) => setResultsText(e.target.value)}
-                    rows="6"
-                    className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
-                    placeholder={t('results')}
-                ></textarea>
-                <div className="flex justify-end space-x-4">
-                    <button
-                        onClick={onClose}
-                        className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
-                    >
-                        {t('cancel')}
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200"
-                    >
-                        {tapas.results ? t('updateResults') : t('addResults')}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
 // Component for a single Tapas detail view
 const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage }) => { // Added setSelectedTapas prop
     const { locale } = useContext(LocaleContext);
@@ -1710,7 +1908,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
     const [checkedPartsSelection, setCheckedPartsSelection] = useState({}); // { index: true, ... } for parts checked today (transient)
     const [showRepeatDialog, setShowRepeatDialog] = useState(false); // New state for repeat dialog
     const [showRecuperationAdvanceMenu, setShowRecuperationAdvanceMenu] = useState(false); // State for dropdown menu
-    const [showResultsModal, setShowResultsModal] = useState(false); // State for results modal
     const [publicSharedTapas, setPublicSharedTapas] = useState(null); // State for public shared tapas data
     const [showUpdateSharedTapasMenu, setShowUpdateSharedTapasMenu] = useState(false); // State for update shared tapas menu
 
@@ -2017,6 +2214,11 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         const defaultName = getLocalizedContent(tapas.name, locale);
         if (confirmName === defaultName) {
             try {
+                // Delete the results sub-collection documents first
+                const resultsSnapshot = await getDocs(collection(tapasRef, 'results'));
+                const batch = writeBatch(db);
+                resultsSnapshot.forEach((doc) => batch.delete(doc.ref));
+                await batch.commit();
                 await deleteDoc(tapasRef);
                 setMessage(t('tapasDeletedSuccessfully'));
                 onClose(); // Close the detail view
@@ -2211,12 +2413,11 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         checkDailyProgress();
     }, [tapas]);
 
-    const handleSaveResults = async (results) => {
+    const handleClearOldResults = async () => {
         setInitMessage('');
         try {
-            await updateDoc(tapasRef, { results: results });
-            setSelectedTapas(prevTapas => ({ ...prevTapas, results: results })); // Immediately update local state
-            setMessage(tapas.results ? t('updateResults') : t('addResults') + ' ' + t('successfully') + '!'); // Update results message
+            await updateDoc(tapasRef, { results: null });
+            setSelectedTapas(prevTapas => ({ ...prevTapas, results: null })); // Immediately update local state
         } catch (error) {
             console.error("Error saving results:", error);
             setMessage("Error saving results.");
@@ -2679,7 +2880,15 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days').toLowerCase()}</p>}
                     <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${tapas.status === 'active' ? 'text-blue-600' : tapas.status === 'successful' ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
-                    {tapas.results && <p><strong className="font-semibold">{t('results')}:</strong> {tapas.results}</p>}
+                    <ResultHistoryView
+                        tapas={tapas}
+                        db={db}
+                        userId={userId}
+                        t={t}
+                        setTapasDetailMessage={setMessage}//setTapasDetailMessage}
+                        clearOldResults={handleClearOldResults}
+                    />
+
                     {!tapas.results && (isSuccessful || isFailed) && <p className="italic text-gray-500 dark:text-gray-400">{t('noResultsDefinedYet')}</p>}
 
                     {tapas.scheduleType !== 'noTapas' && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
@@ -2726,13 +2935,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                             {t('repeatTapas')}
                         </button>
                     )}
-
-                    <button
-                        onClick={() => setShowResultsModal(true)}
-                        className="bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-orange-600 transition-colors duration-200 text-lg font-medium"
-                    >
-                        {t('addResults')}
-                    </button>
 
                     {tapas.scheduleType !== 'noTapas' && (
                         <button
@@ -2955,14 +3157,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                             </div>
                         </div>
                     </div>
-                )}
-
-                {showResultsModal && (
-                    <ResultsModal
-                        tapas={tapas}
-                        onClose={() => setShowResultsModal(false)}
-                        onSaveResults={handleSaveResults}
-                    />
                 )}
             </div>
         </div>
