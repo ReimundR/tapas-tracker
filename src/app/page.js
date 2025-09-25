@@ -6,7 +6,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef, Suspense } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, disableNetwork, enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, disableNetwork, enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
 import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
@@ -66,7 +66,7 @@ const AppContext = createContext(null);
 
 
 // Config
-const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
+const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
     const [dateAspects, setDateAspects] = useState([]);
     const [dateAspectDaysBefore, setDateAspectDaysBefore] = useState(7);
     const [dateAspectDaysAfter, setDateAspectDaysAfter] = useState(1);
@@ -76,6 +76,14 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const configRef = doc(db, `artifacts/${appId}/users/${userId}/config/appConfig`);
+
+    const mySetDoc = async (ref, data, cfg) => {
+        if (isOffline) {
+            setDoc(ref, data, cfg);
+        } else {
+            return await setDoc(ref, data, cfg);
+        }
+    };
 
     useEffect(() => {
         const unsub = onSnapshot(configRef, (docSnap) => {
@@ -105,7 +113,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
         if (newAspectName && newAspectPercentage) {
             const newAspect = { name: newAspectName, percentage: parseFloat(newAspectPercentage) };
             try {
-                await setDoc(configRef, { dateAspects: arrayUnion(newAspect) }, { merge: true });
+                await mySetDoc(configRef, { dateAspects: arrayUnion(newAspect) }, { merge: true });
                 setNewAspectName('');
                 setNewAspectPercentage('');
             } catch (e) {
@@ -116,7 +124,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
 
     const handleRemoveAspect = async (aspect) => {
         try {
-            await setDoc(configRef, { dateAspects: arrayRemove(aspect) }, { merge: true });
+            await mySetDoc(configRef, { dateAspects: arrayRemove(aspect) }, { merge: true });
         } catch (e) {
             console.error("Error removing date aspect: ", e);
         }
@@ -124,7 +132,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
 
     const handleUpdateDays = async () => {
         try {
-            await setDoc(configRef, { dateAspectDaysBefore: dateAspectDaysBefore, dateAspectDaysAfter: dateAspectDaysAfter }, { merge: true });
+            await mySetDoc(configRef, { dateAspectDaysBefore: dateAspectDaysBefore, dateAspectDaysAfter: dateAspectDaysAfter }, { merge: true });
         } catch (e) {
             console.error("Error updating days: ", e);
         }
@@ -134,14 +142,12 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
         config.dateAspectDaysBefore = dateAspectDaysBefore;
         config.dateAspectDaysAfter = dateAspectDaysAfter;
         setConfig(config);
-
-        onClose();
     };
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 p-6 rounded-lg shadow-lg w-full max-w-xl">
-                <button onClick={handleUpdateDays} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
                     &times;
                 </button>
                 <h2 className="text-xl font-bold mb-4">{t('config')}</h2>
@@ -198,6 +204,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
                             <div className="flex gap-4">
                                 <label className="flex items-center">{t('daysBefore')}: <input type="number" value={dateAspectDaysBefore} onChange={(e) => setDateAspectDaysBefore(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
                                 <label className="flex items-center">{t('daysAfter')}: <input type="number" value={dateAspectDaysAfter} onChange={(e) => setDateAspectDaysAfter(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
+                                <button onClick={handleUpdateDays} className="px-4 py-2 bg-blue-500 text-white rounded">{t('save')}</button>
                             </div>
                             <p className="text-sm text-gray-500 mt-2">{t('dateAspectHint')}</p>
                         </div>
@@ -208,7 +215,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
     );
 };
 
-const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedTapas }) => {
+const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedTapas, isOffline }) => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
@@ -282,7 +289,13 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
             } else {
                 update = { checkedDays: updatedCheckedDays };
             }
-            await updateDoc(tapasRef, update);
+
+            if (isOffline) {
+                updateDoc(tapasRef, update);
+            } else {
+                await updateDoc(tapasRef, update);
+            }
+
             setSelectedTapas(prev => ({ ...prev, ...update }));
             onClose(`${t('acknowledgedSuccessfully')} ${numberOfDays} ${deltaName.toLowerCase()}.`);
         } catch (e) {
@@ -418,7 +431,7 @@ const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, on
     );
 };
 
-const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearOldResults }) => {
+const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearOldResults, isOffline, setDetailResults }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showEditResultModal, setShowEditResultModal] = useState(false);
@@ -428,12 +441,37 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
     const sortedResults = [...results].sort((a, b) => (a.date ? a.date.toMillis() : 0) - (b.date ? b.date.toMillis() : 0));
     const showDates = sortedResults.length > 1;
 
+    const myAddDoc = async (ref, data) => {
+        if (isOffline) {
+            addDoc(ref, data);
+        } else {
+            return await addDoc(ref, data);
+        }
+    };
+
+    const myUpdateDoc = async (ref, data) => {
+        if (isOffline) {
+            updateDoc(ref, data);
+        } else {
+            return await updateDoc(ref, data);
+        }
+    };
+
+    const myDeleteDoc = async (ref) => {
+        if (isOffline) {
+            deleteDoc(ref);
+        } else {
+            return await deleteDoc(ref);
+        }
+    };
+
     useEffect(() => {
         if (!resultsColRef) return;
         setIsLoading(true);
         if (typeof tapas.results !== 'number' && tapas.results) {
             const res = [{ id: null, content: tapas.results, date: null , dateChanged: null }];
             setResults(res);
+            setDetailResults(res);
             setIsLoading(false);
         } else {
             const unsub = onSnapshot(query(resultsColRef, orderBy('date')), (snapshot) => {
@@ -449,6 +487,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
                 });
 
                 setResults(sortedWithFallback);
+                setDetailResults(sortedWithFallback);
                 if (tapas.results !== sortedWithFallback.length) {
                     tapas.results = sortedWithFallback.length;
                     clearOldResults(tapas.results);
@@ -474,7 +513,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
 
     const handleAddNewResult = async (newContent, date, changedDate) => {
         try {
-            await addDoc(resultsColRef, {
+            await myAddDoc(resultsColRef, {
                 content: newContent,
                 date: date,
                 changedDate: changedDate,
@@ -490,7 +529,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
     const handleUpdateResult = async (resultId, newContent, newDate) => {
         try {
             const resultRef = doc(resultsColRef, resultId);
-            await updateDoc(resultRef, {
+            await myUpdateDoc(resultRef, {
                 content: newContent,
                 changedDate: newDate,
             });
@@ -504,7 +543,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
     const handleDeleteResult = async (resultId) => {
         try {
             const resultRef = doc(resultsColRef, resultId);
-            await deleteDoc(resultRef);
+            await myDeleteDoc(resultRef);
             await addResultsInfo(-1);
             setTapasDetailMessage(t('resultDeleted'));
         } catch (e) {
@@ -761,7 +800,7 @@ const isTapasDateChecked = (checkedDays, date) => {
 };
 
 // Component for adding/editing a Tapas
-const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
+const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
     const { db, userId, t, locale } = useContext(AppContext);
 
     const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
@@ -1110,6 +1149,21 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
 
     const currentTapasDataForForm = tapasMultiLanguageData[currentFormLanguage] || { name: '', description: '', goals: '', parts: '' };
 
+    const myAddDoc = async (ref, data) => {
+        if (isOffline) {
+            addDoc(ref, data);
+        } else {
+            return await addDoc(ref, data);
+        }
+    };
+
+    const myUpdateDoc = async (ref, data) => {
+        if (isOffline) {
+            updateDoc(ref, data);
+        } else {
+            return await updateDoc(ref, data);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -1201,11 +1255,11 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit }) => {
         try {
             if (editingTapas) {
                 const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, editingTapas.id);
-                await updateDoc(tapasRef, tapasData);
+                await myUpdateDoc(tapasRef, tapasData);
                 setSuccessMessage(t('tapasUpdatedSuccessfully'));
                 onCancelEdit(); // Close edit form
             } else {
-                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), tapasData);
+                await myAddDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), tapasData);
                 setSuccessMessage(t('tapasAddedSuccessfully'));
                 // Clear form after successful addition
                 setTapasMultiLanguageData({
@@ -1978,7 +2032,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 };
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage }) => { // Added setSelectedTapas prop
+const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isOffline }) => { // Added setSelectedTapas prop
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -1994,6 +2048,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
     const [showRecuperationAdvanceMenu, setShowRecuperationAdvanceMenu] = useState(false); // State for dropdown menu
     const [publicSharedTapas, setPublicSharedTapas] = useState(null); // State for public shared tapas data
     const [showUpdateSharedTapasMenu, setShowUpdateSharedTapasMenu] = useState(false); // State for update shared tapas menu
+    const [results, setResults] = useState([]);
 
     if (initMessage && message != initMessage) {
         setMessage(initMessage);
@@ -2061,6 +2116,30 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
     const displayParts = getLocalizedContent(tapas.parts, locale, selectedTapasLanguage);
 
 
+    const myAddDoc = async (ref, data) => {
+        if (isOffline) {
+            addDoc(ref, data);
+        } else {
+            return await addDoc(ref, data);
+        }
+    };
+
+    const myUpdateDoc = async (ref, data) => {
+        if (isOffline) {
+            updateDoc(ref, data);
+        } else {
+            return await updateDoc(ref, data);
+        }
+    };
+
+    const myDeleteDoc = async (ref) => {
+        if (isOffline) {
+            deleteDoc(ref);
+        } else {
+            return await deleteDoc(ref);
+        }
+    };
+
     // Fetch public shared tapas data if shareReference exists
     useEffect(() => {
         if (tapas.shareReference) {
@@ -2113,13 +2192,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         };
 
         try {
-            await updateDoc(tapasRef, { checkedPartsByDate: updatedCheckedPartsByDate });
+            await myUpdateDoc(tapasRef, { checkedPartsByDate: updatedCheckedPartsByDate });
         } catch (error) {
             console.error("Error updating checked parts for today:", error);
             setMessage("Error saving part progress.");
         }
     };
-
 
     const handleMarkUnitFinished = async (dateToMark) => {
         setInitMessage('');
@@ -2140,9 +2218,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         const updatedCheckedDays = getUniqueCheckedDays([...(tapas.checkedDays || []), Timestamp.fromDate(dateForCheckedDays)]);
 
         try {
-            await updateDoc(tapasRef, {
-                checkedDays: updatedCheckedDays,
-            });
+            await myUpdateDoc(tapasRef, { checkedDays: updatedCheckedDays, });
             setMessage(t(successMessageKey));
             if (dateForCheckedDays.toISOString().split('T')[0] === todayDateString) {
                  setCheckedPartsSelection({}); // Clear the UI selection state for parts for next day/interaction
@@ -2155,7 +2231,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
 
         // If all units checked, mark as successful
         if (updatedCheckedDays.length === totalUnits && isPeriodEndOrOver) {
-            await updateDoc(tapasRef, { status: 'successful' });
+            await myUpdateDoc(tapasRef, { status: 'successful' });
             setMessage(t('tapasCompletedSuccessfully'));
             setSelectedTapas(prev => ({ ...prev, status: 'successful' })); // Immediately update local state for status
         }
@@ -2175,7 +2251,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         const updatedRecuperatedDays = getUniqueCheckedDays([...(tapas.recuperatedDays || []), Timestamp.fromDate(dateForCheckedDays)]);
 
         try {
-            await updateDoc(tapasRef, {
+            await myUpdateDoc(tapasRef, {
                 checkedDays: updatedCheckedDays,
                 recuperatedDays: updatedRecuperatedDays,
             });
@@ -2215,7 +2291,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         const updatedAdvancedDays = getUniqueCheckedDays([...(tapas.advancedDays || []), ...advancedDates.map(d => Timestamp.fromDate(d))]);
 
         try {
-            await updateDoc(tapasRef, {
+            await myUpdateDoc(tapasRef, {
                 checkedDays: updatedCheckedDays,
                 advancedDays: updatedAdvancedDays,
             });
@@ -2261,7 +2337,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         delete newCheckedPartsByDate[formatDateToISO(lastCheckedUnitDate)];
 
         try {
-            await updateDoc(tapasRef, {
+            await myUpdateDoc(tapasRef, {
                 checkedDays: getUniqueCheckedDays(newCheckedDays),
                 recuperatedDays: getUniqueCheckedDays(newRecuperatedDays),
                 advancedDays: getUniqueCheckedDays(newAdvancedDays),
@@ -2299,11 +2375,17 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         if (confirmName === defaultName) {
             try {
                 // Delete the results sub-collection documents first
-                const resultsSnapshot = await getDocs(collection(tapasRef, 'results'));
-                const batch = writeBatch(db);
-                resultsSnapshot.forEach((doc) => batch.delete(doc.ref));
-                await batch.commit();
-                await deleteDoc(tapasRef);
+                if (isOffline) {
+                    results.forEach(result => {
+                        deleteDoc(doc(tapasRef, 'results', result.id));
+                    });
+                } else {
+                    const batch = writeBatch(db);
+                    const resultsSnapshot = await getDocs(collection(tapasRef, 'results'));
+                    resultsSnapshot.forEach((doc) => batch.delete(doc.ref));
+                    await batch.commit();
+                }
+                await myDeleteDoc(tapasRef);
                 setMessage(t('tapasDeletedSuccessfully'));
                 onClose(); // Close the detail view
             } catch (e) {
@@ -2437,14 +2519,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
     const confirmFail = async () => {
         setInitMessage('');
         try {
-            await updateDoc(tapasRef, { status: 'failed', failureCause: failureCause || null });
+            await myUpdateDoc(tapasRef, { status: 'failed', failureCause: failureCause || null });
             setMessage(t('tapasMarkedAsFailed'));
             setShowFailDialog(false);
 
             if (repeatOption !== 'none') {
                 const newTapasData = repeatTapas();
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
+                await myAddDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
                 setMessage(t('failedTapasRepeated'));
             }
             onClose(); // Close the detail view
@@ -2464,7 +2546,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         try {
             const newTapasData = repeatTapas();
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            await addDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
+            await myAddDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
             setMessage(t('tapasRepeatedSuccessfully'));
             setShowRepeatDialog(false); // Close the dialog
             onClose(); // Close the detail view
@@ -2484,7 +2566,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
 
         // Automatically mark as successful if all units checked (unique count) and period is over
         if (checkedUnitsCount >= totalUnits) {
-            await updateDoc(tapasRef, { status: 'successful' });
+            await myUpdateDoc(tapasRef, { status: 'successful' });
             setMessage(t('tapasAutoMarkedSuccessful'));
         } else if (isPeriodOver) {
             // If period is over but not all units checked, suggest marking as failed
@@ -2500,7 +2582,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
     const handleClearOldResults = async (results) => {
         setInitMessage('');
         try {
-            await updateDoc(tapasRef, { results: results });
+            await myUpdateDoc(tapasRef, { results: results });
             setSelectedTapas(prevTapas => ({ ...prevTapas, results: results })); // Immediately update local state
         } catch (error) {
             console.error("Error saving results:", error);
@@ -2792,6 +2874,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                                     <button
                                         onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
                                         className={`${sharedInfoBgColor} text-white px-2 py-1 rounded text-xs font-medium`}
+                                        disabled={isOffline}
                                     >
                                         ...
                                     </button>
@@ -2971,6 +3054,8 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         t={t}
                         setTapasDetailMessage={setMessage}//setTapasDetailMessage}
                         clearOldResults={handleClearOldResults}
+                        setDetailResults={setResults}
+                        isOffline={isOffline}
                     />
 
                     {tapas.scheduleType !== 'noTapas' && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
@@ -3022,6 +3107,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         <button
                             onClick={handleShareTapas}
                             className="flex items-center justify-center bg-indigo-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-indigo-600 transition-colors duration-200 text-lg font-medium"
+                            disabled={isOffline}
                         >
                             <svg rpl="" aria-hidden="true" className="icon-share" fill="currentColor" height="16" icon-name="share-new-outline" viewBox="0 0 20 20" width="16" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M2.239 18.723A1.235 1.235 0 0 1 1 17.488C1 11.5 4.821 6.91 10 6.505V3.616a1.646 1.646 0 0 1 2.812-1.16l6.9 6.952a.841.841 0 0 1 0 1.186l-6.9 6.852A1.645 1.645 0 0 1 10 16.284v-2.76c-2.573.243-3.961 1.738-5.547 3.445-.437.47-.881.949-1.356 1.407-.23.223-.538.348-.858.347ZM10.75 7.976c-4.509 0-7.954 3.762-8.228 8.855.285-.292.559-.59.832-.883C5.16 14 7.028 11.99 10.75 11.99h.75v4.294a.132.132 0 0 0 .09.134.136.136 0 0 0 .158-.032L18.186 10l-6.438-6.486a.135.135 0 0 0-.158-.032.134.134 0 0 0-.09.134v4.36h-.75Z"></path>
@@ -3976,7 +4062,7 @@ const HomePage = () => {
                             // persistentLocalCache is required to enable offline querying
                             firestore = initializeFirestore(app, {
                                 //localCache: persistentLocalCache(/*settings*/ {}),
-                                localCache: persistentLocalCache(/*settings*/{tabManager: persistentMultipleTabManager()}),
+                                localCache: persistentLocalCache(/*settings*/{tabManager: persistentSingleTabManager()}),
                             });
                             setPersistentCacheEnabled(true);
                         } catch (e) {
@@ -4912,7 +4998,7 @@ const HomePage = () => {
                                         <button
                                             onClick={() => { setShowDataMenu(!showDataMenu); setShowTapasLanguageMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
-                                            disabled={loadingFirebase}
+                                            disabled={loadingFirebase || (isPersistentCacheEnabled && (isNetworkDisabled || isOffline))}
                                         >
                                             {t('data')}
                                             <svg className={`w-4 h-4 transform transition-transform ${showDataMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -5048,10 +5134,17 @@ const HomePage = () => {
                                 <Statistics allTapas={tapas} />
                             )}
                             {currentPage === 'add' && (
-                                <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }} editingTapas={editingTapas} onCancelEdit={handleCancelEdit} />
+                                <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }}
+                                    editingTapas={editingTapas} onCancelEdit={handleCancelEdit}
+                                    isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                                />
                             )}
                             {selectedTapas && currentPage === 'detail' && (
-                                <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas} setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage} setShowDateRangeModal={setShowAcknowledgeDateRangeModal} initMessage={tapasDetailMessage} setInitMessage={setTapasDetailMessage} />
+                                <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas}
+                                    setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage}
+                                    setShowDateRangeModal={setShowAcknowledgeDateRangeModal} initMessage={tapasDetailMessage}
+                                    setInitMessage={setTapasDetailMessage} isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                                />
                             )}
                             {selectedLicense && (
                                 <License onClose={handleCloseLicense} />
@@ -5097,8 +5190,13 @@ const HomePage = () => {
                 {showAboutModal && <AboutModal onClose={() => setShowAboutModal(false)} />}
                 {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
                 {showCleanDataModal && <CleanDataModal onClose={() => setShowCleanDataModal(false)} onCleanConfirmed={handleCleanDataConfirmed} />}
-                {showConfigModal && <ConfigModal onClose={() => setShowConfigModal(false)} db={db} userId={userId} t={t} setConfig={setConfig} />}
-                {showAcknowledgeDateRangeModal && <AcknowledgeDateRangeModal onClose={closeAcknowledgeDateRangeModal} tapas={selectedTapas} setSelectedTapas={setSelectedTapas} db={db} userId={userId} t={t} />}
+                {showConfigModal && <ConfigModal onClose={() => setShowConfigModal(false)} db={db} userId={userId} t={t}
+                    setConfig={setConfig} isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                />}
+                {showAcknowledgeDateRangeModal && <AcknowledgeDateRangeModal onClose={closeAcknowledgeDateRangeModal}
+                    tapas={selectedTapas} setSelectedTapas={setSelectedTapas} db={db} userId={userId} t={t}
+                    isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                />}
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
             </div>
         </AppContext.Provider>

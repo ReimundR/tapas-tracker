@@ -62,12 +62,14 @@ pre p {
 	font-weight: 700;
 }
 
-nav button:disabled {
+button:disabled {
   color: var(--color-gray-300);
+  background-color: var(--color-gray-100);
 }
 
-.dark nav button:disabled {
+.dark button:disabled {
   color: var(--color-gray-900);
+  background-color: var(--color-gray-700);
 }
 
 #main-menu button:disabled {
