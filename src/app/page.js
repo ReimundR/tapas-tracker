@@ -4767,17 +4767,19 @@ const HomePage = () => {
                 `}</style>
 
                 <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 shadow-md">
-                    <div className="container mx-auto flex justify-between items-center relative">
+                    <div className="container mx-auto flex flex-wrap justify-between items-center relative">
                         <h1 className="text-3xl font-bold">{t('appName')}</h1>
-                        <div className="flex items-center space-x-4">
-                            {isOffline && (
-                                <span className="text-gray-300">{t('isOffline')}</span>
-                            )}
+                        {isOffline && (
+                            <span className="text-gray-300">{t('isOffline')}</span>
+                        )}
+                        <div className="flex items-center justify-right space-x-4">
                             {isPersistentCacheEnabled && (
-                                <button onClick={handleNetworkToggle} className="p-2 rounded-md">
-                                    <span className="text-2xl text-blue-300" role="img" aria-label="Network Status">
-                                        {isNetworkDisabled ? '🛪' : '🌐'}
-                                    </span>
+                                <button onClick={handleNetworkToggle} className="p-2 rounded-md text-blue-400" aria-label="Network Status">
+                                    {isNetworkDisabled ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" fill="currentColor"><path d="M280-80v-100l120-84v-144L80-280v-120l320-224v-176q0-33 23.5-56.5T480-880q33 0 56.5 23.5T560-800v176l320 224v120L560-408v144l120 84v100l-200-60-200 60Z"/></svg>
+                                    ) : (
+                                        <span className="text-2xl text-blue-300" role="img">🌐</span>
+                                    )}
                                 </button>
                             )}
                             <button
