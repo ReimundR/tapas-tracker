@@ -1,6 +1,6 @@
 {
   "name": "tapas",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "private": false,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -17,6 +17,7 @@
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
     "@next/mdx": "15.4.6",
+    "@radix-ui/react-switch": "^1.2.6",
     "@types/mdx": "^2.0.13",
     "cookies-next": "^6.1.0",
     "firebase": "^12.1.0",
@@ -24,6 +25,7 @@
     "next": "15.4.6",
     "react": "19.1.1",
     "react-dom": "19.1.1",
+    "react-tabs": "^6.1.0",
     "react-tooltip": "^5.29.1"
   },
   "devDependencies": {

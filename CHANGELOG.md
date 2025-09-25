@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.1.0 (2025-09-25) =
+
+* added offline mode (persistent data)
+
 #### = 1.0.9 (2025-09-20) =
 
 * added results history view and editor

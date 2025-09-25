@@ -6,15 +6,18 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef, Suspense } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, disableNetwork, enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
+import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
 import { Tooltip } from 'react-tooltip';
+import * as Switch from "@radix-ui/react-switch";
 import Head from 'next/head'; // Import Head from next/head for meta tags
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
 import { translations } from "./translations";
 import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider } from "./helpers";
+import 'react-tabs/style/react-tabs.css';
 
 const __app_id = firebaseConfig.appId;
 const appVersion = process.env.version;
@@ -69,6 +72,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
     const [dateAspectDaysAfter, setDateAspectDaysAfter] = useState(1);
     const [newAspectName, setNewAspectName] = useState('');
     const [newAspectPercentage, setNewAspectPercentage] = useState('');
+    const [isPersistentCacheEnabled, setPersistentCacheEnabled] = useState(localStorage.getItem('persistentLocalCache') === 'true');
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const configRef = doc(db, `artifacts/${appId}/users/${userId}/config/appConfig`);
@@ -89,6 +93,13 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
         });
         return () => unsub();
     }, [db]);
+
+    const handlePersistentCacheChange = (isChecked) => {
+        setPersistentCacheEnabled(isChecked);
+        localStorage.setItem('persistentLocalCache', isChecked.toString());
+        // This is a client-side setting, Firebase persistence is enabled on app load
+        // when the cookie is present. This button only updates the cookie.
+    };
 
     const handleAddAspect = async () => {
         if (newAspectName && newAspectPercentage) {
@@ -129,32 +140,69 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig}) => {
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 p-6 rounded-lg shadow-lg w-full max-w-2xl">
+            <div className="bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 p-6 rounded-lg shadow-lg w-full max-w-xl">
+                <button onClick={handleUpdateDays} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                    &times;
+                </button>
                 <h2 className="text-xl font-bold mb-4">{t('config')}</h2>
-                <div className="mb-4">
-                    <h3 className="font-semibold mb-2">{t('dateAspects')}</h3>
-                    <div className="flex gap-2 mb-2">
-                        <input type="text" value={newAspectName} onChange={(e) => setNewAspectName(e.target.value)} placeholder={t('aspectName')} className="flex-grow p-2 border rounded" />
-                        <input type="number" value={newAspectPercentage} onChange={(e) => setNewAspectPercentage(e.target.value)} placeholder={t('percentage')} className="w-24 p-2 border rounded" />
-                        <button onClick={handleAddAspect} className="px-4 py-2 bg-blue-500 text-white rounded">{t('add')}</button>
-                    </div>
-                    <ul className="list-disc pl-5">
-                        {dateAspects.map((aspect, index) => (
-                            <li key={index} className="flex justify-between items-center my-1">{aspect.name}: {aspect.percentage}% <button onClick={() => handleRemoveAspect(aspect)} className="text-red-500">{t('remove')}</button></li>
-                        ))}
-                    </ul>
-                </div>
-                <div className="mb-4">
-                    <h3 className="font-semibold mb-2">{t('dateAspectTimeframe')}</h3>
-                    <div className="flex gap-4">
-                        <label className="flex items-center">{t('daysBefore')}: <input type="number" value={dateAspectDaysBefore} onChange={(e) => setDateAspectDaysBefore(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
-                        <label className="flex items-center">{t('daysAfter')}: <input type="number" value={dateAspectDaysAfter} onChange={(e) => setDateAspectDaysAfter(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">{t('dateAspectHint')}</p>
-                </div>
-                <div className="flex justify-end">
-                    <button onClick={handleUpdateDays} className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded">{t('close')}</button>
-                </div>
+
+                <Tabs>
+                    <TabList>
+                        <Tab>{t('general')}</Tab>
+                        <Tab>{t('dateAspects')}</Tab>
+                    </TabList>
+                    <TabPanel>
+                        <div className="space-y-4">
+                            <div>
+                                <div style={{ display: "flex", alignItems: "center" }}>
+                                    <label
+                                        className="Label pr-4"
+                                        htmlFor="local-persistance"
+                                    >
+                                        {t('enableLocalPersistence')}
+                                    </label>
+                                    <Switch.Root
+                                        className="SwitchRoot"
+                                        id="local-persistance"
+                                        checked={isPersistentCacheEnabled}
+                                        onCheckedChange={handlePersistentCacheChange}
+                                    >
+                                        <Switch.Thumb className="SwitchThumb" />
+                                    </Switch.Root>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
+                                    {t('persistenceHint')}
+                                </p>
+                            </div>
+                        </div>
+                    </TabPanel>
+                    <TabPanel>
+                        <div className="mb-4">
+                            <div className="flex gap-2 mb-2">
+                                <input type="text" value={newAspectName}
+                                    onChange={(e) => setNewAspectName(e.target.value)}
+                                    placeholder={t('aspectName')}
+                                    className="flex-grow w-full p-2 border rounded"
+                                />
+                                <input type="number" value={newAspectPercentage} onChange={(e) => setNewAspectPercentage(e.target.value)} placeholder="%" aria-hidden="percent" className="w-24 p-2 border rounded" />
+                                <button onClick={handleAddAspect} className="px-4 py-2 bg-blue-500 text-white rounded" aria-hidden="add">+</button>
+                            </div>
+                            <ul className="list-disc pl-5">
+                                {dateAspects.map((aspect, index) => (
+                                    <li key={index} className="flex justify-between items-center my-1">{aspect.name}: {aspect.percentage}% <button onClick={() => handleRemoveAspect(aspect)} className="text-red-500">{t('remove')}</button></li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className="mb-4">
+                            <h3 className="font-semibold mb-2">{t('dateAspectTimeframe')}</h3>
+                            <div className="flex gap-4">
+                                <label className="flex items-center">{t('daysBefore')}: <input type="number" value={dateAspectDaysBefore} onChange={(e) => setDateAspectDaysBefore(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
+                                <label className="flex items-center">{t('daysAfter')}: <input type="number" value={dateAspectDaysAfter} onChange={(e) => setDateAspectDaysAfter(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-2">{t('dateAspectHint')}</p>
+                        </div>
+                    </TabPanel>
+                </Tabs>
             </div>
         </div>
     );
@@ -1585,6 +1633,10 @@ const getSharedTapasInfo = async (shareReference, db) => {
             return { userId: data.userId, version: data.version || 1 };
         }
     } catch (e) {
+        if (e.code === 'unavailable') {
+            // offline
+            return null;
+        }
         console.error("Error fetching shared tapas info:", e);
     }
     return { userId: null, version: null };
@@ -3851,6 +3903,11 @@ const HomePage = () => {
     const fileInputRef = useRef(null); // Ref for the hidden file input
     const [sharedRef, setSharedRef] = useState(null); // New state for shared tapas reference
 
+    // State for network and persistence settings
+    const [isPersistentCacheEnabled, setPersistentCacheEnabled] = useState(false);
+    const [isNetworkDisabled, setNetworkDisabled] = useState(false);
+    const [isFirebaseInitialized, setFirebaseInitialized] = useState(false);
+
     // Firebase state
     const [db, setDb] = useState(null);
     const [auth, setAuth] = useState(null);
@@ -3863,6 +3920,7 @@ const HomePage = () => {
     const [isGuestUser, setIsGuestUser] = useState(false); // New state to track if user is anonymous
     const [pageBeforeDetail, setPageBeforeDetail] = useState('active'); // New state to remember previous page
     const [sharedTapasInfoMap, setSharedTapasInfoMap] = useState({}); // Moved here
+    const [isOffline, setIsOffline] = useState(false);
 
     // History filters
     const [historyStatusFilter, setHistoryStatusFilter] = useState('all');
@@ -3888,17 +3946,59 @@ const HomePage = () => {
         }
     }, []);
 
+    const handleNetworkToggle = async () => {
+        const newNetworkState = !isNetworkDisabled;
+        newNetworkState ? await disableNetwork(db) : await enableNetwork(db);
+        localStorage.setItem('networkDisabled', newNetworkState);
+        setNetworkDisabled(newNetworkState);
+    };
+
     // Initialize Firebase and handle authentication
     useEffect(() => {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         if (firebaseConfig && firebaseConfig.apiKey) {
+            if (isFirebaseInitialized) return;
+
             try {
+                const persistentCacheCookie = localStorage.getItem('persistentLocalCache');
+                const networkDisabledCookie = localStorage.getItem('networkDisabled');
                 const app = initializeApp(firebaseConfig);
-                const firestore = getFirestore(app);
-                const authentication = getAuth(app);
-                setDb(firestore);
-                setAuth(authentication);
+
+                let firestore;
+                let authentication;
+                if (db) {
+                    firestore = db;
+                    authentication = auth;
+                } else {
+                    if (persistentCacheCookie === 'true' && typeof window !== 'undefined') {
+                        try {
+                            // persistentLocalCache is required to enable offline querying
+                            firestore = initializeFirestore(app, {
+                                //localCache: persistentLocalCache(/*settings*/ {}),
+                                localCache: persistentLocalCache(/*settings*/{tabManager: persistentMultipleTabManager()}),
+                            });
+                            setPersistentCacheEnabled(true);
+                        } catch (e) {
+                            if (e.code === 'failed-precondition') {
+                                console.warn("Multiple tabs open, persistence not enabled.");
+                            } else if (e.code === 'unimplemented') {
+                                console.warn("The browser does not support persistence.");
+                            }
+                        }
+                    } else {
+                        firestore = getFirestore(app);
+                    }
+
+                    if (persistentCacheCookie === 'true' && networkDisabledCookie === 'true') {
+                        disableNetwork(firestore);
+                        setNetworkDisabled(true);
+                    }
+
+                    authentication = getAuth(app);
+                    setDb(firestore);
+                    setAuth(authentication);
+                }
 
                 const unsubscribe = onAuthStateChanged(authentication, async (user) => {
                     if (user) {
@@ -3913,7 +4013,17 @@ const HomePage = () => {
 
                         // Load user preferences for Tapas language
                         const userPrefsRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/preferences/tapas`);
-                        const userPrefsSnap = await getDoc(userPrefsRef);
+                        let userPrefsSnap;
+                        try {
+                            userPrefsSnap = await getDoc(userPrefsRef);
+                        } catch (e) {
+                            if (e.code === 'unavailable') {
+                                setIsOffline(true);
+                            } else {
+                                alert("Failed to connect.");
+                            }
+                            return;
+                        }
                         if (userPrefsSnap.exists()) {
                             const prefs = userPrefsSnap.data();
                             setSelectedTapasLanguage(prefs.selectedTapasLanguage || null);
@@ -3940,6 +4050,7 @@ const HomePage = () => {
                         setConfig({}); // Clear config
                     }
                     setLoadingFirebase(false);
+                    setFirebaseInitialized(true);
                 });
 
                 return () => unsubscribe();
@@ -3987,14 +4098,25 @@ const HomePage = () => {
 
 
             // Fetch shared tapas info for all tapas items here
-            const newSharedTapasInfoMap = {};
-            for (const tapasItem of cleanedTapasData) {
-                if (tapasItem.shareReference) {
-                    const info = await getSharedTapasInfo(tapasItem.shareReference, db);
-                    newSharedTapasInfoMap[tapasItem.id] = info;
+            if (!isNetworkDisabled) {
+                let netOffline = false;
+                const newSharedTapasInfoMap = {};
+                for (const tapasItem of cleanedTapasData) {
+                    if (tapasItem.shareReference) {
+                        const info = await getSharedTapasInfo(tapasItem.shareReference, db);
+                        if (info === null) {
+                            netOffline = true;
+                            break;
+                        }
+                        newSharedTapasInfoMap[tapasItem.id] = info;
+                    }
+                }
+                if (netOffline) {
+                    setIsOffline(true);
+                } else {
+                    setSharedTapasInfoMap(newSharedTapasInfoMap);
                 }
             }
-            setSharedTapasInfoMap(newSharedTapasInfoMap);
 
         }, (error) => {
             console.error("Error fetching tapas: ", error);
@@ -4648,6 +4770,16 @@ const HomePage = () => {
                     <div className="container mx-auto flex justify-between items-center relative">
                         <h1 className="text-3xl font-bold">{t('appName')}</h1>
                         <div className="flex items-center space-x-4">
+                            {isOffline && (
+                                <span className="text-gray-300">{t('isOffline')}</span>
+                            )}
+                            {isPersistentCacheEnabled && (
+                                <button onClick={handleNetworkToggle} className="p-2 rounded-md">
+                                    <span className="text-2xl text-blue-300" role="img" aria-label="Network Status">
+                                        {isNetworkDisabled ? '🛪' : '🌐'}
+                                    </span>
+                                </button>
+                            )}
                             <button
                                 onClick={toggleTheme}
                                 className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors duration-200 text-white focus:outline-none focus:ring-2 focus:ring-white"
@@ -4712,35 +4844,22 @@ const HomePage = () => {
                                                 {t('signIn')}
                                             </button>
                                         )}
-                                        <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
-                                        <button
-                                            onClick={() => { setShowDataMenu(!showDataMenu); setShowTapasLanguageMenu(false); }}
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
-                                            disabled={loadingFirebase}
-                                        >
-                                            {t('data')}
-                                            <svg className={`w-4 h-4 transform transition-transform ${showDataMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                        </button>
-                                        {showDataMenu && (
-                                            <div className="pl-4"> {/* Indent submenu items */}
-                                                <button
-                                                    onClick={handleImportDataClick}
-                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        {isPersistentCacheEnabled && (
+                                            <div className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">
+                                                <label
+                                                    className="Label pr-4"
+                                                    htmlFor="sync"
                                                 >
-                                                    {t('importData')}
-                                                </button>
-                                                <button
-                                                    onClick={handleExportData}
-                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                    {t('sync')}
+                                                </label>
+                                                <Switch.Root
+                                                    className="SwitchRoot"
+                                                    id="sync"
+                                                    checked={!isNetworkDisabled}
+                                                    onCheckedChange={handleNetworkToggle}
                                                 >
-                                                    {t('exportData')}
-                                                </button>
-                                                <button
-                                                    onClick={handleCleanData}
-                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
-                                                >
-                                                    {t('cleanData')}
-                                                </button>
+                                                    <Switch.Thumb className="SwitchThumb" />
+                                                </Switch.Root>
                                             </div>
                                         )}
                                         <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
@@ -4785,6 +4904,37 @@ const HomePage = () => {
                                                         {t('clearX', '')}
                                                     </button>
                                                 )}
+                                            </div>
+                                        )}
+                                        <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
+                                        <button
+                                            onClick={() => { setShowDataMenu(!showDataMenu); setShowTapasLanguageMenu(false); }}
+                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
+                                            disabled={loadingFirebase}
+                                        >
+                                            {t('data')}
+                                            <svg className={`w-4 h-4 transform transition-transform ${showDataMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </button>
+                                        {showDataMenu && (
+                                            <div className="pl-4"> {/* Indent submenu items */}
+                                                <button
+                                                    onClick={handleImportDataClick}
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                >
+                                                    {t('importData')}
+                                                </button>
+                                                <button
+                                                    onClick={handleExportData}
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                >
+                                                    {t('exportData')}
+                                                </button>
+                                                <button
+                                                    onClick={handleCleanData}
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                >
+                                                    {t('cleanData')}
+                                                </button>
                                             </div>
                                         )}
                                         <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
