@@ -743,6 +743,16 @@ const countCheckedSince = (checkedDaysArray, fromDate) => {
     return cnt;
 };
 
+const getLastDate = (daysArray) => {
+    let lastDate = daysArray[0];
+    daysArray.forEach(timestamp => {
+        if (timestamp > lastDate) {
+            lastDate = timestamp;
+        }
+    });
+    return lastDate;
+};
+
 // Helper to get unique checked days, handling potential duplicates and various date types
 const getUniqueCheckedDays = (checkedDaysArray) => {
     if (!checkedDaysArray || checkedDaysArray.length === 0) {
@@ -1712,26 +1722,35 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
             let statusText = [];
             if (noDuration) {
                 const uniqueCheckedDays = getUniqueCheckedDays(tapasItem.checkedDays);
+                if (uniqueCheckedDays) {
+                    const lastDate = getLastDate(uniqueCheckedDays).toDate();
+                    const lastSince = (today.getTime() - lastDate.getTime()) / timeDayMs;
+                    const lastInfo = lastSince === 0 ? t('todayX', '') : lastSince === 1 ? t('yesterdayX', '') : t('beforeXDays', lastSince);
+                    statusText.push([t('isLastDay') + ': ' + lastInfo]);
+                }
+
                 const dates = { "Week": 7, "Month": 30, "Year": 365 };
                 let lastChecked = 0;
                 let statusZero = '';
+                let statusStat = [];
                 Object.keys(dates).forEach(name => {
                     const duration = dates[name];
                     const date = getStartOfDayUTC(new Date(today.getTime() - (duration * timeDayMs)));
                     const checkedDates = countCheckedSince(uniqueCheckedDays, date);
                     const status = t('last' + name) + ': ' + checkedDates;
-                    if (checkedDates == 0 && !statusText.length) {
+                    if (checkedDates == 0 && !statusStat.length) {
                         statusZero = status;
                     }
-                    if (checkedDates > lastChecked || (!statusText.length && duration==365)) {
+                    if (checkedDates > lastChecked || (!statusStat.length && duration==365)) {
                         if (statusZero) {
-                            statusText.push(statusZero);
+                            statusStat.push(statusZero);
                             statusZero = '';
                         }
-                        statusText.push(status);
+                        statusStat.push(status);
                     }
                     lastChecked = checkedDates;
                 });
+                statusText.push(statusStat);
             }
             return { statusText: statusText, statusClass: 'text-gray-600 dark:text-gray-400' }; // No pending status for 'noTapas'
         }
@@ -1757,13 +1776,13 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 
         if (yesterdayPending) {
             const statusText = t((isWeekly ? 'lastWeekX' : 'yesterdayX'), t('pending')).toLowerCase();
-            pendingStatus = { statusText: [statusText], statusClass: 'text-red-600' };
+            pendingStatus = { statusText: [[statusText]], statusClass: 'text-red-600' };
         } else if (todayPending && !tapasItem.acknowledgeAfter) {
             const isTodayPending = !isWeekly || today.getTime() == getStartOfDayUTC(new Date()).getTime();
             const pendingDay = isTodayPending ? 'todayX' : 'thisWeekX';
             const pendingColor = isTodayPending ? 'text-orange-600' : 'text-gray-600';
             const statusText = t(pendingDay, t('pending')).toLowerCase();
-            pendingStatus = { statusText: [statusText], statusClass: pendingColor };
+            pendingStatus = { statusText: [[statusText]], statusClass: pendingColor };
         }
 
         let leftOutDaysCount = 0;
@@ -1777,7 +1796,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
         }
         if (!pendingStatus.statusText.length && leftOutDaysCount > 0) {
             const statusText = `${leftOutDaysCount} ${t((isWeekly ? 'weeks' : 'days') + 'LeftOut')}`;
-            pendingStatus = { statusText: [statusText], statusClass: 'text-gray-600' };
+            pendingStatus = { statusText: [[statusText]], statusClass: 'text-gray-600' };
         }
 
         return pendingStatus;
@@ -2001,10 +2020,13 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                 {tapasItem.status === 'failed' && (
                                     <p className="text-sm font-medium text-red-600 mt-2">{t('status')}: {t('failed')}</p>
                                 )}
-                                {tapasItem.status === 'active' && statusText.length > 0 && (
-                                    <p className={`text-sm font-bold mt-1 ${statusClass}`}>
-                                        {statusText.map((text, idx) => <span key={idx} className="pr-3">{text}</span>)}
-                                    </p>
+                                {tapasItem.status === 'active' && statusText.length > 0 && (<>
+                                    {statusText.map((texts, idx) => 
+                                        <p key={idx} className={`text-sm font-bold mt-1 ${statusClass}`}>
+                                            {texts.map((text, tidx) => <span key={tidx} className="pr-3">{text}</span>)}
+                                        </p>
+                                    )}
+                                    </>
                                 )}
                                 {aspectDates && aspectDates.length > 0 && (
                                     <p className={`text-sm font-bold mt-1`}>

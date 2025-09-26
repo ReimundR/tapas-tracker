@@ -72,6 +72,11 @@ button:disabled {
   background-color: var(--color-gray-700);
 }
 
+nav button:disabled {
+  color: var(--color-gray-300);
+  background-color: inherit !important;
+}
+
 #main-menu button:disabled {
   /*background-color: var(--color-gray-300);*/
   background-color: transparent;
