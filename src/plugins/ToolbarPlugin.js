@@ -435,7 +435,9 @@ export default function ToolbarPlugin() {
       editor.registerUpdateListener(({ editorState }) => {
         editorState.read(() => {
           updateToolbar();
-        });
+        },
+        {editor}
+        );
       }),
       editor.registerCommand(
         SELECTION_CHANGE_COMMAND,

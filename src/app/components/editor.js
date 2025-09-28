@@ -96,16 +96,16 @@ export const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
             <div className="relative border border-gray-300 dark:border-gray-600 rounded-md">
                 <ToolbarPlugin />
                 <div className="editor-inner">
-                <RichTextPlugin
-                    contentEditable={<ContentEditable className="editor-input min-h-[150px] p-3 outline-none resize-y overflow-auto bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 rounded-b-md" />}
-                    placeholder={<div className="editor-placeholder">{t('enterDescription')}...</div>}
-                    ErrorBoundary={LexicalErrorBoundary}
-                />
-                <HistoryPlugin />
-                <ListPlugin />
-                <LinkPlugin />
-                <AutoLinkPlugin />
-                <OnChangePlugin onChange={onEditorStateChange} />
+                    <RichTextPlugin
+                        contentEditable={<ContentEditable className="editor-input min-h-[150px] p-3 outline-none resize-y overflow-auto bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 rounded-b-md" />}
+                        placeholder={<div className="editor-placeholder">{t('enterDescription')}...</div>}
+                        ErrorBoundary={LexicalErrorBoundary}
+                    />
+                    <HistoryPlugin />
+                    <ListPlugin />
+                    <LinkPlugin />
+                    <AutoLinkPlugin />
+                    <OnChangePlugin onChange={onEditorStateChange} />
                 </div>
             </div>
         </LexicalComposer>
