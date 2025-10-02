@@ -142,6 +142,16 @@ nav button:hover:disabled {
   opacity: 0.2;
 }
 
+.toolbar button:disabled {
+  background: #fff;
+  color: black;
+}
+
+.dark .toolbar button:disabled {
+  background: #414141 !important;
+  color: #cccccc !important;
+}
+
 .toolbar button.toolbar-item.active {
   background-color: rgba(223, 232, 250, 0.3);
 }

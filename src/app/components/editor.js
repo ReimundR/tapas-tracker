@@ -12,10 +12,11 @@ import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { $getRoot, $insertNodes, $createParagraphNode } from 'lexical';
+import { $getRoot, $insertNodes, $createParagraphNode, TextNode } from 'lexical';
 import { $generateNodesFromDOM } from '@lexical/html';
 import AutoLinkPlugin from "../../plugins/AutoLinkPlugin";
 import ToolbarPlugin from "../../plugins/ToolbarPlugin";
+import { ExtendedTextNode } from "../../plugins/ExtendedTextNode";
 
 // Lexical Editor Configuration
 const editorConfig = {
@@ -52,6 +53,12 @@ const editorConfig = {
         console.error(error);
     },
     nodes: [
+        ExtendedTextNode,
+        {
+            replace: TextNode,
+            with: (node) => new ExtendedTextNode(node.__text),
+            withKlass: ExtendedTextNode,
+        },
         HeadingNode,
         ListNode,
         ListItemNode,

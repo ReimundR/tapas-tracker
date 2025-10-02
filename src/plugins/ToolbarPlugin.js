@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CAN_REDO_COMMAND, CAN_UNDO_COMMAND, REDO_COMMAND, UNDO_COMMAND, SELECTION_CHANGE_COMMAND,
   FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, $getSelection, $isRangeSelection, $createParagraphNode, $getNodeByKey } from "lexical";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
-import { $isParentElementRTL, $wrapNodes, $isAtNodeEnd } from "@lexical/selection";
+import { $getSelectionStyleValueForProperty, $isParentElementRTL, $patchStyleText, $wrapNodes, $isAtNodeEnd } from "@lexical/selection";
 import { $getNearestNodeOfType, mergeRegister } from "@lexical/utils";
 import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND, REMOVE_LIST_COMMAND, $isListNode, ListNode } from "@lexical/list";
 import { createPortal } from "react-dom";
@@ -375,6 +375,7 @@ function BlockOptionsDropdownList({
 
 export default function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
+  const [activeEditor, setActiveEditor] = useState(editor);
   const toolbarRef = useRef(null);
   const buttonRef = useRef(null);
   const [canUndo, setCanUndo] = useState(false);
@@ -389,6 +390,7 @@ export default function ToolbarPlugin() {
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
+  const [fontSize, setFontSize] = useState('15px');
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -399,7 +401,7 @@ export default function ToolbarPlugin() {
           ? anchorNode
           : anchorNode.getTopLevelElementOrThrow();
       const elementKey = element.getKey();
-      const elementDOM = editor.getElementByKey(elementKey);
+      const elementDOM = activeEditor.getElementByKey(elementKey);
       if (elementDOM !== null) {
         setSelectedElementKey(elementKey);
         if ($isListNode(element)) {
@@ -427,8 +429,12 @@ export default function ToolbarPlugin() {
       } else {
         setIsLink(false);
       }
+      // Hande buttons
+      setFontSize(
+        $getSelectionStyleValueForProperty(selection, 'font-size', '15px'),
+      );
     }
-  }, [editor]);
+  }, [activeEditor]);
 
   useEffect(() => {
     return mergeRegister(
@@ -443,6 +449,7 @@ export default function ToolbarPlugin() {
         SELECTION_CHANGE_COMMAND,
         (_payload, newEditor) => {
           updateToolbar();
+          setActiveEditor(newEditor);
           return false;
         },
         LowPriority
@@ -466,6 +473,25 @@ export default function ToolbarPlugin() {
     );
   }, [editor, updateToolbar]);
 
+  const applyStyleText = useCallback(
+    (styles) => {
+      activeEditor.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          $patchStyleText(selection, styles);
+        }
+      });
+    },
+    [activeEditor],
+  );
+  
+  const onFontSizeSelect = useCallback(
+    (e) => {
+      applyStyleText({'font-size': e.target.value});
+    },
+    [applyStyleText],
+  );
+
   const insertLink = useCallback(() => {
     if (!isLink) {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://");
@@ -479,7 +505,7 @@ export default function ToolbarPlugin() {
       <button
         disabled={!canUndo}
         onClick={() => {
-          editor.dispatchCommand(UNDO_COMMAND);
+          activeEditor.dispatchCommand(UNDO_COMMAND);
         }}
         type="button"
         className="toolbar-item spaced font-bold text-lg"
@@ -490,7 +516,7 @@ export default function ToolbarPlugin() {
       <button
         disabled={!canRedo}
         onClick={() => {
-          editor.dispatchCommand(REDO_COMMAND);
+          activeEditor.dispatchCommand(REDO_COMMAND);
         }}
         type="button"
         className="toolbar-item font-bold text-lg"
@@ -516,7 +542,7 @@ export default function ToolbarPlugin() {
           {showBlockOptionsDropDown &&
             createPortal(
               <BlockOptionsDropdownList
-                editor={editor}
+                editor={activeEditor}
                 blockType={blockType}
                 toolbarRef={toolbarRef}
                 buttonRef={buttonRef}
@@ -527,9 +553,19 @@ export default function ToolbarPlugin() {
           <Divider />
         </>
       )}
+      <>
+        <Select
+          className="toolbar-item font-size"
+          onChange={onFontSizeSelect}
+          options={['10px', '11px', '12px', '15px', '16px', '18px', '21px', '28px', '32px', '38px']}
+          value={fontSize}
+        />
+        <i className="chevron-down inside" />
+      </>
+      <Divider />      
       <button
         onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold");
+          activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold");
         }}
         type="button"
         className={"toolbar-item spaced " + (isBold ? "active" : "")}
@@ -539,7 +575,7 @@ export default function ToolbarPlugin() {
       </button>
       <button
         onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic");
+          activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic");
         }}
         type="button"
         className={"toolbar-item spaced " + (isItalic ? "active" : "")}
@@ -549,7 +585,7 @@ export default function ToolbarPlugin() {
       </button>
       <button
         onClick={() => {
-          editor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline");
+          activeEditor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline");
         }}
         type="button"
         className={"toolbar-item spaced " + (isUnderline ? "active" : "")}
@@ -566,7 +602,7 @@ export default function ToolbarPlugin() {
         &#x1F517;
       </button>
       {isLink &&
-        createPortal(<FloatingLinkEditor editor={editor} />, document.body)}
+        createPortal(<FloatingLinkEditor editor={activeEditor} />, document.body)}
       {" "}
     </div>
   );

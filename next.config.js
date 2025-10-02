@@ -28,7 +28,8 @@ const nextConfig = {
   env: {
     version,
     FIREBASE_WEBAPP_CONFIG: process.env.FIREBASE_WEBAPP_CONFIG
-  }
+  },
+  output: 'export'
 };
 
 module.exports = withMDX(nextConfig);
