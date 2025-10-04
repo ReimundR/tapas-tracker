@@ -20,7 +20,6 @@
 # production
 /build
 /android
-/public
 
 # misc
 .DS_Store
