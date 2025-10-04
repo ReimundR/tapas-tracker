@@ -6,7 +6,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef, Suspense } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, disableNetwork, enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, disableNetwork, enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, getDocFromCache, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
 import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
@@ -4121,15 +4121,26 @@ const HomePage = () => {
 
                         // Load user preferences for Tapas language
                         const userPrefsRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/preferences/tapas`);
-                        let userPrefsSnap;
+                        let userPrefsSnap = null;
                         try {
                             userPrefsSnap = await getDoc(userPrefsRef);
                         } catch (e) {
+                            userPrefsSnap = null;
                             if (e.code === 'unavailable') {
                                 setIsOffline(true);
                             } else {
                                 alert("Failed to connect.");
+                                return;
                             }
+                        }
+                        if (!userPrefsSnap) {
+                            try {
+                                userPrefsSnap = await getDocFromCache(userPrefsRef);
+                            } catch (e) {
+                                return;
+                            }
+                        }
+                        if (!userPrefsSnap) {
                             return;
                         }
                         if (userPrefsSnap.exists()) {
@@ -4141,7 +4152,12 @@ const HomePage = () => {
 
                         // Load config
                         const configRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/config/appConfig`);
-                        const configSnap = await getDoc(configRef);
+                        let configSnap;
+                        if (isOffline) {
+                            configSnap = await getDoc(configRef);
+                        } else {
+                            configSnap = await getDocFromCache(configRef);
+                        }
                         if (configSnap.exists()) {
                             const config = configSnap.data();
                             setConfig(config || {});
