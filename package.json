@@ -1,6 +1,6 @@
 {
   "name": "tapas",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": false,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -29,6 +29,7 @@
     "react-tooltip": "^5.29.1"
   },
   "devDependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/typography": "^0.5.19",
     "marked": "^16.3.0",

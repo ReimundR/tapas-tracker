@@ -1,3 +1,8 @@
+const {
+  PHASE_DEVELOPMENT_SERVER,
+  PHASE_PRODUCTION_BUILD,
+} = require("next/constants");
+
 const withMDX = require('@next/mdx')({
   extension: /\.(md|mdx)$/,
   options: {
@@ -13,6 +18,7 @@ const { version } = require('./package.json');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   pageExtensions: ['js', 'jsx', 'md', 'mdx'],
   // Enable Turbopack for development mode
   /*turbopack: {
@@ -31,4 +37,15 @@ const nextConfig = {
   },
 };
 
-module.exports = withMDX(nextConfig);
+module.exports = (phase) => {
+  if (phase === PHASE_DEVELOPMENT_SERVER || phase === PHASE_PRODUCTION_BUILD) {
+    const withPWA = require('@ducanh2912/next-pwa').default({
+      dest: "public",         // destination directory for the PWA files
+      disable: process.env.NODE_ENV === "development",        // disable PWA in the development environment
+      register: true,         // register the PWA service worker
+      skipWaiting: true,      // skip waiting for service worker activation
+    });
+    return withPWA(withMDX(nextConfig));
+  }
+  return withMDX(nextConfig);
+};

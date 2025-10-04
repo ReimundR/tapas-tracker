@@ -1,5 +1,10 @@
 # Changelog
 
+#### = 1.2.0 (2025-10-04) =
+
+* added PWA (progressive web app) functionality
+  allowing install as native app
+
 #### = 1.1.0 (2025-09-25) =
 
 * added offline mode (persistent data)
