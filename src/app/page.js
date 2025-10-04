@@ -6,7 +6,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef, Suspense } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, disableNetwork, enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, getDocFromCache, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, disableNetwork, enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, getDocsFromCache, getDocFromCache, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
 import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
@@ -4047,6 +4047,22 @@ const HomePage = () => {
     const { locale, setLocale, t } = useContext(LocaleContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
 
+    const myGetDoc = async (ref) => {
+        if (isPersistentCacheEnabled && (isNetworkDisabled || isOffline)) {
+            return await getDocFromCache(ref);
+        } else {
+            return await getDoc(ref);
+        }
+    };
+
+    const myGetDocs = async (ref) => {
+        if (isPersistentCacheEnabled && (isNetworkDisabled || isOffline)) {
+            return await getDocsFromCache(ref);
+        } else {
+            return await getDocs(ref);
+        }
+    };
+
     const closeAcknowledgeDateRangeModal = useCallback((message) => {
         setShowAcknowledgeDateRangeModal(false);
         if (message) {
@@ -4123,7 +4139,7 @@ const HomePage = () => {
                         const userPrefsRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/preferences/tapas`);
                         let userPrefsSnap = null;
                         try {
-                            userPrefsSnap = await getDoc(userPrefsRef);
+                            userPrefsSnap = await myGetDoc(userPrefsRef);
                         } catch (e) {
                             userPrefsSnap = null;
                             if (e.code === 'unavailable') {
@@ -4152,12 +4168,7 @@ const HomePage = () => {
 
                         // Load config
                         const configRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/config/appConfig`);
-                        let configSnap;
-                        if (isOffline) {
-                            configSnap = await getDoc(configRef);
-                        } else {
-                            configSnap = await getDocFromCache(configRef);
-                        }
+                        const configSnap = await myGetDoc(configRef);
                         if (configSnap.exists()) {
                             const config = configSnap.data();
                             setConfig(config || {});
@@ -4414,7 +4425,7 @@ const HomePage = () => {
         try {
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const tapasCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/tapas`);
-            const querySnapshot = await getDocs(tapasCollectionRef);
+            const querySnapshot = await myGetDocs(tapasCollectionRef);
             const dataToExport = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 // Convert Firestore Timestamps to ISO strings for export
@@ -5036,7 +5047,7 @@ const HomePage = () => {
                                         <button
                                             onClick={() => { setShowDataMenu(!showDataMenu); setShowTapasLanguageMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
-                                            disabled={loadingFirebase || (isPersistentCacheEnabled && (isNetworkDisabled || isOffline))}
+                                            disabled={loadingFirebase}
                                         >
                                             {t('data')}
                                             <svg className={`w-4 h-4 transform transition-transform ${showDataMenu ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -5046,6 +5057,7 @@ const HomePage = () => {
                                                 <button
                                                     onClick={handleImportDataClick}
                                                     className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                    disabled={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                                                 >
                                                     {t('importData')}
                                                 </button>
@@ -5058,6 +5070,7 @@ const HomePage = () => {
                                                 <button
                                                     onClick={handleCleanData}
                                                     className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                    disabled={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                                                 >
                                                     {t('cleanData')}
                                                 </button>
