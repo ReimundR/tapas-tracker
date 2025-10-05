@@ -16,7 +16,7 @@ import Head from 'next/head'; // Import Head from next/head for meta tags
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
 import { translations } from "./translations";
-import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider } from "./helpers";
+import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, iOSInstallPrompt } from "./helpers";
 import 'react-tabs/style/react-tabs.css';
 
 const __app_id = firebaseConfig.appId;
@@ -5248,6 +5248,7 @@ const HomePage = () => {
                     tapas={selectedTapas} setSelectedTapas={setSelectedTapas} db={db} userId={userId} t={t}
                     isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                 />}
+                <iOSInstallPrompt />
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
             </div>
         </AppContext.Provider>
