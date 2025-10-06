@@ -200,7 +200,7 @@ export const InstallPrompt = ({ t }) => {
         </button>
       <h3 className="text-2xl font-bold mb-4">{t('installApp')}</h3>
       <h4 className="text-m font-bold mb-4">{t('addToHomeScreen')}</h4>
-      {isIOS && userAgent === 'Safari' ? (
+      {isIOS && displayPrompt === 'Safari' ? (
         <p>
           {t('installIos1')} <span role="img" aria-label="share icon">{' '}⎋{' '}</span>
           {t('installIos2')} "{t('addToHomeScreen')}" <span role="img" aria-label="plus icon">{' '}➕{' '}</span>.
