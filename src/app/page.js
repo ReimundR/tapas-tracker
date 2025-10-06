@@ -16,7 +16,7 @@ import Head from 'next/head'; // Import Head from next/head for meta tags
 import GdprEN from "@/content/privacy-policy-en.mdx";
 import GdprDE from "@/content/privacy-policy-de.mdx";
 import { translations } from "./translations";
-import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, iOSInstallPrompt } from "./helpers";
+import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt } from "./helpers";
 import 'react-tabs/style/react-tabs.css';
 
 const __app_id = firebaseConfig.appId;
@@ -67,12 +67,13 @@ const AppContext = createContext(null);
 
 // Config
 const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
+    const persistentCacheCookie = localStorage.getItem('persistentLocalCache');
     const [dateAspects, setDateAspects] = useState([]);
     const [dateAspectDaysBefore, setDateAspectDaysBefore] = useState(7);
     const [dateAspectDaysAfter, setDateAspectDaysAfter] = useState(1);
     const [newAspectName, setNewAspectName] = useState('');
     const [newAspectPercentage, setNewAspectPercentage] = useState('');
-    const [isPersistentCacheEnabled, setPersistentCacheEnabled] = useState(localStorage.getItem('persistentLocalCache') === 'true');
+    const [isPersistentCacheEnabled, setPersistentCacheEnabled] = useState(persistentCacheCookie === 'true');
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const configRef = doc(db, `artifacts/${appId}/users/${userId}/config/appConfig`);
@@ -86,6 +87,13 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
     };
 
     useEffect(() => {
+        if (!persistentCacheCookie) {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            if (isStandalone) {
+                setPersistentCacheEnabled(true); // standalone default enabled
+            }
+        }
+
         const unsub = onSnapshot(configRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -4085,6 +4093,7 @@ const HomePage = () => {
             if (isFirebaseInitialized) return;
 
             try {
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
                 const persistentCacheCookie = localStorage.getItem('persistentLocalCache');
                 const networkDisabledCookie = localStorage.getItem('networkDisabled');
                 const app = initializeApp(firebaseConfig);
@@ -4095,7 +4104,7 @@ const HomePage = () => {
                     firestore = db;
                     authentication = auth;
                 } else {
-                    if (persistentCacheCookie === 'true' && typeof window !== 'undefined') {
+                    if (typeof window !== 'undefined' && (persistentCacheCookie === 'true' || (!persistentCacheCookie && isStandalone))) {
                         try {
                             // persistentLocalCache is required to enable offline querying
                             firestore = initializeFirestore(app, {
@@ -5248,7 +5257,7 @@ const HomePage = () => {
                     tapas={selectedTapas} setSelectedTapas={setSelectedTapas} db={db} userId={userId} t={t}
                     isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                 />}
-                <iOSInstallPrompt />
+                <InstallPrompt t={t} />
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
             </div>
         </AppContext.Provider>
