@@ -1529,6 +1529,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                     <textarea
                         id="goals"
                         value={currentTapasDataForForm.goals}
+                        placeholder={t('enterGoals')}
                         onChange={(e) => handleMultiLanguageInputChange('goals', e.target.value)}
                         rows="3"
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
@@ -1539,6 +1540,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                     <textarea
                         id="parts"
                         value={currentTapasDataForForm.parts}
+                        placeholder={t('enterParts')}
                         onChange={(e) => handleMultiLanguageInputChange('parts', e.target.value)}
                         rows="3"
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
@@ -2968,9 +2970,9 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                     {displayGoals && displayGoals.length > 0 ? (
                         <div>
                             <strong className="font-semibold">{t('goals')}:</strong>
-                            <ul className="list-disc list-inside ml-4">
+                            <ul className="list-disc ml-4">
                                 {displayGoals.map((goal, index) => (
-                                    <li key={`goal-${index}`}>{goal}</li>
+                                    <li className="ml-4" key={`goal-${index}`}>{goal}</li>
                                 ))}
                             </ul>
                         </div>
@@ -2982,13 +2984,13 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                             <strong className="font-semibold">{t('parts')}:</strong>
                             <ul className="list-none ml-4 space-y-2">
                                 {displayParts.map((part, index) => (
-                                    <li key={index} className="flex items-center space-x-2">
+                                    <li key={index} className="flex space-x-2">
                                         {!isSuccessful && !isFailed && (
                                             <input
                                                 type="checkbox"
                                                 checked={!!checkedPartsSelection[index]}
                                                 onChange={() => handlePartCheckboxChange(index)}
-                                                className="form-checkbox h-4 w-4 text-indigo-600 rounded"
+                                                className="form-checkbox mt-1 h-4 w-4 text-indigo-600 rounded"
                                             />
                                         )}
                                         <span className={`${!!checkedPartsSelection[index] ? 'line-through text-gray-500' : ''}`}>{part}</span>
