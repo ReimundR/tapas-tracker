@@ -378,7 +378,7 @@ export let translations = {
         "parts0n": "Teile 0..n (optional, pro Zeile)",
         "enterGoals": "Ziele eingeben...",
         "enterParts": "Teile eingeben...",
-        "crystallizationTime": "Kristallisations- und Bewusstseinszeit [Tage] (optional)",
+        "crystallizationTime": "Kristallisations- und Bewusstwerdungszeit [Tage] (optional)",
         "updateX": "%s aktualisieren",
         "addTapas": "Tapas hinzufügen",
         "nameStartDateRequired": "Name und Startdatum sind erforderlich.",

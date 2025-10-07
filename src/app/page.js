@@ -209,7 +209,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
                         </div>
                         <div className="mb-4">
                             <h3 className="font-semibold mb-2">{t('dateAspectTimeframe')}</h3>
-                            <div className="flex gap-4">
+                            <div className="flex flex-wrap gap-4">
                                 <label className="flex items-center">{t('daysBefore')}: <input type="number" value={dateAspectDaysBefore} onChange={(e) => setDateAspectDaysBefore(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
                                 <label className="flex items-center">{t('daysAfter')}: <input type="number" value={dateAspectDaysAfter} onChange={(e) => setDateAspectDaysAfter(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
                                 <button onClick={handleUpdateDays} className="px-4 py-2 bg-blue-500 text-white rounded">{t('save')}</button>
@@ -415,24 +415,22 @@ const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, on
                         rows="5"
                     />
                 </div>
-                <div className="flex justify-between gap-2 mt-6">
+                <div className="flex flex-wrap justify-between gap-2 mt-6">
                     {!isNew && (
                         <button onClick={handleDelete} disabled={isLoading} className="capitalize px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-red-400">
                             {t('deleteX', '') + (isLoading ? '...' : '')}
                         </button>)
                     }
-                    <div className="flex gap-2">
-                        <button onClick={onClose} className="px-4 py-2 bg-gray-300 text-gray-700 hover:bg-gray-400 rounded">{t('cancel')}</button>
-                        {isNew ? (
-                            <button onClick={handleAddNew} disabled={isLoading || !content} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
-                                {t('add') + (isLoading ? '...' : '')}
-                            </button>
-                        ) : (
-                            <button onClick={handleUpdate} disabled={isLoading || !content} className="capitalize px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
-                                {t('updateX', '') + (isLoading ? '...' : '')}
-                            </button>
-                        )}
-                    </div>
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-300 text-gray-700 hover:bg-gray-400 rounded">{t('cancel')}</button>
+                    {isNew ? (
+                        <button onClick={handleAddNew} disabled={isLoading || !content} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
+                            {t('add') + (isLoading ? '...' : '')}
+                        </button>
+                    ) : (
+                        <button onClick={handleUpdate} disabled={isLoading || !content} className="capitalize px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
+                            {t('updateX', '') + (isLoading ? '...' : '')}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
