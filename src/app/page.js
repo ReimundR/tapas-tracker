@@ -437,7 +437,7 @@ const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, on
     );
 };
 
-const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearOldResults, isOffline, setDetailResults }) => {
+const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessage, clearOldResults, isOffline, setDetailResults }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showEditResultModal, setShowEditResultModal] = useState(false);
@@ -445,7 +445,7 @@ const ResultHistoryView = ({ tapas, db, userId, t, setTapasDetailMessage, clearO
 
     const resultsColRef = tapas ? collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapas.id, 'results') : null;
     const sortedResults = [...results].sort((a, b) => (a.date ? a.date.toMillis() : 0) - (b.date ? b.date.toMillis() : 0));
-    const showDates = sortedResults.length > 1;
+    const showDates = sortedResults.length > 1 || (sortedResults.length==1 && sortedResults[0].date && endDate && sortedResults[0].date.toDate() < endDate);
 
     const myAddDoc = async (ref, data) => {
         if (isOffline) {
@@ -3079,6 +3079,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
                     <ResultHistoryView
                         tapas={tapas}
+                        endDate={endDate}
                         db={db}
                         userId={userId}
                         t={t}
