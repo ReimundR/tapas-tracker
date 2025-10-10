@@ -18,21 +18,20 @@ export const metadata = {
   generator: "Next.js",
   manifest: "/manifest.json",
   keywords: ["Tapas", "Spiritual", "Development"],
-  themeColor: [{ media: "(prefers-color-scheme: dark)", color: "#fff" }],
   authors: [
     { name: "Reimund Renner" },
   ],
-  viewport:
-    "minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover",
   icons: [
-    { rel: "apple-touch-icon", url: "icon-192x192.png" },
-    { rel: "icon", url: "icon-192x192.png" },
+    { rel: "apple-touch-icon", url: "icons/icon-192.png" },
+    { rel: "icon", url: "icons/icon-192.png" },
   ],
 };
 
 export const viewport = {
   themeColor: "#FFFFFF",
 };
+
+const themeColor = [{ media: "(prefers-color-scheme: dark)", color: "#fff" }];
 
 export default function RootLayout({ children }) {
   return (
@@ -42,13 +41,13 @@ export default function RootLayout({ children }) {
         <meta name="generator" content={metadata.generator} />
         <link rel="manifest" href={metadata.manifest} />
         <meta name="keywords" content={metadata.keywords.join(", ")} />
-        {metadata.themeColor.map(({ media, color }, index) => (
+        {themeColor.map(({ media, color }, index) => (
           <meta key={index} name="theme-color" media={media} content={color} />
         ))}
         {metadata.authors.map(({ name, url }, index) => (
           <meta key={index} name="author" content={name} {...(url && { href: url })} />
         ))}
-        <meta name="viewport" content={metadata.viewport} />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover" />
         {metadata.icons.map(({ rel, url }, index) => (
           <link key={index} rel={rel} href={url} />
         ))}
