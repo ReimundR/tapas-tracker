@@ -17,7 +17,7 @@ export const metadata = {
   description: "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently",
   generator: "Next.js",
   manifest: "/manifest.json",
-  keywords: ["Tapas", "Spiritual", "Development"],
+  keywords: ["Tapas", "Tapasya", "Spiritual", "Development"],
   authors: [
     { name: "Reimund Renner" },
   ],

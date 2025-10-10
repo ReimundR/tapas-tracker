@@ -3917,7 +3917,7 @@ const License = ({ onClose }) => {
     const [isLoading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch('https://raw.githubusercontent.com/ReimundR/tapas-tracker/refs/heads/main/LICENSE')
+        fetch('LICENSE')
         .then(response => {
             return response.text()
         })
