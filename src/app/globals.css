@@ -814,3 +814,7 @@ i.redo {
 .dark .SwitchThumb {
 	background-color: white;
 }
+
+.max-h-half {
+    max-height: 50vh;
+}

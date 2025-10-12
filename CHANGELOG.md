@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.2.1 (2025-10-12) =
+
+* made results with preview and scrollable
+
 #### = 1.2.0 (2025-10-04) =
 
 * added PWA (progressive web app) functionality

@@ -442,6 +442,7 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
     const [isLoading, setIsLoading] = useState(true);
     const [showEditResultModal, setShowEditResultModal] = useState(false);
     const [selectedResult, setSelectedResult] = useState(null);
+    const [showPreview, setShowPreview] = useState(true);
 
     const resultsColRef = tapas ? collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapas.id, 'results') : null;
     const sortedResults = [...results].sort((a, b) => (a.date ? a.date.toMillis() : 0) - (b.date ? b.date.toMillis() : 0));
@@ -558,12 +559,32 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
         }
     };
 
+    useEffect(() => {
+        if (!showPreview) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+    }, [showPreview]);
+
+    const previewRes = sortedResults && sortedResults.length > 0 ? sortedResults[sortedResults.length - 1] : null;
+    const hasPreview = previewRes && (sortedResults.length > 1 || previewRes.content.length > 120);
+
     return (
         <div className="flex-1 flex flex-col overflow-hidden">
             {/* Historical Results Timeline */}
-            <div className="flex-1 overflow-y-auto rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+            <div className="flex-1 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
                 <div className="flex justify-between space-x-2">
-                <h3 className="text-m font-bold text-gray-700 dark:text-gray-300">{t('results')}:</h3>
+                <div className="flex">
+                    <h3 className="text-m font-bold text-gray-700 dark:text-gray-300">{t('results')}:</h3>
+                    {hasPreview && (
+                        <button
+                            onClick={() => {setShowPreview(!showPreview);}}
+                            className="text-black dark:text-white hover:text-gray-500 px-2 py-1 ml-2 my-1 rounded text-xs font-medium"
+                        >
+                            {showPreview ? '▶' : '▼'}
+                        </button>
+                    )}
+                </div>
                 <button
                     onClick={() => {
                         setSelectedResult(null);
@@ -581,25 +602,43 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
                         {sortedResults.length === 0 ? (
                             <div className="italic text-gray-500 dark:text-gray-400">{t('noResultsDefinedYet')}</div>
                         ) : (
-                            sortedResults.map((res, index) => (
+                            hasPreview && showPreview ? (
                                 <div
-                                    key={res.id}
-                                    className="relative px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer transition-colors duration-200"
-                                    onClick={() => {
-                                        setSelectedResult(res);
-                                        setShowEditResultModal(true);
-                                    }}
+                                    className="relative px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors duration-200"
+                                    onClick={() => {setShowPreview(false);}}
                                 >
                                     {showDates && (
                                         <span className="absolute top-2 left-2 text-xs font-mono text-gray-600 dark:text-gray-400">
-                                            {res.date ? res.date.toDate().toLocaleDateString() : t('noDate')}{res.changedDate ? ' (' + t('edited') + ')' : ''}
+                                            {previewRes.date ? previewRes.date.toDate().toLocaleDateString() : t('noDate')}{previewRes.changedDate ? ' (' + t('edited') + ')' : ''}
                                         </span>
                                     )}
                                     <div className={`${showDates ? 'mt-4' : ''}`}>
-                                        <p>{res.content}</p>
+                                        <p>{previewRes.content.slice(0,120)}...</p>
                                     </div>
                                 </div>
-                            ))
+                            ) : (
+                            <div className="max-h-half overflow-y-auto" id="results">
+                                {sortedResults.map((res, index) => (
+                                    <div
+                                        key={res.id}
+                                        className="relative px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer transition-colors duration-200"
+                                        onClick={() => {
+                                            setSelectedResult(res);
+                                            setShowEditResultModal(true);
+                                        }}
+                                    >
+                                        {showDates && (
+                                            <span className="absolute top-2 left-2 text-xs font-mono text-gray-600 dark:text-gray-400">
+                                                {res.date ? res.date.toDate().toLocaleDateString() : t('noDate')}{res.changedDate ? ' (' + t('edited') + ')' : ''}
+                                            </span>
+                                        )}
+                                        <div className={`${showDates ? 'mt-4' : ''}`}>
+                                            <p>{res.content}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            )
                         )}
                     </div>
                 )}
