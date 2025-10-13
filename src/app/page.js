@@ -3802,7 +3802,7 @@ const Results = ({ tapas }) => {
                                 <div key={res.id}>
                                     {res.date && (
                                         <div className="flex items-center justify-center mt-2">
-                                        <p className="px-2 text-xs font-bold font-mono border rounded-lg text-gray-800 dark:text-gray-200 bg-gray-700">
+                                        <p className="px-2 text-xs font-bold font-mono border rounded-lg text-gray-800 dark:text-gray-200 bg-gray-200 dark:bg-gray-700">
                                             {res.date.toDate().toLocaleDateString()}
                                         </p>
                                         </div>
@@ -3814,7 +3814,7 @@ const Results = ({ tapas }) => {
                                         }}*/
                                     >
                                         {res.name && (<h4 className="mb-1 text-gray-700 dark:text-gray-300">{res.name}</h4>)}
-                                        <div className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer transition-colors duration-200">
+                                        <div className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer">
                                             <p className="ml-1">{res.content}</p>
                                             <p className="text-right mx-4 text-xs font-mono text-gray-600 dark:text-gray-400">
                                                 {res.changedDate ? ' (' + t('edited') + ')' : ''}
