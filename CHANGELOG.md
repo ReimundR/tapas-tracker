@@ -1,8 +1,9 @@
 # Changelog
 
-#### = 1.2.1 (2025-10-12) =
+#### = 1.2.1 (2025-10-13) =
 
 * made results with preview and scrollable
+* added all reults tab
 
 #### = 1.2.0 (2025-10-04) =
 

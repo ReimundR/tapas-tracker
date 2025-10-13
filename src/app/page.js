@@ -3609,6 +3609,230 @@ const Statistics = ({ allTapas }) => {
     );
 };
 
+// Component for Results
+const Results = ({ tapas }) => {
+    const { locale } = useContext(LocaleContext);
+    const { db, userId, t } = useContext(AppContext);
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [nameFilter, setNameFilter] = useState('');
+    const [textFilter, setTextFilter] = useState('');
+    const [results, setResults] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [resultsMessage, setResultsMessage] = useState('');
+    const tapasListenersRef = useRef([]);
+
+    useEffect(() => {
+        let filtered = tapas;
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(tapas => tapas.status === statusFilter);
+        }
+        if (nameFilter) {
+            const sname = nameFilter.toLowerCase();
+            filtered = filtered.filter(tapas => getLocalizedContent(tapas.name, locale).toLowerCase().indexOf(sname) !== -1);
+        }
+
+        const stext = textFilter.toLowerCase();
+
+        const cleanupListeners = () => {
+            tapasListenersRef.current.forEach(unsubscribe => unsubscribe());
+            tapasListenersRef.current = [];
+        };
+
+        const fetchAndListenToAllTapasResults = async () => {
+            setIsLoading(true);
+            cleanupListeners(); // Vorherige Listener abmelden
+
+            if (filtered.length === 0) {
+                setIsLoading(false);
+                setResults([]);
+                return;
+            }
+
+            const tempResultsMap = new Map();
+            let listenersReadyCount = 0;
+            let listenersExpected = filtered.length;
+
+            let working = true;
+            const done = () => {
+                const combinedResults = Array.from(tempResultsMap.values()).flat();
+                const sortedWithFallback = combinedResults.sort((a, b) => {
+                    const dateA = a.date ? a.date.toMillis() : 0;
+                    const dateB = b.date ? b.date.toMillis() : 0;
+                    return dateA - dateB;
+                });
+                for (let index = sortedWithFallback.length-1; index > 0; --index) {
+                    const el1 = sortedWithFallback[index-1];
+                    const el2 = sortedWithFallback[index];
+                    if (el1.date && el2.date && Math.floor(el1.date.toMillis() / timeDayMs) == Math.floor(el2.date.toMillis() / timeDayMs)) {
+                        sortedWithFallback[index].date = null;
+                        if (el1.name && el2.name) {
+                            sortedWithFallback[index].name = '';
+                        }
+                    }
+                }
+                working = false;
+                setResults(sortedWithFallback);
+                setIsLoading(false);
+            };
+
+            filtered.forEach(tapasItem => {
+                const tapasName = getLocalizedContent(tapasItem.name, locale);
+                if (typeof tapasItem.results !== 'number' && tapasItem.results) {
+                    const res = { name: tapasName, id: null, content: tapasItem.results, date: null , dateChanged: null };
+                    if (!textFilter || res.content.toLowerCase().indexOf(stext) !== -1) {
+                        tempResultsMap.set(tapasItem.id, [res]);
+                    }
+                    listenersReadyCount++;
+                } else if (tapasItem.results > 0) {
+                    const resultsColRef = collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapasItem.id, 'results');
+                    const unsub = onSnapshot(query(resultsColRef, orderBy('date')), (snapshot) => {
+                        const resultsData = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data(),
+                        }));
+
+                        const sortedWithFallback = resultsData.sort((a, b) => {
+                            const dateA = a.date ? a.date.toMillis() : 0;
+                            const dateB = b.date ? b.date.toMillis() : 0;
+                            return dateA - dateB;
+                        });
+
+                        const res = [];
+                        sortedWithFallback.forEach(resultItem => {
+                            if (!textFilter || resultItem.content.toLowerCase().indexOf(stext) !== -1) {
+                                res.push({name: tapasName, ...resultItem});
+                            }
+                        });
+
+                        tempResultsMap.set(tapasItem.id, res);
+
+                        // Loading nur beim ersten Durchlauf aller Listener ausschalten
+                        if (listenersReadyCount < listenersExpected) {
+                            listenersReadyCount++;
+                            if (listenersReadyCount === listenersExpected) {
+                                done();
+                            }
+                        }
+                    }, (error) => {
+                        console.error("Error getting results: ", error);
+                        if (listenersReadyCount < listenersExpected) {
+                            listenersReadyCount++;
+                            if (listenersReadyCount === listenersExpected) {
+                                done();
+                            }
+                        }
+                        setResultsMessage("Failed to load results.");
+                    });
+
+                    tapasListenersRef.current.push(unsub);
+                } else {
+                    listenersReadyCount++;
+                }
+
+                if (working && listenersReadyCount === listenersExpected) {
+                    done();
+                }
+            });
+        };
+
+        fetchAndListenToAllTapasResults();
+        return cleanupListeners;
+    }, [statusFilter, nameFilter, textFilter]);
+
+    useEffect(() => {
+        if (!isLoading) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+    }, [isLoading]);
+
+    return (
+        <div className="space-y-4">
+            <div className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
+                <div className="flex flex-col sm:flex-row justify-around items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{t('filterBy')}:</span>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                        >
+                            <option value="all">{t('all')}</option>
+                            <option value="active">{t('active')}</option>
+                            <option value="successful">{t('successful')}</option>
+                            <option value="failed">{t('failed')}</option>
+                        </select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{t('tapas')}:</span>
+                        <input
+                            type="text"
+                            placeholder={t('searchByName')+"..."}
+                            value={nameFilter}
+                            onChange={(e) => setNameFilter(e.target.value)}
+                            className="px-3 py-2 rounded-md border border-gray-300 w-full"
+                        />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{t('results')}:</span>
+                        <input
+                            type="text"
+                            placeholder={t('searchByName')+"..."}
+                            value={textFilter}
+                            onChange={(e) => setTextFilter(e.target.value)}
+                            className="px-3 py-2 rounded-md border border-gray-300 w-full"
+                        />
+                    </div>
+                </div>
+            </div>
+            {resultsMessage && (
+                <div className={`p-3 text-center ${resultsMessage.includes(t('successful').toLowerCase()) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-md mx-auto mt-4 max-w-lg`}>
+                    {resultsMessage}
+                </div>
+            )}
+            {isLoading ? (
+                <div className="text-gray-500 dark:text-gray-400">{t('loadingX', t('results'))}...</div>
+            ) : (
+                <div className="space-y-2">
+                    {results.length === 0 ? (
+                        <p className="text-center py-8 text-gray-600 dark:text-gray-400">{t('noResultsFound')}</p>
+                    ) : (
+                        <div className="max-h-half overflow-y-auto" id="results">
+                            {results.map((res, index) => (
+                                <>
+                                    {res.date && (
+                                        <div className="flex items-center justify-center mt-2">
+                                        <p className="px-2 text-xs font-bold font-mono border rounded-lg text-gray-800 dark:text-gray-200 bg-gray-700">
+                                            {res.date.toDate().toLocaleDateString()}
+                                        </p>
+                                        </div>
+                                    )}
+                                <div
+                                    key={res.id}
+                                    className="relative px-4 py-1"
+                                    /*onClick={() => {
+                                        setSelectedResult(res);
+                                        setShowEditResultModal(true);
+                                    }}*/
+                                >
+                                    {res.name && (<h4 className="text-gray-700 dark:text-gray-300">{res.name}</h4>)}
+                                    <div className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer transition-colors duration-200">
+                                        <p className="ml-1">{res.content}</p>
+                                        <p className="text-right mx-4 text-xs font-mono text-gray-600 dark:text-gray-400">
+                                            {res.changedDate ? ' (' + t('edited') + ')' : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                </>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AboutModal = ({ onClose }) => {
     const { t } = useContext(AppContext);
     return (
@@ -5146,7 +5370,7 @@ const HomePage = () => {
                 </header>
 
                 {statusMessage && (
-                    <div className={`p-3 text-center ${statusMessage.includes('successfully') || statusMessage.includes('erfolgreich') || statusMessage.includes('reușită') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-md mx-auto mt-4 max-w-lg`}>
+                    <div className={`p-3 text-center ${statusMessage.includes(t('successful').toLowerCase()) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-md mx-auto mt-4 max-w-lg`}>
                         {statusMessage}
                     </div>
                 )}
@@ -5179,6 +5403,15 @@ const HomePage = () => {
                             disabled={loadingFirebase}
                         >
                             {t('statistics')}
+                        </button>
+                        <button
+                            onClick={() => { setCurrentPage('results'); setSelectedTapas(null); setEditingTapas(null); }}
+                            className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
+                                currentPage === 'results' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                            }`}
+                            disabled={loadingFirebase}
+                        >
+                            {t('results')}
                         </button>
                         <button
                             onClick={() => { setCurrentPage('add'); setSelectedTapas(null); }}
@@ -5232,6 +5465,9 @@ const HomePage = () => {
                             )}
                             {currentPage === 'statistics' && (
                                 <Statistics allTapas={tapas} />
+                            )}
+                            {currentPage === 'results' && (
+                                <Results tapas={tapas} />
                             )}
                             {currentPage === 'add' && (
                                 <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }}
