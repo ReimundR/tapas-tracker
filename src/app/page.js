@@ -3777,7 +3777,7 @@ const Results = ({ tapas }) => {
                         <span className="font-medium text-gray-700 dark:text-gray-300">{t('results')}:</span>
                         <input
                             type="text"
-                            placeholder={t('searchByName')+"..."}
+                            placeholder={t('searchByText')+"..."}
                             value={textFilter}
                             onChange={(e) => setTextFilter(e.target.value)}
                             className="px-3 py-2 rounded-md border border-gray-300 w-full"
@@ -3799,7 +3799,7 @@ const Results = ({ tapas }) => {
                     ) : (
                         <div className="max-h-half overflow-y-auto" id="results">
                             {results.map((res, index) => (
-                                <>
+                                <div key={res.id}>
                                     {res.date && (
                                         <div className="flex items-center justify-center mt-2">
                                         <p className="px-2 text-xs font-bold font-mono border rounded-lg text-gray-800 dark:text-gray-200 bg-gray-700">
@@ -3807,23 +3807,21 @@ const Results = ({ tapas }) => {
                                         </p>
                                         </div>
                                     )}
-                                <div
-                                    key={res.id}
-                                    className="relative px-4 py-1"
-                                    /*onClick={() => {
-                                        setSelectedResult(res);
-                                        setShowEditResultModal(true);
-                                    }}*/
-                                >
-                                    {res.name && (<h4 className="text-gray-700 dark:text-gray-300">{res.name}</h4>)}
-                                    <div className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer transition-colors duration-200">
-                                        <p className="ml-1">{res.content}</p>
-                                        <p className="text-right mx-4 text-xs font-mono text-gray-600 dark:text-gray-400">
-                                            {res.changedDate ? ' (' + t('edited') + ')' : ''}
-                                        </p>
+                                    <div className="relative px-4 py-1"
+                                        /*onClick={() => {
+                                            setSelectedResult(res);
+                                            setShowEditResultModal(true);
+                                        }}*/
+                                    >
+                                        {res.name && (<h4 className="mb-1 text-gray-700 dark:text-gray-300">{res.name}</h4>)}
+                                        <div className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer transition-colors duration-200">
+                                            <p className="ml-1">{res.content}</p>
+                                            <p className="text-right mx-4 text-xs font-mono text-gray-600 dark:text-gray-400">
+                                                {res.changedDate ? ' (' + t('edited') + ')' : ''}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                                </>
                             ))}
                         </div>
                     )}
