@@ -3616,17 +3616,25 @@ const Results = ({ tapas }) => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [nameFilter, setNameFilter] = useState('');
     const [textFilter, setTextFilter] = useState('');
+    const [nameOnly, setNameOnly] = useState('');
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [resultsMessage, setResultsMessage] = useState('');
     const tapasListenersRef = useRef([]);
+
+    const clearNameOnly = () => {
+        setNameOnly('');
+    };
 
     useEffect(() => {
         let filtered = tapas;
         if (statusFilter !== 'all') {
             filtered = filtered.filter(tapas => tapas.status === statusFilter);
         }
-        if (nameFilter) {
+
+        if (nameOnly) {
+            filtered = filtered.filter(tapas => getLocalizedContent(tapas.name, locale) == nameOnly);
+        } else if (nameFilter) {
             const sname = nameFilter.toLowerCase();
             filtered = filtered.filter(tapas => getLocalizedContent(tapas.name, locale).toLowerCase().indexOf(sname) !== -1);
         }
@@ -3660,11 +3668,13 @@ const Results = ({ tapas }) => {
                     const dateB = b.date ? b.date.toMillis() : 0;
                     return dateA - dateB;
                 });
+                sortedWithFallback[0].showDate = true;
                 for (let index = sortedWithFallback.length-1; index > 0; --index) {
                     const el1 = sortedWithFallback[index-1];
                     const el2 = sortedWithFallback[index];
-                    if (el1.date && el2.date && Math.floor(el1.date.toMillis() / timeDayMs) == Math.floor(el2.date.toMillis() / timeDayMs)) {
-                        sortedWithFallback[index].date = null;
+                    const hideDate = el1.date && el2.date && Math.floor(el1.date.toMillis() / timeDayMs) == Math.floor(el2.date.toMillis() / timeDayMs);
+                    sortedWithFallback[index].showDate = !hideDate;
+                    if (hideDate) {
                         if (el1.name && el2.name) {
                             sortedWithFallback[index].name = '';
                         }
@@ -3737,7 +3747,7 @@ const Results = ({ tapas }) => {
 
         fetchAndListenToAllTapasResults();
         return cleanupListeners;
-    }, [statusFilter, nameFilter, textFilter]);
+    }, [statusFilter, nameFilter, nameOnly, textFilter]);
 
     useEffect(() => {
         if (!isLoading) {
@@ -3765,13 +3775,22 @@ const Results = ({ tapas }) => {
                     </div>
                     <div className="flex items-center space-x-2">
                         <span className="font-medium text-gray-700 dark:text-gray-300">{t('tapas')}:</span>
-                        <input
-                            type="text"
-                            placeholder={t('searchByName')+"..."}
-                            value={nameFilter}
-                            onChange={(e) => setNameFilter(e.target.value)}
-                            className="px-3 py-2 rounded-md border border-gray-300 w-full"
-                        />
+                        {nameOnly ? (
+                            <>
+                            <p className="text-gray-500">{nameOnly}</p>
+                            <button onClick={clearNameOnly} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl font-bold">
+                                &times;
+                            </button>
+                            </>
+                        ) : (
+                            <input
+                                type="text"
+                                placeholder={t('searchByName')+"..."}
+                                value={nameFilter}
+                                onChange={(e) => setNameFilter(e.target.value)}
+                                className="px-3 py-2 rounded-md border border-gray-300 w-full"
+                            />
+                        )}
                     </div>
                     <div className="flex items-center space-x-2">
                         <span className="font-medium text-gray-700 dark:text-gray-300">{t('results')}:</span>
@@ -3800,7 +3819,7 @@ const Results = ({ tapas }) => {
                         <div className="max-h-half overflow-y-auto" id="results">
                             {results.map((res, index) => (
                                 <div key={res.id}>
-                                    {res.date && (
+                                    {res.showDate && res.date && (
                                         <div className="flex items-center justify-center mt-2">
                                         <p className="px-2 text-xs font-bold font-mono border rounded-lg text-gray-800 dark:text-gray-200 bg-gray-200 dark:bg-gray-700">
                                             {res.date.toDate().toLocaleDateString()}
@@ -3813,11 +3832,18 @@ const Results = ({ tapas }) => {
                                             setShowEditResultModal(true);
                                         }}*/
                                     >
-                                        {res.name && (<h4 className="mb-1 text-gray-700 dark:text-gray-300">{res.name}</h4>)}
+                                        {res.name && (
+                                            <h4
+                                                className="cursor-pointer mb-1 text-gray-700 dark:text-gray-300"
+                                                onClick={(e) => {setNameOnly(e.target.innerText)}}
+                                            >
+                                                {res.name}
+                                            </h4>
+                                        )}
                                         <div className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer">
                                             <p className="ml-1">{res.content}</p>
                                             <p className="text-right mx-4 text-xs font-mono text-gray-600 dark:text-gray-400">
-                                                {res.changedDate ? ' (' + t('edited') + ')' : ''}
+                                                {res.changedDate ? ' (' + t('edited') + ')' : ''} {res.date ? res.date.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
                                             </p>
                                         </div>
                                     </div>
