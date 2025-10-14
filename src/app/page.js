@@ -1948,7 +1948,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                         </div>
                         <div className="flex items-center space-x-2">
                             <input
-                                type="text"
+                                type="search"
                                 placeholder={t('searchByName')+"..."}
                                 value={historyNameFilter}
                                 onChange={(e) => setHistoryNameFilter(e.target.value)}
@@ -3669,7 +3669,9 @@ const Results = ({ tapas }) => {
                     const dateB = b.date ? b.date.toMillis() : 0;
                     return dateA - dateB;
                 });
-                sortedWithFallback[0].showDate = true;
+                if (sortedWithFallback.length > 0) {
+                    sortedWithFallback[0].showDate = true;
+                }
                 for (let index = sortedWithFallback.length-1; index > 0; --index) {
                     const el1 = sortedWithFallback[index-1];
                     const el2 = sortedWithFallback[index];
@@ -3753,7 +3755,9 @@ const Results = ({ tapas }) => {
     useEffect(() => {
         if (!isLoading) {
             const resultsDiv = document.getElementById('results');
-            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            if (resultsDiv) {
+                resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            }
         }
     }, [isLoading]);
 
@@ -3782,7 +3786,7 @@ const Results = ({ tapas }) => {
                     <div className="flex items-center space-x-2">
                         {showExtendedFilters && (<span className="font-medium text-gray-700 dark:text-gray-300">{t('results')}:</span>)}
                         <input
-                            type="text"
+                            type="search"
                             placeholder={t('searchByText')+"..."}
                             value={textFilter}
                             onChange={(e) => setTextFilter(e.target.value)}
@@ -3801,7 +3805,7 @@ const Results = ({ tapas }) => {
                                 </>
                             ) : (
                                 <input
-                                    type="text"
+                                    type="search"
                                     placeholder={t('searchByName')+"..."}
                                     value={nameFilter}
                                     onChange={(e) => setNameFilter(e.target.value)}
