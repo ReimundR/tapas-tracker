@@ -5401,7 +5401,7 @@ const HomePage = () => {
 
                 {/* Navigation Tabs */}
                 <nav className="shadow-sm p-3 sticky top-0 z-10 bg-white dark:bg-gray-800">
-                    <div className="container mx-auto flex justify-around">
+                    <div className="container mx-auto flex flex-nowrap overflow-x-auto justify-around">
                         <button
                             onClick={() => { setCurrentPage('active'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${

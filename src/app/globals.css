@@ -21,7 +21,8 @@
 }
 
 nav .container {
-  flex-wrap: wrap;
+  /*flex-wrap: wrap;*/
+  scrollbar-width: thin;
 }
 
 body {
