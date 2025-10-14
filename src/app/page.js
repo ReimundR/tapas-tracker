@@ -3760,10 +3760,10 @@ const Results = ({ tapas }) => {
     return (
         <div className="space-y-4">
             <div className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
-                <button onClick={() => {setShowExtendedFilters(!showExtendedFilters)}} className="float-right text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl font-bold">
+                <button onClick={() => {setShowExtendedFilters(!showExtendedFilters)}} className="ml-3 float-right text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl font-bold">
                     ...
                 </button>
-                <div className="flex flex-col sm:flex-row justify-around items-center gap-4">
+                <div className="flex flex-col md:flex-row justify-around items-center gap-4">
                     {showExtendedFilters && (
                         <div className="flex items-center space-x-2">
                             <span className="font-medium text-gray-700 dark:text-gray-300">{t('status')}:</span>
@@ -3786,7 +3786,7 @@ const Results = ({ tapas }) => {
                             placeholder={t('searchByText')+"..."}
                             value={textFilter}
                             onChange={(e) => setTextFilter(e.target.value)}
-                            className="px-3 py-2 rounded-md border border-gray-300 w-full"
+                            className="px-3 py-2 min-w-2 rounded-md border border-gray-300 w-full"
                         />
                     </div>
                     {(showExtendedFilters || nameOnly) && (
