@@ -3614,6 +3614,7 @@ const Results = ({ tapas }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
     const [statusFilter, setStatusFilter] = useState('all');
+    const [showExtendedFilters, setShowExtendedFilters] = useState(false);
     const [nameFilter, setNameFilter] = useState('');
     const [textFilter, setTextFilter] = useState('');
     const [nameOnly, setNameOnly] = useState('');
@@ -3759,41 +3760,27 @@ const Results = ({ tapas }) => {
     return (
         <div className="space-y-4">
             <div className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
+                <button onClick={() => {setShowExtendedFilters(!showExtendedFilters)}} className="float-right text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl font-bold">
+                    ...
+                </button>
                 <div className="flex flex-col sm:flex-row justify-around items-center gap-4">
+                    {showExtendedFilters && (
+                        <div className="flex items-center space-x-2">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{t('status')}:</span>
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                            >
+                                <option value="all">{t('all')}</option>
+                                <option value="active">{t('active')}</option>
+                                <option value="successful">{t('successful')}</option>
+                                <option value="failed">{t('failed')}</option>
+                            </select>
+                        </div>
+                    )}
                     <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{t('filterBy')}:</span>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                        >
-                            <option value="all">{t('all')}</option>
-                            <option value="active">{t('active')}</option>
-                            <option value="successful">{t('successful')}</option>
-                            <option value="failed">{t('failed')}</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{t('tapas')}:</span>
-                        {nameOnly ? (
-                            <>
-                            <p className="text-gray-500">{nameOnly}</p>
-                            <button onClick={clearNameOnly} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl font-bold">
-                                &times;
-                            </button>
-                            </>
-                        ) : (
-                            <input
-                                type="text"
-                                placeholder={t('searchByName')+"..."}
-                                value={nameFilter}
-                                onChange={(e) => setNameFilter(e.target.value)}
-                                className="px-3 py-2 rounded-md border border-gray-300 w-full"
-                            />
-                        )}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{t('results')}:</span>
+                        {showExtendedFilters && (<span className="font-medium text-gray-700 dark:text-gray-300">{t('results')}:</span>)}
                         <input
                             type="text"
                             placeholder={t('searchByText')+"..."}
@@ -3802,6 +3789,27 @@ const Results = ({ tapas }) => {
                             className="px-3 py-2 rounded-md border border-gray-300 w-full"
                         />
                     </div>
+                    {(showExtendedFilters || nameOnly) && (
+                        <div className="flex items-center space-x-2">
+                            {showExtendedFilters && (<span className="font-medium text-gray-700 dark:text-gray-300">{t('tapas')}:</span>)}
+                            {nameOnly ? (
+                                <>
+                                <p className="text-gray-500">{nameOnly}</p>
+                                <button onClick={clearNameOnly} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl font-bold">
+                                    &times;
+                                </button>
+                                </>
+                            ) : (
+                                <input
+                                    type="text"
+                                    placeholder={t('searchByName')+"..."}
+                                    value={nameFilter}
+                                    onChange={(e) => setNameFilter(e.target.value)}
+                                    className="px-3 py-2 rounded-md border border-gray-300 w-full"
+                                />
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
             {resultsMessage && (
