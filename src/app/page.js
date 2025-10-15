@@ -353,10 +353,62 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
     );
 };
 
-const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, onUpdate, onDelete }) => {
+const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, myAddDoc, myUpdateDoc, myDeleteDoc, setSelectedTapas, setMessage, setInitMessage=null, onResultAdded=null }) => {
     const isNew = result === null;
     const [content, setContent] = useState(result ? result.content : '');
     const [isLoading, setIsLoading] = useState(false);
+
+    const resultsColRef = collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapasId, 'results');
+
+    const addResultsInfo = async (value) => {
+        const tapas = Array.isArray(allTapas) ? allTapas.find(x => x.id == tapasId) : allTapas;
+        if (typeof tapas.results !== 'number') {
+            tapas.results = 0;
+        }
+        tapas.results += value;
+        await handleClearOldResults(db, __app_id, userId, tapas.id, tapas.results, myUpdateDoc, setSelectedTapas, setMessage, setInitMessage);
+    };
+
+    const onAddNew = async (newContent, date, changedDate) => {
+        try {
+            await myAddDoc(resultsColRef, {
+                content: newContent,
+                date: date,
+                changedDate: changedDate,
+            });
+            await addResultsInfo(1);
+            setMessage(t('resultAdded'));
+        } catch (e) {
+            console.error("Error adding document: ", e);
+            setMessage("Failed to add new result.");
+        }
+    };
+
+    const onUpdate = async (resultId, newContent, newDate) => {
+        try {
+            const resultRef = doc(resultsColRef, resultId);
+            await myUpdateDoc(resultRef, {
+                content: newContent,
+                changedDate: newDate,
+            });
+            setMessage(t('resultUpdated'));
+        } catch (e) {
+            console.error("Error updating result: ", e);
+            setMessage("Failed to update result.");
+        }
+    };
+
+    const onDelete = async (resultId) => {
+        try {
+            const resultRef = doc(resultsColRef, resultId);
+            await myDeleteDoc(resultRef);
+            await addResultsInfo(-1);
+            setMessage(t('resultDeleted'));
+        } catch (e) {
+            console.error("Error deleting result: ", e);
+            setMessage("Failed to delete result.");
+        }
+    };
 
     const handleAddNew = async () => {
         setIsLoading(true);
@@ -378,9 +430,14 @@ const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, on
             const newDate = Timestamp.fromDate(new Date());
             if (result.id === null) {
                 await onAddNew(content, null, newDate);
+                if (onResultAdded) {
+                    onResultAdded();
+                }
             } else {
                 await onUpdate(result.id, content, newDate);
             }
+            result.content = content;
+            result.changedDate = newDate;
             onClose();
         } catch (e) {
             console.error("Error updating result: ", e);
@@ -394,6 +451,9 @@ const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, on
         setIsLoading(true);
         try {
             await onDelete(result.id);
+            if (onResultAdded) {
+                onResultAdded();
+            }
             onClose();
         } catch (e) {
             console.error("Error deleting result: ", e);
@@ -437,7 +497,7 @@ const EditResultModal = ({ onClose, db, userId, t, tapasId, result, onAddNew, on
     );
 };
 
-const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessage, clearOldResults, isOffline, setDetailResults }) => {
+const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessage, isOffline, setDetailResults, setSelectedTapas, setInitMessage }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showEditResultModal, setShowEditResultModal] = useState(false);
@@ -497,7 +557,7 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
                 setDetailResults(sortedWithFallback);
                 if (tapas.results !== sortedWithFallback.length) {
                     tapas.results = sortedWithFallback.length;
-                    clearOldResults(tapas.results);
+                    handleClearOldResults(db, __app_id, userId, tapas.id, tapas.results, myUpdateDoc, setSelectedTapas, setTapasDetailMessage, setInitMessage);
                 }
                 setIsLoading(false);
             }, (error) => {
@@ -509,55 +569,6 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
             return () => unsub();
         }
     }, []);
-
-    const addResultsInfo = async (value) => {
-        if (typeof tapas.results !== 'number') {
-            tapas.results = 0;
-        }
-        tapas.results += value;
-        await clearOldResults(tapas.results);
-    };
-
-    const handleAddNewResult = async (newContent, date, changedDate) => {
-        try {
-            await myAddDoc(resultsColRef, {
-                content: newContent,
-                date: date,
-                changedDate: changedDate,
-            });
-            await addResultsInfo(1);
-            setTapasDetailMessage(t('resultAdded'));
-        } catch (e) {
-            console.error("Error adding document: ", e);
-            setTapasDetailMessage("Failed to add new result.");
-        }
-    };
-
-    const handleUpdateResult = async (resultId, newContent, newDate) => {
-        try {
-            const resultRef = doc(resultsColRef, resultId);
-            await myUpdateDoc(resultRef, {
-                content: newContent,
-                changedDate: newDate,
-            });
-            setTapasDetailMessage(t('resultUpdated'));
-        } catch (e) {
-            console.error("Error updating result: ", e);
-            setTapasDetailMessage("Failed to update result.");
-        }
-    };
-
-    const handleDeleteResult = async (resultId) => {
-        try {
-            const resultRef = doc(resultsColRef, resultId);
-            await myDeleteDoc(resultRef);
-            await addResultsInfo(-1);
-            setTapasDetailMessage(t('resultDeleted'));
-        } catch (e) {
-            console.error("Error deleting result: ", e);
-            setTapasDetailMessage("Failed to delete result.");
-        }
-    };
 
     useEffect(() => {
         if (!showPreview) {
@@ -649,11 +660,15 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
                     db={db}
                     t={t}
                     userId={userId}
+                    allTapas={tapas}
                     tapasId={tapas.id}
                     result={selectedResult}
-                    onAddNew={handleAddNewResult}
-                    onUpdate={handleUpdateResult}
-                    onDelete={handleDeleteResult}
+                    setSelectedTapas={setSelectedTapas}
+                    setMessage={setTapasDetailMessage}
+                    setInitMessage={setInitMessage}
+                    myAddDoc={myAddDoc}
+                    myUpdateDoc={myUpdateDoc}
+                    myDeleteDoc={myDeleteDoc}
                 />
             )}
         </div>
@@ -2101,7 +2116,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 };
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isOffline }) => { // Added setSelectedTapas prop
+const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isOffline }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -2648,17 +2663,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         checkDailyProgress();
     }, [tapas]);
 
-    const handleClearOldResults = async (results) => {
-        setInitMessage('');
-        try {
-            await myUpdateDoc(tapasRef, { results: results });
-            setSelectedTapas(prevTapas => ({ ...prevTapas, results: results })); // Immediately update local state
-        } catch (error) {
-            console.error("Error saving results:", error);
-            setMessage("Error saving results.");
-        }
-    };
-
     const handleShareTapas = async () => {
         setInitMessage('');
         if (tapas.scheduleType === 'noTapas') {
@@ -3122,8 +3126,9 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         db={db}
                         userId={userId}
                         t={t}
-                        setTapasDetailMessage={setMessage}//setTapasDetailMessage}
-                        clearOldResults={handleClearOldResults}
+                        setInitMessage={setInitMessage}
+                        setTapasDetailMessage={setMessage}
+                        setSelectedTapas={setSelectedTapas}
                         setDetailResults={setResults}
                         isOffline={isOffline}
                     />
@@ -3610,7 +3615,7 @@ const Statistics = ({ allTapas }) => {
 };
 
 // Component for Results
-const Results = ({ tapas }) => {
+const Results = ({ tapas, setSelectedTapas, isOffline }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
     const [statusFilter, setStatusFilter] = useState('all');
@@ -3621,7 +3626,35 @@ const Results = ({ tapas }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [resultsMessage, setResultsMessage] = useState('');
+    const [selectedResult, setSelectedResult] = useState(null);
+    const [showEditResultModal, setShowEditResultModal] = useState(false);
+    const [update, setUpdate] = useState(0);
+
     const tapasListenersRef = useRef([]);
+
+    const myAddDoc = async (ref, data) => {
+        if (isOffline) {
+            addDoc(ref, data);
+        } else {
+            return await addDoc(ref, data);
+        }
+    };
+
+    const myUpdateDoc = async (ref, data) => {
+        if (isOffline) {
+            updateDoc(ref, data);
+        } else {
+            return await updateDoc(ref, data);
+        }
+    };
+
+    const myDeleteDoc = async (ref) => {
+        if (isOffline) {
+            deleteDoc(ref);
+        } else {
+            return await deleteDoc(ref);
+        }
+    };
 
     const clearNameOnly = () => {
         setNameOnly('');
@@ -3691,7 +3724,7 @@ const Results = ({ tapas }) => {
             filtered.forEach(tapasItem => {
                 const tapasName = getLocalizedContent(tapasItem.name, locale);
                 if (typeof tapasItem.results !== 'number' && tapasItem.results) {
-                    const res = { name: tapasName, id: null, content: tapasItem.results, date: null , dateChanged: null };
+                    const res = { tapasId: tapasItem.id, name: tapasName, id: null, content: tapasItem.results, date: null , dateChanged: null };
                     if (!textFilter || res.content.toLowerCase().indexOf(stext) !== -1) {
                         tempResultsMap.set(tapasItem.id, [res]);
                     }
@@ -3700,6 +3733,7 @@ const Results = ({ tapas }) => {
                     const resultsColRef = collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapasItem.id, 'results');
                     const unsub = onSnapshot(query(resultsColRef, orderBy('date')), (snapshot) => {
                         const resultsData = snapshot.docs.map(doc => ({
+                            tapasId: tapasItem.id, 
                             id: doc.id,
                             ...doc.data(),
                         }));
@@ -3750,7 +3784,7 @@ const Results = ({ tapas }) => {
 
         fetchAndListenToAllTapasResults();
         return cleanupListeners;
-    }, [statusFilter, nameFilter, nameOnly, textFilter]);
+    }, [statusFilter, nameFilter, nameOnly, textFilter, update]);
 
     useEffect(() => {
         if (!isLoading) {
@@ -3817,7 +3851,7 @@ const Results = ({ tapas }) => {
                 </div>
             </div>
             {resultsMessage && (
-                <div className={`p-3 text-center ${resultsMessage.includes(t('successful').toLowerCase()) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-md mx-auto mt-4 max-w-lg`}>
+                <div className={`p-3 text-center ${resultsMessage.includes(t('successful').toLowerCase()) ? 'text-green-700' : 'text-red-700'} mx-auto mt-4 max-w-lg`}>
                     {resultsMessage}
                 </div>
             )}
@@ -3838,12 +3872,7 @@ const Results = ({ tapas }) => {
                                         </p>
                                         </div>
                                     )}
-                                    <div className="relative px-4 py-1"
-                                        /*onClick={() => {
-                                            setSelectedResult(res);
-                                            setShowEditResultModal(true);
-                                        }}*/
-                                    >
+                                    <div className="relative px-4 py-1">
                                         {res.name && (
                                             <h4
                                                 className="cursor-pointer mb-1 text-gray-700 dark:text-gray-300"
@@ -3852,7 +3881,13 @@ const Results = ({ tapas }) => {
                                                 {res.name}
                                             </h4>
                                         )}
-                                        <div className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer">
+                                        <div
+                                            className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer"
+                                            onClick={() => {
+                                                setSelectedResult(res);
+                                                setShowEditResultModal(true);
+                                            }}
+                                        >
                                             <p className="ml-1">{res.content}</p>
                                             <p className="text-right mx-4 text-xs font-mono text-gray-600 dark:text-gray-400">
                                                 {res.changedDate ? ' (' + t('edited') + ')' : ''} {res.date ? res.date.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
@@ -3864,6 +3899,23 @@ const Results = ({ tapas }) => {
                         </div>
                     )}
                 </div>
+            )}
+            {showEditResultModal && (
+                <EditResultModal
+                    onClose={() => setShowEditResultModal(false)}
+                    db={db}
+                    t={t}
+                    userId={userId}
+                    allTapas={tapas}
+                    tapasId={selectedResult.tapasId}
+                    result={selectedResult}
+                    setSelectedTapas={setSelectedTapas}
+                    setMessage={setResultsMessage}
+                    myAddDoc={myAddDoc}
+                    myUpdateDoc={myUpdateDoc}
+                    myDeleteDoc={myDeleteDoc}
+                    onResultAdded={() => {setUpdate(update+1);}}
+                />
             )}
         </div>
     );
@@ -4299,6 +4351,20 @@ const GDPR = ({ onClose }) => {
     );
 };
 
+const handleClearOldResults = async (db, appId, userId, tapasId, results, myUpdateDoc, setSelectedTapas, setMessage, setInitMessage) => {
+    if (setInitMessage) {
+        setInitMessage('');
+    }
+
+    try {
+        const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, tapasId);
+        await myUpdateDoc(tapasRef, { results: results });
+        setSelectedTapas(prevTapas => ({ ...prevTapas, results: results })); // Immediately update local state
+    } catch (error) {
+        console.error("Error saving results:", error);
+        setMessage("Error saving results.");
+    }
+};
 
 // Main App Component (now the default export for pages/index.js)
 const HomePage = () => {
@@ -5503,7 +5569,9 @@ const HomePage = () => {
                                 <Statistics allTapas={tapas} />
                             )}
                             {currentPage === 'results' && (
-                                <Results tapas={tapas} />
+                                <Results tapas={tapas} setSelectedTapas={setSelectedTapas}
+                                    isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                                />
                             )}
                             {currentPage === 'add' && (
                                 <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }}
