@@ -464,15 +464,18 @@ const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, my
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex mdh:items-center items-start justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md flex flex-col h-screen-70% mdh:h-screen-50%">
                 <h2 className="text-xl font-bold mb-4">{t((isNew ? 'add' : 'update') + 'Results')} </h2>
-                <div className="flex flex-col gap-4">
+                <div
+                    className="gap-4"
+                    style={{flex: '1 1 auto'}}
+                >
                     <textarea
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        className="w-full p-2 border rounded-md"
-                        rows="5"
+                        className="w-full p-2 border rounded-md resize-none"
+                        style={{height: '100%'}}
                     />
                 </div>
                 <div className="flex flex-wrap justify-between gap-2 mt-6">

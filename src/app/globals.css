@@ -819,3 +819,17 @@ i.redo {
 .max-h-half {
     max-height: 50vh;
 }
+
+.h-screen-70\% {
+    height: 70vh;
+}
+
+@media (min-height: 48rem) {
+  .mdh\:h-screen-50\% {
+      height: 50vh;
+  }
+  .mdh\:items-center {
+      align-items: center;
+  }
+}
+
