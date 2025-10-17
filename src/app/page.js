@@ -5510,13 +5510,13 @@ const HomePage = () => {
                             {t('statistics')}
                         </button>
                         <button
-                            onClick={() => { setCurrentPage('results'); setSelectedTapas(null); setEditingTapas(null); }}
+                            onClick={() => { setCurrentPage('diary'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'results' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'diary' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                             disabled={loadingFirebase}
                         >
-                            {t('results')}
+                            {t('diary')}
                         </button>
                         <button
                             onClick={() => { setCurrentPage('add'); setSelectedTapas(null); }}
@@ -5571,7 +5571,7 @@ const HomePage = () => {
                             {currentPage === 'statistics' && (
                                 <Statistics allTapas={tapas} />
                             )}
-                            {currentPage === 'results' && (
+                            {currentPage === 'diary' && (
                                 <Results tapas={tapas} setSelectedTapas={setSelectedTapas}
                                     isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                                 />
