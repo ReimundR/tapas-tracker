@@ -1708,7 +1708,7 @@ const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
     endDate.setDate(startDate.getDate() + tapasItem.duration - 1);
 
     const diffTime = endDate.getTime() - today.getTime();
-    const daysOver = Math.ceil(diffTime / timeDayMs);
+    const daysOver = Math.round(diffTime / timeDayMs);
     const daysRemaining = Math.max(0, daysOver);
 
     // date aspects
@@ -2554,7 +2554,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
             }
         } else if (repeatOption === 'untilEndDate') {
             const diffTime = endDateObj.getTime() - newStartDate.getTime();
-            const diffDays = Math.ceil(diffTime / timeDayMs);
+            const diffDays = Math.round(diffTime / timeDayMs);
             if (diffDays > 0) {
                 newDurationDays = diffDays;
             } else {
