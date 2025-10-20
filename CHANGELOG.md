@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.2.2 (2025-10-20) =
+
+* small fixes and improvements
+
 #### = 1.2.1 (2025-10-13) =
 
 * made results with preview and scrollable

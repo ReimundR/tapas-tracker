@@ -833,3 +833,17 @@ i.redo {
   }
 }
 
+.infolink {
+    cursor: default;
+    text-align: center;
+    font-size: 1.3ex;
+    font-weight: bold;
+    line-height: 15px;
+    border-radius: 50%;
+    border-width: 2px;
+    margin-left: 9px;
+    padding-right: 1px;
+    width: 18px;
+    height: 18px;
+    text-decoration: none;
+}

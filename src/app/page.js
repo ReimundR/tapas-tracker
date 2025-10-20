@@ -119,7 +119,14 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
 
     const handleAddAspect = async () => {
         if (newAspectName && newAspectPercentage) {
-            const newAspect = { name: newAspectName, percentage: parseFloat(newAspectPercentage) };
+            let newPercentage;
+            if (newAspectPercentage.indexOf('/') !== -1) {
+                const vals = newAspectPercentage.split('/');
+                newPercentage = Math.round(parseFloat(vals[0]) / parseFloat(vals[1]) * 1e5)/1e3;
+            } else {
+                newPercentage = parseFloat(newAspectPercentage);
+            }
+            const newAspect = { name: newAspectName, percentage: newPercentage };
             try {
                 await mySetDoc(configRef, { dateAspects: arrayUnion(newAspect) }, { merge: true });
                 setNewAspectName('');
@@ -198,7 +205,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
                                     placeholder={t('aspectName')}
                                     className="flex-grow w-full p-2 border rounded"
                                 />
-                                <input type="number" value={newAspectPercentage} onChange={(e) => setNewAspectPercentage(e.target.value)} placeholder="%" aria-hidden="percent" className="w-24 p-2 border rounded" />
+                                <input type="text" value={newAspectPercentage} onChange={(e) => setNewAspectPercentage(e.target.value)} placeholder="1/3 or %" aria-hidden="percent" className="w-24 p-2 border rounded" />
                                 <button onClick={handleAddAspect} className="px-4 py-2 bg-blue-500 text-white rounded" aria-hidden="add">+</button>
                             </div>
                             <ul className="list-disc pl-5">
@@ -1373,6 +1380,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
 
     return (
         <div ref={formContainerRef} className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
+            <Tooltip id="my-tooltip" />
             <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100 flex items-center">
                 {editingTapas ? t('editTapasTitle') : t('addEditTapas')}
                 <div className="relative ml-4" ref={addLanguageDropdownRef}>
@@ -1569,6 +1577,12 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                         <label htmlFor="acknowledgeAfter" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                             {t('acknowledgeAfter')}
                         </label>
+                        <span
+                            className="infolink"
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-html={t('acknowledgeAfterInfo')}
+                            >?
+                        </span>
                     </div>
                 )}
                 <div className="col-span-full">
@@ -1627,6 +1641,12 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                     <label htmlFor="allowRecuperation" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {t('allowRecuperation')}
                     </label>
+                    <span
+                        className="infolink"
+                        data-tooltip-id="my-tooltip"
+                        data-tooltip-html={t('allowRecuperationInfo')}
+                        >?
+                    </span>
                 </div>
                     </>
                 )}
@@ -2141,6 +2161,15 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         setMessage(initMessage);
     }
 
+    const btnShowUpdateSharedTapasMenu = (e) => {
+        if (showUpdateSharedTapasMenu) {
+            setShowUpdateSharedTapasMenu(false);
+        } else if (e.target.offsetParent.offsetLeft < document.body.clientWidth/2) {
+            setShowUpdateSharedTapasMenu('left');
+        } else {
+            setShowUpdateSharedTapasMenu('right');
+        }
+    };
     const sharedDropdownRef = useRef(null); // Ref for the main detail container to detect outside clicks
     const tapasDropdownRef = useRef(null); // Ref for the main detail container to detect outside clicks
 
@@ -2926,6 +2955,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
 
     const sharedInfoColor = actualDataIsNewer ? 'orange' : (updateAvailable ? 'green' : 'gray');
     const sharedInfoBgColor = actualDataIsNewer ? 'bg-orange-500' : (updateAvailable ? 'bg-green-600' : 'bg-gray-400 dark:bg-gray-600');
+    const posRight = true;
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
@@ -2948,14 +2978,14 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                                 {updateAvailable && ('('+t('updateAvailable')+')')}
                                 <div ref={sharedDropdownRef} className="relative inline-block ml-2">
                                     <button
-                                        onClick={() => setShowUpdateSharedTapasMenu(!showUpdateSharedTapasMenu)}
+                                        onClick={btnShowUpdateSharedTapasMenu}
                                         className={`${sharedInfoBgColor} text-white px-2 py-1 rounded text-xs font-medium`}
                                         disabled={isOffline}
                                     >
                                         ...
                                     </button>
                                     {showUpdateSharedTapasMenu && (
-                                        <div className={`absolute ${actualDataIsNewer || updateAvailable ? 'right' : 'left'}-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100`}>
+                                        <div className={`absolute ${showUpdateSharedTapasMenu}-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100`}>
                                             {actualDataIsNewer && (
                                                 <button
                                                     onClick={handleUpdateSharedTapas}
