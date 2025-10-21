@@ -686,7 +686,15 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
 };
 
 // Component for a custom confirmation dialog
-const ConfirmDialog = ({ message, onConfirm, onCancel, confirmText, cancelText }) => {
+const ConfirmDialog = ({ t, message, onConfirm, onCancel, confirmText="", cancelText="" }) => {
+    if (!confirmText) {
+        confirmText = t('yes');
+    }
+
+    if (!cancelText) {
+        cancelText = t('cancel');
+    }
+
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
@@ -2155,6 +2163,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
     const [showRecuperationAdvanceMenu, setShowRecuperationAdvanceMenu] = useState(false); // State for dropdown menu
     const [publicSharedTapas, setPublicSharedTapas] = useState(null); // State for public shared tapas data
     const [showUpdateSharedTapasMenu, setShowUpdateSharedTapasMenu] = useState(false); // State for update shared tapas menu
+    const [deleteSharedTapas, setDeleteSharedTapas] = useState(false);
     const [results, setResults] = useState([]);
 
     if (initMessage && message != initMessage) {
@@ -3003,11 +3012,17 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                                                 </button>
                                             )}
                                             <button
-                                                onClick={handleDeleteSharedTapas}
+                                                onClick={() => setDeleteSharedTapas(true)}
                                                 className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
                                             >
                                                 {t('deleteSharedTapasFromPublic')}
                                             </button>
+                                            {deleteSharedTapas && (<ConfirmDialog
+                                                t={t}
+                                                message={t('deleteSharedTapasFromPublic') + ':"' + displayTapasName + '" ?'}
+                                                onConfirm={handleDeleteSharedTapas}
+                                                onCancel={() => setDeleteSharedTapas(false)}
+                                            />)}
                                         </div>
                                     )}
                                 </div>
@@ -4084,7 +4099,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                     setSharedTapas({ id: docSnap.id, ...docSnap.data() });
                     setError('');
                 } else {
-                    setError("Shared Tapas not found.");
+                    setError(t('sharedTapasNotFound'));
                 }
             } catch (e) {
                 console.error("Error fetching shared Tapas:", e);
