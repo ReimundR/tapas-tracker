@@ -3,6 +3,8 @@
 #### = 1.2.2 (2025-10-20) =
 
 * small fixes and improvements
+* on repeat new name respects the language and if date is given, adapts the date
+  correspondingly, e.g. "my tapas (2025-7)" to "my tapas (2025-10)"
 
 #### = 1.2.1 (2025-10-13) =
 

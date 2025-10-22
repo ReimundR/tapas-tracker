@@ -2560,20 +2560,78 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         setNewRepeatDuration('');
     };
 
-    const updateRepeatName = (name) => {
-        let currentName = name;
-        const repeatRegex = /\(Repeat(?: (\d+))?\)/;
-        const match = currentName.match(repeatRegex);
-        if (match) {
-            if (match[1]) {
-                const currentRepeatNum = parseInt(match[1]);
-                currentName = currentName.replace(repeatRegex, `(Repeat ${currentRepeatNum + 1})`);
-            } else {
-                currentName = currentName.replace('(Repeat)', '(Repeat 2)');
-            }
-        } else {
-            currentName = `${currentName} (Repeat)`;
+    const getRepeatDateOptions = (date) => {
+        const year = String(date.getFullYear());
+        const yearShort = year.slice(-2);
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const monthShort = month[0] == '0' ? month[1] : '';
+        const ret = [[year, month], [month, year], [yearShort, month], [month, yearShort]];
+        if (monthShort) {
+            ret.push(...[[year, monthShort], [monthShort, year],
+                [yearShort, monthShort], [monthShort, yearShort]]);
         }
+        return ret;
+    };
+
+    const getDateIndex = (name, date) => {
+        let ret = null;
+        const seps = ['-', '.', '/'];
+        const dateOpts = getRepeatDateOptions(date);
+        dateOpts.every((opt, index) => {
+            seps.every((sep) => {
+                const optStr = opt[0] + sep + opt[1];
+                const nameIndex = name.indexOf(optStr);
+                if (nameIndex !== -1) {
+                    ret = { index: index >= 4 ? index-4 : index, sep: sep, date: optStr };
+                    return false;
+                }
+                return true;
+            });
+            return !ret;
+        });
+        return ret;
+    };
+
+    const updateRepeatName = (name, newDurationDays) => {
+        let currentName = name;
+
+        const startDateRet = getDateIndex(currentName, startDateObj);
+        const endDateRet = getDateIndex(currentName, endDateObj);
+        let repDate = null;
+        let dateRet = null;
+        if (startDateRet) {
+            repDate = new Date();
+            dateRet = startDateRet;
+        } else if (endDateRet) {
+            repDate = new Date();
+            repDate.setDate(repDate.getDate() + newDurationDays - 1);
+            dateRet = endDateRet;
+        }
+
+        if (repDate) {
+            const newMonth = String(repDate.getMonth() + 1);
+            let newYear = String(repDate.getFullYear());
+            if (dateRet.index >= 2) {
+                newYear = newYear.slice(-2); // short year
+            }
+            const newDate = (dateRet.index & 1) > 0 ? newMonth + dateRet.sep + newYear : newYear + dateRet.sep + newMonth;
+            currentName = currentName.replace(dateRet.date, newDate);
+        } else {
+            const repStr = t('theRepeat');
+            const repeatRegex = `/\(${repStr}(?: (\d+))?\)/`;
+            const match = currentName.match(repeatRegex);
+            if (match) {
+                if (match[1]) {
+                    const currentRepeatNum = parseInt(match[1]);
+                    currentName = currentName.replace(repeatRegex, `(${repStr} ${currentRepeatNum + 1})`);
+                } else {
+                    currentName = currentName.replace(`(${repStr})`, `(${repStr} 2)`);
+                }
+            } else {
+                currentName = `${currentName} (${repStr})`;
+            }
+        }
+
         return currentName;
     };
 
@@ -2604,11 +2662,11 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         // Create new multi-language name object for the repeated tapas
         let newMultiLangName;
         if (typeof tapas.name === 'string') {
-            newMultiLangName = updateRepeatName(tapas.name);
+            newMultiLangName = updateRepeatName(tapas.name, newDurationDays);
         } else {
             newMultiLangName = {};
             Object.keys(tapas.name).forEach(lang => {
-                newMultiLangName[lang] = updateRepeatName(tapas.name[lang] || '');
+                newMultiLangName[lang] = updateRepeatName(tapas.name[lang] || '', newDurationDays);
             });
         }
 
