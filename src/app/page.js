@@ -1741,7 +1741,7 @@ const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
 
     // date aspects
     let aspectDates = [];
-    if (Object.keys(config).length > 0 && tapasItem.duration && config?.dateAspects) {
+    if (Object.keys(config).length > 0 && tapasItem.duration && tapasItem.duration >= 4 && config?.dateAspects) {
         const daysBefore = config.dateAspectDaysBefore || 7;
         const daysAfter = config.dateAspectDaysAfter || 1;
         const todayTime = today.getTime();
@@ -1799,6 +1799,30 @@ const getSharedTapasInfo = async (shareReference, db) => {
     return { userId: null, version: null };
 };
 
+
+const isActive = (tapasItem) => {
+    return tapasItem.status === 'active';
+};
+
+const isCrystallization = (tapasItem) => {
+    return tapasItem.status === 'crystallization';
+};
+
+const isSuccessful = (tapasItem) => {
+    return tapasItem.status === 'successful';
+};
+
+const isFailed = (tapasItem) => {
+    return tapasItem.status === 'failed';
+};
+
+const isActiveOrCrystallization = (tapasItem) => {
+    return isActive(tapasItem) || isCrystallization(tapasItem);
+};
+
+const isSuccessfulOrCrystallization = (tapasItem) => {
+    return isSuccessful(tapasItem) || isCrystallization(tapasItem);
+};
 
 // Component to display a list of Tapas
 const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter, historyNameFilter, setHistoryNameFilter, sharedTapasInfoMap, selectedTapasLanguage }) => {
@@ -2018,7 +2042,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 
                         // Calculate undone parts for active tapas
                         const undoneParts = [];
-                        if (tapasItem.status === 'active' && tapasItem.parts) {
+                        if (isActive(tapasItem) && tapasItem.parts) {
                             const todayDateString = formatDateNoTimeToISO(new Date());
                             const checkedPartsForToday = tapasItem.checkedPartsByDate?.[todayDateString] || [];
                             
@@ -2054,7 +2078,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                             </svg>
                                         </span>
                                     )}
-                                    {tapasItem.status === 'active' && tapasItem.scheduleType !== 'noTapas' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
+                                    {isActive(tapasItem) && tapasItem.scheduleType !== 'noTapas' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
                                 </h3>
                                 {tapasItem.duration !== null && tapasItem.duration > 0 && (
                                     <>
@@ -2090,7 +2114,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                         {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
                                         )}
-                                        {tapasItem.status === 'active' && daysOver >= 0 && (
+                                        {isActive(tapasItem) && daysOver >= 0 && (
                                             <>
                                             {daysRemaining <= 1 && (
                                                 <p className="text-sm font-medium text-yellow-200 mt-2">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
@@ -2107,13 +2131,16 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                         )}
                                     </>
                                 )}
-                                {tapasItem.status === 'successful' && (
+                                {isSuccessful(tapasItem) && (
                                     <p className="text-sm font-medium text-green-600 mt-2">{t('status')}: {t('successful')}</p>
                                 )}
-                                {tapasItem.status === 'failed' && (
+                                {isFailed(tapasItem) && (
                                     <p className="text-sm font-medium text-red-600 mt-2">{t('status')}: {t('failed')}</p>
                                 )}
-                                {tapasItem.status === 'active' && statusText.length > 0 && (<>
+                                {isCrystallization(tapasItem) && (
+                                    <p className="text-sm font-medium text-indigo-600 mt-2">{t('crystallization')}</p>
+                                )}
+                                {isActive(tapasItem) && statusText.length > 0 && (<>
                                     {statusText.map((texts, idx) => 
                                         <p key={idx} className={`text-sm font-bold mt-1 ${statusClass}`}>
                                             {texts.map((text, tidx) => <span key={tidx} className="pr-3">{text}</span>)}
@@ -2127,7 +2154,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                     </p>
                                 )}
                                 {/* Display undone parts for active tapas */}
-                                {tapasItem.status === 'active' && undoneParts.length > 0 && (
+                                {isActive(tapasItem) && undoneParts.length > 0 && (
                                     <div className="mt-2">
                                         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('undonePartsToday')}:</p>
                                         <ul className="list-disc list-inside ml-4 text-sm text-gray-600 dark:text-gray-400">
@@ -2231,8 +2258,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
     const isYesterdayValid = startDateObj <= yesterday && (noDuration || yesterday <= endDateObj);
     const isPeriodEndOrOver = !noDuration && today >= endDateObj;
     const isPeriodOver = !noDuration && today > endDateObj;
-    const isSuccessful = tapas.status === 'successful';
-    const isFailed = tapas.status === 'failed';
 
     // Get localized content for display
     const displayTapasName = getLocalizedContent(tapas.name, locale, selectedTapasLanguage);
@@ -2467,7 +2492,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                 recuperatedDays: getUniqueCheckedDays(newRecuperatedDays),
                 advancedDays: getUniqueCheckedDays(newAdvancedDays),
                 checkedPartsByDate: newCheckedPartsByDate,
-                status: (tapas.status === 'successful' && getUniqueCheckedDays(newCheckedDays).length < totalUnits) ? 'active' : tapas.status
+                status: (isSuccessfulOrCrystallization(tapas) && getUniqueCheckedDays(newCheckedDays).length < totalUnits) ? 'active' : tapas.status
             });
 
             setSelectedTapas(prev => ({
@@ -2476,12 +2501,12 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                 recuperatedDays: getUniqueCheckedDays(newRecuperatedDays),
                 advancedDays: getUniqueCheckedDays(newAdvancedDays),
                 checkedPartsByDate: newCheckedPartsByDate,
-                status: (tapas.status === 'successful' && getUniqueCheckedDays(newCheckedDays).length < totalUnits) ? 'active' : tapas.status
+                status: (isSuccessfulOrCrystallization(tapas) && getUniqueCheckedDays(newCheckedDays).length < totalUnits) ? 'active' : tapas.status
             }));
 
             setMessage(t('dayClearedSuccessfully')); // Re-using dayClearedSuccessfully
 
-            if (tapas.status === 'successful' && getUniqueCheckedDays(newCheckedDays).length < totalUnits) {
+            if (isSuccessfulOrCrystallization(tapas) && getUniqueCheckedDays(newCheckedDays).length < totalUnits) {
                 setMessage(t('tapasAutoMarkedActive'));
             }
         } catch (error) {
@@ -2745,15 +2770,30 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
 
     const checkDailyProgress = async () => {
         setInitMessage('');
-        if (tapas.scheduleType === 'noTapas' || !isPeriodEndOrOver || isSuccessful || isFailed) return;
+        if (tapas.scheduleType === 'noTapas' || !isPeriodEndOrOver || isSuccessful(tapas) || isFailed(tapas)) return;
+
+        if (isCrystallization(tapas)) {
+            const crystallizationDate = new Date(endDateObj);
+            crystallizationDate.setDate(crystallizationDate.getDate() + tapas.crystallizationTime);
+            if (today > crystallizationDate) {
+                await myUpdateDoc(tapasRef, { status: 'successful' });
+                setMessage(t('tapasAutoMarkedSuccessful'));
+            }
+            return;
+        }
 
         // Automatically mark as successful if all units checked (unique count) and period is over
         if (checkedUnitsCount >= totalUnits) {
-            await myUpdateDoc(tapasRef, { status: 'successful' });
-            setMessage(t('tapasAutoMarkedSuccessful'));
+            if (tapas.crystallizationTime) {
+                await myUpdateDoc(tapasRef, { status: 'crystallization' });
+                setMessage(t('tapasAutoMarkedCrystallization'));
+            } else {
+                await myUpdateDoc(tapasRef, { status: 'successful' });
+                setMessage(t('tapasAutoMarkedSuccessful'));
+            }
         } else if (isPeriodOver) {
             // If period is over but not all units checked, suggest marking as failed
-            setMessage(t('tapasPeriodOverNotAllDaysChecked')); // Re-using this message
+            setMessage(t('tapasPeriodOverNotAllDaysChecked'));
         }
     };
 
@@ -3132,7 +3172,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                             <ul className="list-none ml-4 space-y-2">
                                 {displayParts.map((part, index) => (
                                     <li key={index} className="flex space-x-2">
-                                        {!isSuccessful && !isFailed && (
+                                        {!isSuccessful(tapas) && !isFailed(tapas) && (
                                             <input
                                                 type="checkbox"
                                                 checked={!!checkedPartsSelection[index]}
@@ -3148,7 +3188,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                     ) : (
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
                     )}
-                    {!isSuccessful && !isFailed && (
+                    {!isSuccessful(tapas) && !isFailed(tapas) && (
                         <div className="flex justify-between space-x-2 mt-4"> {/* Use justify-between to push the "..." to the right */}
                             <div className="flex space-x-2">
                                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -3224,7 +3264,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         </div>
                     )}
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days').toLowerCase()}</p>}
-                    <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${tapas.status === 'active' ? 'text-blue-600' : tapas.status === 'successful' ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
+                    <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessful(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
                     <ResultHistoryView
                         tapas={tapas}
@@ -3259,7 +3299,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                 </div>
 
                 <div className="mt-8 flex flex-wrap justify-center gap-4">
-                    {!isSuccessful && !isFailed && tapas.scheduleType !== 'noTapas' && (
+                    {isActive(tapas) && tapas.scheduleType !== 'noTapas' && (
                         <button
                             onClick={handleMarkFailed}
                             className="bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-red-700 transition-colors duration-200 text-lg font-medium"
@@ -3267,7 +3307,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                             {t('markAsFailed')}
                         </button>
                     )}
-                    {!isSuccessful && !isFailed && (
+                    {!isSuccessful(tapas) && !isFailed(tapas) && (
                         <button
                             onClick={() => onEdit(tapas)}
                             className="bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-yellow-600 transition-colors duration-200 text-lg font-medium"
@@ -3275,7 +3315,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                             {t('editTapas')}
                         </button>
                     )}
-                    {(isSuccessful || isFailed) && (
+                    {(isSuccessful(tapas) || isFailed(tapas)) && (
                         <button
                             onClick={handleRepeat}
                             className="bg-purple-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-purple-700 transition-colors duration-200 text-lg font-medium"
@@ -3545,7 +3585,7 @@ const Statistics = ({ allTapas }) => {
         filterDate.setHours(0, 0, 0, 0); // Normalize filter date
 
         return tapasList.filter(tapas => {
-            const completionDate = tapas.status !== 'active' && tapas.completionDate ? tapas.completionDate.toDate() : tapas.createdAt.toDate();
+            const completionDate = !isActiveOrCrystallization(tapas) && tapas.completionDate ? tapas.completionDate.toDate() : tapas.createdAt.toDate();
             if (completionDate >= filterDate) {
                 return true;
             }
@@ -3562,10 +3602,10 @@ const Statistics = ({ allTapas }) => {
 
     const filteredTapas = filterTapasByTime(allTapas);
 
-    const successfulTapas = filteredTapas.filter(tapas => tapas.status === 'successful');
-    const failedTapas = filteredTapas.filter(tapas => tapas.status === 'failed');
-    const activeTapas = filteredTapas.filter(tapas => tapas.status === 'active' && tapas.scheduleType !== 'noTapas' && tapas.startDate.toDate() <= today);
-    const pendingTapas = filteredTapas.filter(tapas => tapas.status === 'active' && tapas.scheduleType !== 'noTapas' && tapas.startDate.toDate() > today);
+    const successfulTapas = filteredTapas.filter(tapas => isSuccessfulOrCrystallization(tapas));
+    const failedTapas = filteredTapas.filter(tapas => isFailed(tapas));
+    const activeTapas = filteredTapas.filter(tapas => isActive(tapas) && tapas.scheduleType !== 'noTapas' && tapas.startDate.toDate() <= today);
+    const pendingTapas = filteredTapas.filter(tapas => isActive(tapas) && tapas.scheduleType !== 'noTapas' && tapas.startDate.toDate() > today);
 
     const calculateAverageDuration = (tapasList) => {
         if (tapasList.length === 0) return 0;
@@ -5205,7 +5245,7 @@ const HomePage = () => {
 
     const tapasLanguagesForMenu = Object.keys(customTapasLanguages).filter(lang => lang !== locale);
 
-    const activeTapas = tapas.filter(tapas => tapas.status === 'active').sort((a, b) => {
+    const activeTapas = tapas.filter(tapas => isActiveOrCrystallization(tapas)).sort((a, b) => {
         // Custom sorting logic for active tapas
         const isATapas = a.scheduleType !== 'noTapas';
         const isBTapas = b.scheduleType !== 'noTapas';
@@ -5238,7 +5278,7 @@ const HomePage = () => {
     });
 
     // History filter by end date latest first
-    const baseHistoryTapas = tapas.filter(tapas => tapas.status !== 'active').sort((a,b) => {
+    const baseHistoryTapas = tapas.filter(tapas => !isActiveOrCrystallization(tapas)).sort((a,b) => {
         const endDateA = getTapasDatesInfo(b).endDate;
         const endDateB = getTapasDatesInfo(a).endDate;
 
