@@ -1394,7 +1394,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
     // Available languages for the selector (excluding already added ones and custom ones)
     const allKnownLanguages = { ...translations, ...otherLanguages };
     const languagesToAdd = Object.keys(allKnownLanguages).filter(lang => !availableFormLanguages.includes(lang));
-
+    const dayWeekCap = (scheduleType === 'weekly' ? t('weeks') : t('days'))[0];
 
     return (
         <div ref={formContainerRef} className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
@@ -1563,14 +1563,21 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                             onClick={() => handleSetDurationFromButton(7, scheduleType === 'weekly' ? 'weeks' : 'days')}
                             className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200"
                         >
-                            {scheduleType === 'weekly' ? t('7w') : t('7d')}
+                            7{dayWeekCap}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSetDurationFromButton(21, scheduleType === 'weekly' ? 'weeks' : 'days')}
+                            className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200"
+                        >
+                            21{dayWeekCap}
                         </button>
                         <button
                             type="button"
                             onClick={() => handleSetDurationFromButton(49, scheduleType === 'weekly' ? 'weeks' : 'days')}
                             className="px-3 py-2 bg-indigo-500 text-white rounded-r-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
-                            {scheduleType === 'weekly' ? t('49w') : t('49d')}
+                            49{dayWeekCap}
                         </button>
                     </div>
                 </div>
