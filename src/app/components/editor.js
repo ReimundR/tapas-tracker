@@ -16,6 +16,7 @@ import { $getRoot, $insertNodes, $createParagraphNode, TextNode } from 'lexical'
 import { $generateNodesFromDOM } from '@lexical/html';
 import AutoLinkPlugin from "../../plugins/AutoLinkPlugin";
 import ToolbarPlugin from "../../plugins/ToolbarPlugin";
+import { MaxLengthPlugin } from '../../plugins/LexicalMaxLengthPlugin';
 import { ExtendedTextNode } from "../../plugins/ExtendedTextNode";
 
 // Lexical Editor Configuration
@@ -108,6 +109,7 @@ export const RichTextEditor = ({ initialContent, onEditorStateChange }) => {
                         placeholder={<div className="editor-placeholder">{t('enterDescription')}...</div>}
                         ErrorBoundary={LexicalErrorBoundary}
                     />
+                    <MaxLengthPlugin maxLength={4000} />
                     <HistoryPlugin />
                     <ListPlugin />
                     <LinkPlugin />

@@ -200,12 +200,21 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
                     <TabPanel>
                         <div className="mb-4">
                             <div className="flex gap-2 mb-2">
-                                <input type="text" value={newAspectName}
+                                <input type="text"
+                                    value={newAspectName}
+                                    maxLength="120"
                                     onChange={(e) => setNewAspectName(e.target.value)}
                                     placeholder={t('aspectName')}
                                     className="flex-grow w-full p-2 border rounded"
                                 />
-                                <input type="text" value={newAspectPercentage} onChange={(e) => setNewAspectPercentage(e.target.value)} placeholder="1/3 or %" aria-hidden="percent" className="w-24 p-2 border rounded" />
+                                <input type="text"
+                                    value={newAspectPercentage}
+                                    maxLength="20"
+                                    onChange={(e) => setNewAspectPercentage(e.target.value)}
+                                    placeholder="1/3 or %"
+                                    aria-hidden="percent"
+                                    className="w-24 p-2 border rounded"
+                                />
                                 <button onClick={handleAddAspect} className="px-4 py-2 bg-blue-500 text-white rounded" aria-hidden="add">+</button>
                             </div>
                             <ul className="list-disc pl-5">
@@ -480,6 +489,7 @@ const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, my
                 >
                     <textarea
                         value={content}
+                        maxLength="4000"
                         onChange={(e) => setContent(e.target.value)}
                         className="w-full p-2 border rounded-md resize-none"
                         style={{height: '100%'}}
@@ -654,7 +664,7 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
                                             </span>
                                         )}
                                         <div className={`${showDates ? 'mt-4' : ''}`}>
-                                            <p>{res.content}</p>
+                                            <p className="whitespace-pre-wrap">{res.content}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -1465,6 +1475,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                         ref={firstRef}
                         type="text"
                         id="name"
+                        maxLength="120"
                         value={currentTapasDataForForm.name}
                         onChange={(e) => handleMultiLanguageInputChange('name', e.target.value)}
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
@@ -1605,6 +1616,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                     <label htmlFor="goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('goals0n')}</label>
                     <textarea
                         id="goals"
+                        maxLength="1000"
                         value={currentTapasDataForForm.goals}
                         placeholder={t('enterGoals')}
                         onChange={(e) => handleMultiLanguageInputChange('goals', e.target.value)}
@@ -1616,6 +1628,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                     <label htmlFor="parts" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('parts0n')}</label>
                     <textarea
                         id="parts"
+                        maxLength="1000"
                         value={currentTapasDataForForm.parts}
                         placeholder={t('enterParts')}
                         onChange={(e) => handleMultiLanguageInputChange('parts', e.target.value)}
@@ -1687,6 +1700,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                             type="text"
                             id="newLangName"
                             value={newLangNameInput}
+                            maxLength="30"
                             onChange={(e) => setNewLangNameInput(e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
                             placeholder={t('language')+'...'}
@@ -1696,6 +1710,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                             type="text"
                             id="newLangCode"
                             value={newLangCodeInput}
+                            maxLength="3"
                             onChange={(e) => setNewLangCodeInput(e.target.value)}
                             className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
                             placeholder={t('countryCode')+'...'}
@@ -2021,6 +2036,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                 type="search"
                                 placeholder={t('searchByName')+"..."}
                                 value={historyNameFilter}
+                                maxLength="120"
                                 onChange={(e) => setHistoryNameFilter(e.target.value)}
                                 className="px-3 py-2 rounded-md border border-gray-300 w-full"
                             />                        
@@ -3352,6 +3368,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         <input
                             type="text"
                             value={confirmName}
+                            maxLength="120"
                             onChange={(e) => setConfirmName(e.target.value)}
                             className="block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-red-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-red-500 mb-4"
                             placeholder={t('typeTapasNameToConfirm')}
@@ -3381,6 +3398,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                             <label htmlFor="failureCause" className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('causeOptional')}</label>
                             <textarea
                                 id="failureCause"
+                                maxLength="4000"
                                 value={failureCause}
                                 onChange={(e) => setFailureCause(e.target.value)}
                                 rows="2"
@@ -3969,6 +3987,7 @@ const Results = ({ tapas, setSelectedTapas, isOffline }) => {
                             type="search"
                             placeholder={t('searchByText')+"..."}
                             value={textFilter}
+                            maxLength="120"
                             onChange={(e) => setTextFilter(e.target.value)}
                             className="px-3 py-2 min-w-2 rounded-md border border-gray-300 w-full"
                         />
@@ -3988,6 +4007,7 @@ const Results = ({ tapas, setSelectedTapas, isOffline }) => {
                                     type="search"
                                     placeholder={t('searchByName')+"..."}
                                     value={nameFilter}
+                                    maxLength="120"
                                     onChange={(e) => setNameFilter(e.target.value)}
                                     className="px-3 py-2 rounded-md border border-gray-300 w-full"
                                 />
@@ -4034,7 +4054,7 @@ const Results = ({ tapas, setSelectedTapas, isOffline }) => {
                                                 setShowEditResultModal(true);
                                             }}
                                         >
-                                            <p className="ml-1">{res.content}</p>
+                                            <p className="ml-1 whitespace-pre-wrap">{res.content}</p>
                                             <p className="text-right mx-4 text-xs font-mono text-gray-600 dark:text-gray-400">
                                                 {res.changedDate ? ' (' + t('edited') + ')' : ''} {res.date ? res.date.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
                                             </p>
@@ -5313,6 +5333,7 @@ const HomePage = () => {
                                 type="email"
                                 placeholder={t('email')}
                                 value={email}
+                                maxLength="120"
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full px-4 py-3 mb-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                             />
@@ -5320,6 +5341,7 @@ const HomePage = () => {
                                 type="password"
                                 placeholder={t('password')}
                                 value={password}
+                                maxLength="2048"
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full px-4 py-3 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                             />
