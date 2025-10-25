@@ -3306,6 +3306,9 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                     )}
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days').toLowerCase()}</p>}
                     <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessfulOrFinished(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
+                    {tapas.scheduleType !== 'noTapas' && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
+                        <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t(tapas.scheduleType === 'weekly' ? 'weeksChecked' : 'daysChecked')}
+                    </p>)}
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
                     <ResultHistoryView
                         tapas={tapas}
@@ -3320,9 +3323,6 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         isOffline={isOffline}
                     />
 
-                    {tapas.scheduleType !== 'noTapas' && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
-                        <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t(tapas.scheduleType === 'weekly' ? 'weeksChecked' : 'daysChecked')}
-                    </p>)}
                     {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                         <div>
                             <strong className="font-semibold">{t('checkedDates')}:</strong>
