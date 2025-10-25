@@ -1,5 +1,10 @@
 # Changelog
 
+#### = 1.2.3 (2025-10-25) =
+
+* added Spanish language
+* fixed No-Tapas expired set to finished state
+
 #### = 1.2.2 (2025-10-20) =
 
 * small fixes and improvements

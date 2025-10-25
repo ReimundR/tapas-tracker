@@ -1834,12 +1834,20 @@ const isSuccessful = (tapasItem) => {
     return tapasItem.status === 'successful';
 };
 
+const isFinished = (tapasItem) => {
+    return tapasItem.status === 'finished';
+};
+
 const isFailed = (tapasItem) => {
     return tapasItem.status === 'failed';
 };
 
 const isActiveOrCrystallization = (tapasItem) => {
     return isActive(tapasItem) || isCrystallization(tapasItem);
+};
+
+const isSuccessfulOrFinished = (tapasItem) => {
+    return isSuccessful(tapasItem) || isFinished(tapasItem);
 };
 
 const isSuccessfulOrCrystallization = (tapasItem) => {
@@ -2404,9 +2412,10 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
 
         // If all units checked, mark as successful
         if (updatedCheckedDays.length === totalUnits && isPeriodEndOrOver) {
-            await myUpdateDoc(tapasRef, { status: 'successful' });
+            const newStatus = tapas.crystallizationTime ? 'crystallization' : 'successful';
+            await myUpdateDoc(tapasRef, { status: newStatus });
             setMessage(t('tapasCompletedSuccessfully'));
-            setSelectedTapas(prev => ({ ...prev, status: 'successful' })); // Immediately update local state for status
+            setSelectedTapas(prev => ({ ...prev, status: newStatus })); // Immediately update local state for status
         }
     };
 
@@ -2793,7 +2802,13 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
 
     const checkDailyProgress = async () => {
         setInitMessage('');
-        if (tapas.scheduleType === 'noTapas' || !isPeriodEndOrOver || isSuccessful(tapas) || isFailed(tapas)) return;
+        if (!isPeriodEndOrOver || isSuccessful(tapas) || isFailed(tapas) || isFinished(tapas)) return;
+        if (tapas.scheduleType === 'noTapas') {
+            await myUpdateDoc(tapasRef, { status: 'finished' });
+            setMessage(t('notapasAutoMarkedFinished'));
+            setSelectedTapas(prev => ({ ...prev, status: 'finished' })); // Immediately update local state for status
+            return;
+        }
 
         if (isCrystallization(tapas)) {
             const crystallizationDate = new Date(endDateObj);
@@ -2801,6 +2816,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
             if (today > crystallizationDate) {
                 await myUpdateDoc(tapasRef, { status: 'successful' });
                 setMessage(t('tapasAutoMarkedSuccessful'));
+                setSelectedTapas(prev => ({ ...prev, status: 'successful' })); // Immediately update local state for status
             }
             return;
         }
@@ -2810,9 +2826,11 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
             if (tapas.crystallizationTime) {
                 await myUpdateDoc(tapasRef, { status: 'crystallization' });
                 setMessage(t('tapasAutoMarkedCrystallization'));
+                setSelectedTapas(prev => ({ ...prev, status: 'crystallization' })); // Immediately update local state for status
             } else {
                 await myUpdateDoc(tapasRef, { status: 'successful' });
                 setMessage(t('tapasAutoMarkedSuccessful'));
+                setSelectedTapas(prev => ({ ...prev, status: 'successful' })); // Immediately update local state for status
             }
         } else if (isPeriodOver) {
             // If period is over but not all units checked, suggest marking as failed
@@ -3287,7 +3305,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                         </div>
                     )}
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days').toLowerCase()}</p>}
-                    <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessful(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
+                    <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessfulOrFinished(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
                     <ResultHistoryView
                         tapas={tapas}
@@ -3330,7 +3348,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
                             {t('markAsFailed')}
                         </button>
                     )}
-                    {!isSuccessful(tapas) && !isFailed(tapas) && (
+                    {!isSuccessfulOrFinished(tapas) && !isFailed(tapas) && (
                         <button
                             onClick={() => onEdit(tapas)}
                             className="bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-yellow-600 transition-colors duration-200 text-lg font-medium"
