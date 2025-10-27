@@ -4592,6 +4592,7 @@ const HomePage = () => {
     const [statusMessage, setStatusMessage] = useState(''); // For import/export feedback
     const [isGuestUser, setIsGuestUser] = useState(false); // New state to track if user is anonymous
     const [pageBeforeDetail, setPageBeforeDetail] = useState('active'); // New state to remember previous page
+    const [scrollPosition, setScrollPosition] = useState(-1);
     const [sharedTapasInfoMap, setSharedTapasInfoMap] = useState({}); // Moved here
     const [isOffline, setIsOffline] = useState(false);
 
@@ -4861,6 +4862,7 @@ const HomePage = () => {
     }, []);
 
     const handleSelectTapas = (tapasItem) => {
+        setScrollPosition(window.pageYOffset);
         setPageBeforeDetail(currentPage); // Store current page before opening detail
         setSelectedTapas(tapasItem);
         setTapasDetailMessage(null);
@@ -4871,6 +4873,7 @@ const HomePage = () => {
         setSelectedTapas(null);
         setTapasDetailMessage(null);
         setCurrentPage(pageBeforeDetail); // Go back to the page that was active before
+        setTimeout(() => window.scrollTo(0, scrollPosition), 200);
     };
 
     const handleCloseLicense = () => {
