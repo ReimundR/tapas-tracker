@@ -18,7 +18,9 @@ const { version } = require('./package.json');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactCompiler: true,
   reactStrictMode: true,
+  cacheComponents: true,
   pageExtensions: ['js', 'jsx', 'md', 'mdx'],
   // Enable Turbopack for development mode
   /*turbopack: {

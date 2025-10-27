@@ -2113,13 +2113,13 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                 </h3>
                                 {tapasItem.duration !== null && tapasItem.duration > 0 && (
                                     <>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        <p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
                                             {t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}
                                             {tapasItem.startTime && (
                                                 <span className="ml-3 font-semibold text-indigo-700 dark:text-indigo-500">{tapasItem.startTime}</span>
                                             )}
                                         </p>
-                                        <div className="flex justify-between items-center">
+                                        <div className="hidden lg:block flex justify-between items-center">
                                         {!statusText.length && tapasItem.scheduleType === 'noTapas' && checkedUnitsCount==0 ? (
                                             <p className="text-sm text-gray-600 dark:text-gray-400">
                                                 {t('duration')}: {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
@@ -2142,7 +2142,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                         )}
                                         </p>
                                         </div>
-                                        {tapasItem.scheduleType === 'everyNthDays' && (<p className="text-sm text-gray-600 dark:text-gray-400">
+                                        {tapasItem.scheduleType === 'everyNthDays' && (<p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
                                         )}
                                         {isActive(tapasItem) && daysOver >= 0 && (
@@ -5290,6 +5290,12 @@ const HomePage = () => {
 
     const tapasLanguagesForMenu = Object.keys(customTapasLanguages).filter(lang => lang !== locale);
 
+    const isTapasTodayChecked = (tapasItem) => {
+        const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
+        const today = getTapasDay(new Date(), tapasItem, startDate);
+        return isTapasDateChecked(tapasItem.checkedDays, today);
+    };
+
     const activeTapas = tapas.filter(tapas => isActiveOrCrystallization(tapas)).sort((a, b) => {
         // Custom sorting logic for active tapas
         const isATapas = a.scheduleType !== 'noTapas';
@@ -5298,6 +5304,24 @@ const HomePage = () => {
         // If one is 'noTapas' and the other isn't, 'noTapas' goes to the end
         if (isATapas && !isBTapas) return -1;
         if (!isATapas && isBTapas) return 1;
+
+        const isACrystallization = isCrystallization(a);
+        const isBCrystallization = isCrystallization(b);
+        if (isACrystallization && !isBCrystallization) return -1;
+        if (!isACrystallization && isBCrystallization) return 1;
+
+        // If both are 'noTapas', sort by name alphabetically
+        if (!isATapas && !isBTapas) {
+            const nameA = getLocalizedContent(a.name, locale, selectedTapasLanguage);
+            const nameB = getLocalizedContent(b.name, locale, selectedTapasLanguage);
+            return nameA.localeCompare(nameB);
+        }
+
+        const isAChecked = isTapasTodayChecked(a);
+        const isBChecked = isTapasTodayChecked(b);
+
+        if (isAChecked && !isBChecked) return 1;
+        if (!isAChecked && isBChecked) return -1;
 
         // If both are 'noTapas' or both are regular tapas, sort by end date
         if (isATapas && isBTapas) {
@@ -5310,13 +5334,6 @@ const HomePage = () => {
             if (!endDateB) return -1; // Null end date goes to the end
 
             return endDateA.getTime() - endDateB.getTime(); // Sort by end date ascending (earliest first)
-        }
-
-        // If both are 'noTapas', sort by name alphabetically
-        if (!isATapas && !isBTapas) {
-            const nameA = getLocalizedContent(a.name, locale, selectedTapasLanguage);
-            const nameB = getLocalizedContent(b.name, locale, selectedTapasLanguage);
-            return nameA.localeCompare(nameB);
         }
 
         return 0; // Should not be reached
