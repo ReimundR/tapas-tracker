@@ -4873,7 +4873,7 @@ const HomePage = () => {
         setSelectedTapas(null);
         setTapasDetailMessage(null);
         setCurrentPage(pageBeforeDetail); // Go back to the page that was active before
-        setTimeout(() => window.scrollTo(0, scrollPosition), 200);
+        setTimeout(() => window.scrollTo(0, scrollPosition), 30);
     };
 
     const handleCloseLicense = () => {
