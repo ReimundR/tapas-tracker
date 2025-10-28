@@ -74,6 +74,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
     const [newAspectName, setNewAspectName] = useState('');
     const [newAspectPercentage, setNewAspectPercentage] = useState('');
     const [isPersistentCacheEnabled, setPersistentCacheEnabled] = useState(persistentCacheCookie === 'true');
+    const [dayTime, setDayTime] = useState('04:00');
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const configRef = doc(db, `artifacts/${appId}/users/${userId}/config/appConfig`);
@@ -100,22 +101,17 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
                 setDateAspects(data.dateAspects || []);
                 setDateAspectDaysBefore(data.dateAspectDaysBefore || 7);
                 setDateAspectDaysAfter(data.dateAspectDaysAfter || 1);
+                setDayTime(data.dayTime || '04:00');
             } else {
                 // Set default values if the document doesn't exist
                 setDateAspects([]);
                 setDateAspectDaysBefore(7);
                 setDateAspectDaysAfter(1);
+                setDayTime('04:00');
             }
         });
         return () => unsub();
     }, [db]);
-
-    const handlePersistentCacheChange = (isChecked) => {
-        setPersistentCacheEnabled(isChecked);
-        localStorage.setItem('persistentLocalCache', isChecked.toString());
-        // This is a client-side setting, Firebase persistence is enabled on app load
-        // when the cookie is present. This button only updates the cookie.
-    };
 
     const handleAddAspect = async () => {
         if (newAspectName && newAspectPercentage) {
@@ -127,36 +123,41 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
                 newPercentage = parseFloat(newAspectPercentage);
             }
             const newAspect = { name: newAspectName, percentage: newPercentage };
-            try {
-                await mySetDoc(configRef, { dateAspects: arrayUnion(newAspect) }, { merge: true });
-                setNewAspectName('');
-                setNewAspectPercentage('');
-            } catch (e) {
-                console.error("Error adding date aspect: ", e);
-            }
+            setDateAspects([...dateAspects, newAspect]);
+            setNewAspectName('');
+            setNewAspectPercentage('');
         }
     };
 
     const handleRemoveAspect = async (aspect) => {
-        try {
-            await mySetDoc(configRef, { dateAspects: arrayRemove(aspect) }, { merge: true });
-        } catch (e) {
-            console.error("Error removing date aspect: ", e);
-        }
+        const newAspects = dateAspects.filter(function( obj ) {
+            return obj.name !== aspect.name;
+        });
+        setDateAspects(newAspects);
     };
 
-    const handleUpdateDays = async () => {
+    const handleSave = async () => {
         try {
-            await mySetDoc(configRef, { dateAspectDaysBefore: dateAspectDaysBefore, dateAspectDaysAfter: dateAspectDaysAfter }, { merge: true });
+            await mySetDoc(configRef, { dayTime: dayTime,
+                dateAspectDaysBefore: dateAspectDaysBefore,
+                dateAspectDaysAfter: dateAspectDaysAfter,
+                dateAspects: dateAspects,
+            }, { merge: true });
         } catch (e) {
             console.error("Error updating days: ", e);
         }
 
         const config = {};
+        config.dayTime = dayTime;
         config.dateAspects = dateAspects;
         config.dateAspectDaysBefore = dateAspectDaysBefore;
         config.dateAspectDaysAfter = dateAspectDaysAfter;
         setConfig(config);
+
+        localStorage.setItem('persistentLocalCache', isPersistentCacheEnabled.toString());
+        // This is a client-side setting, Firebase persistence is enabled on app load
+        // when the cookie is present. This button only updates the cookie.
+        onClose();
     };
 
     return (
@@ -174,6 +175,16 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
                     </TabList>
                     <TabPanel>
                         <div className="space-y-4">
+                            <div className="flex row items-center">
+                                <label htmlFor="dayTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('dayTime')}</label>
+                                <input
+                                    type="time"
+                                    id="dayTime"
+                                    value={dayTime}
+                                    onChange={(e) => setDayTime(e.target.value)}
+                                    className="mt-1 ml-3 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
+                                />
+                            </div>
                             <div>
                                 <div style={{ display: "flex", alignItems: "center" }}>
                                     <label
@@ -186,7 +197,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
                                         className="SwitchRoot"
                                         id="local-persistance"
                                         checked={isPersistentCacheEnabled}
-                                        onCheckedChange={handlePersistentCacheChange}
+                                        onCheckedChange={setPersistentCacheEnabled}
                                     >
                                         <Switch.Thumb className="SwitchThumb" />
                                     </Switch.Root>
@@ -228,12 +239,17 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
                             <div className="flex flex-wrap gap-4">
                                 <label className="flex items-center">{t('daysBefore')}: <input type="number" value={dateAspectDaysBefore} onChange={(e) => setDateAspectDaysBefore(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
                                 <label className="flex items-center">{t('daysAfter')}: <input type="number" value={dateAspectDaysAfter} onChange={(e) => setDateAspectDaysAfter(parseInt(e.target.value) || 0)} className="w-16 ml-2 p-2 border rounded" /></label>
-                                <button onClick={handleUpdateDays} className="px-4 py-2 bg-blue-500 text-white rounded">{t('save')}</button>
                             </div>
                             <p className="text-sm text-gray-500 mt-2">{t('dateAspectHint')}</p>
                         </div>
                     </TabPanel>
                 </Tabs>
+                <div className="flex justify-end gap-2 mt-6">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-500 rounded">{t('cancel')}</button>
+                    <button onClick={handleSave} className="capitalize px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-indigo-400">
+                        {t('save')}
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -1854,16 +1870,25 @@ const isSuccessfulOrCrystallization = (tapasItem) => {
     return isSuccessful(tapasItem) || isCrystallization(tapasItem);
 };
 
+const getDateNow = (config) => {
+    const dayTime = (config.dayTime || '04:00').split(':');
+    const date = new Date();
+    date.setHours(date.getHours() - parseInt(dayTime[0]));
+    date.setMinutes(date.getMinutes() - parseInt(dayTime[1]));
+    return date;
+};
+
 // Component to display a list of Tapas
 const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, historyStatusFilter, setHistoryStatusFilter, historyTimeFilter, setHistoryTimeFilter, historyNameFilter, setHistoryNameFilter, sharedTapasInfoMap, selectedTapasLanguage }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
+    const dateNow = getDateNow(config);
 
     // Helper to get detailed status for active tapas display
     const getDetailedStatus = useCallback((tapasItem) => {
         const noDuration = tapasItem.duration === null || tapasItem.duration <= 0;
         const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
-        const today = getTapasDay(new Date(), tapasItem, startDate);
+        const today = getTapasDay(dateNow, tapasItem, startDate);
 
         if (noDuration || (tapasItem.scheduleType === 'noTapas' && tapasItem.checkedDays)) {
             let statusText = [];
@@ -2097,7 +2122,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                         return (
                             <div
                                 key={tapasItem.id}
-                                className="p-3 lg:p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                                className="p-2 lg:p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
                                 onClick={() => onSelectTapas(tapasItem)}
                             >
                                 <div className="flex justify-between items-center">
@@ -2196,7 +2221,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 };
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isOffline }) => {
+const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isOffline }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -2262,7 +2287,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         return formatDateNoTimeToISO(advancedDate) === formatDateNoTimeToISO(date);
     });
 
-    const today = getTapasDay(new Date(), tapas, startDateObj);
+    const today = getTapasDay(getDateNow(config), tapas, startDateObj);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
     const beforeYesterday = getStartOfDayUTC(new Date(today.getTime() - 2 * daysDelta * timeDayMs)); // Calculate from UTC today
     const yesterday = getStartOfDayUTC(new Date(today.getTime() - daysDelta * timeDayMs)); // Calculate from UTC today
@@ -2981,7 +3006,7 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
 
     // Determine the current date/week display based on scheduleType
     let displayDateInfo;
-    const todayFormatted = new Date().toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const todayFormatted = getDateNow(config).toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     if (tapas.scheduleType === 'weekly') {
         const currentWeekStart = getStartOfWeekUTC(today);
@@ -2994,6 +3019,9 @@ const TapasDetail = ({ tapas, onClose, onEdit, setSelectedTapas, setShowDateRang
         displayDateInfo = t('thisWeekIs', currentWeekStartFormatted, currentWeekEndFormatted);
     } else {
         displayDateInfo = `${t('todayIs')} ${todayFormatted}`;
+        if (config.dayTime !== '00:00') {
+            displayDateInfo += ' (' + t('until') + ' ' + (config.dayTime || '04:00') + ')';
+        }
     }
 
     const { endDate, daysRemaining } = getTapasDatesInfo(tapas);
@@ -5600,7 +5628,11 @@ const HomePage = () => {
                                         )}
                                         <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
                                         <button
-                                            onClick={() => setShowConfigModal(true)}
+                                            onClick={() => {
+                                                setScrollPosition(window.pageYOffset);
+                                                setPageBeforeDetail(currentPage);
+                                                setCurrentPage('');
+                                                setShowConfigModal(true); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                         >
                                             {t('config')}
@@ -5753,7 +5785,7 @@ const HomePage = () => {
                 </nav>
 
                 {/* Main Content Area */}
-                <main className="container mx-auto p-4 flex-grow bg-gray-100 dark:bg-gray-900">
+                <main className="container mx-auto p-2 lg:p-4 flex-grow bg-gray-100 dark:bg-gray-900">
                     {sharedRef ? (
                         <ShareView
                             shareReference={sharedRef}
@@ -5804,7 +5836,7 @@ const HomePage = () => {
                                 />
                             )}
                             {selectedTapas && currentPage === 'detail' && (
-                                <TapasDetail tapas={selectedTapas} onClose={handleCloseTapasDetail} onEdit={handleEditTapas}
+                                <TapasDetail tapas={selectedTapas} config={config} onClose={handleCloseTapasDetail} onEdit={handleEditTapas}
                                     setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage}
                                     setShowDateRangeModal={setShowAcknowledgeDateRangeModal} initMessage={tapasDetailMessage}
                                     setInitMessage={setTapasDetailMessage} isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
@@ -5854,7 +5886,7 @@ const HomePage = () => {
                 {showAboutModal && <AboutModal onClose={() => setShowAboutModal(false)} />}
                 {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
                 {showCleanDataModal && <CleanDataModal onClose={() => setShowCleanDataModal(false)} onCleanConfirmed={handleCleanDataConfirmed} />}
-                {showConfigModal && <ConfigModal onClose={() => setShowConfigModal(false)} db={db} userId={userId} t={t}
+                {showConfigModal && <ConfigModal onClose={() => { setShowConfigModal(false); handleCloseTapasDetail(); }} db={db} userId={userId} t={t}
                     setConfig={setConfig} isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                 />}
                 {showAcknowledgeDateRangeModal && <AcknowledgeDateRangeModal onClose={closeAcknowledgeDateRangeModal}

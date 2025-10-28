@@ -834,6 +834,9 @@ i.redo {
 }
 
 @media (min-width:48rem) {
+  .lg\:p-4 {
+    padding:calc(var(--spacing)*4);
+  }
   .lg\:p-5 {
     padding:calc(var(--spacing)*5);
   }
