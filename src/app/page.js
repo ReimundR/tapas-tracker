@@ -5319,6 +5319,9 @@ const HomePage = () => {
             return nameA.localeCompare(nameB);
         }
 
+        if (a.acknowledgeAfter && !b.acknowledgeAfter) return 1;
+        if (!a.acknowledgeAfter && b.acknowledgeAfter) return -1;
+
         const isACheckedYesterday = isTapasYesterdayChecked(a);
         const isBCheckedYesterday = isTapasYesterdayChecked(b);
 
