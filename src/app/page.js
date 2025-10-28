@@ -5528,7 +5528,7 @@ const HomePage = () => {
                     }
                 `}</style>
 
-                <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 pt-6 shadow-md">
+                <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 pt-5 shadow-md">
                     <div className="container mx-auto flex flex-wrap justify-between items-center relative">
                         <h1 className="text-3xl font-bold">{t('appName')}</h1>
                         {isOffline && (
