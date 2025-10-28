@@ -2097,7 +2097,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                         return (
                             <div
                                 key={tapasItem.id}
-                                className="p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                                className="p-3 lg:p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
                                 onClick={() => onSelectTapas(tapasItem)}
                             >
                                 <div className="flex justify-between items-center">

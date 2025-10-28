@@ -833,6 +833,12 @@ i.redo {
   }
 }
 
+@media (min-width:48rem) {
+  .lg\:p-5 {
+    padding:calc(var(--spacing)*5);
+  }
+}
+
 .infolink {
     cursor: default;
     text-align: center;
