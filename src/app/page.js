@@ -2062,7 +2062,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
             {displayedTapas.length === 0 ? (
                 <p className="text-center py-8 text-gray-600 dark:text-gray-400">{t('noTapasFound')}</p>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Added responsive grid classes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4"> {/* Added responsive grid classes */}
                     {displayedTapas.map((tapasItem) => {
                         const { endDate, daysRemaining, daysOver, aspectDates } = getTapasDatesInfo(tapasItem, config, t);
                         const { statusText, statusClass } = getDetailedStatus(tapasItem); 
@@ -2100,36 +2100,22 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                 className="p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200"
                                 onClick={() => onSelectTapas(tapasItem)}
                             >
-                                <h3 className="text-xl font-semibold text-indigo-700 mb-2">
-                                    {displayTapasName}
-                                    {tapasItem.shareReference && (
-                                        <span className={`ml-2 text-${sharedInfo.userId === userId ? 'blue-500' : 'gray-500'}`}>
-                                            <svg onClick={(event) => event.stopPropagation()} className="shareHint inline-block" fill="currentColor" height="16" width="16" icon-name="shared" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M2.239 18.723A1.235 1.235 0 0 1 1 17.488C1 11.5 4.821 6.91 10 6.505V3.616a1.646 1.646 0 0 1 2.812-1.16l6.9 6.952a.841.841 0 0 1 0 1.186l-6.9 6.852A1.645 1.645 0 0 1 10 16.284v-2.76c-2.573.243-3.961 1.738-5.547 3.445-.437.47-.881.949-1.356 1.407-.23.223-.538.348-.858.347ZM10.75 7.976c-4.509 0-7.954 3.762-8.228 8.855.285-.292.559-.59.832-.883C5.16 14 7.028 11.99 10.75 11.99h.75v4.294a.132.132 0 0 0 .09.134.136.136 0 0 0 .158-.032L18.186 10l-6.438-6.486a.135.135 0 0 0-.158-.032.134.134 0 0 0-.09.134v4.36h-.75Z"></path>
-                                            </svg>
-                                        </span>
-                                    )}
-                                    {isActive(tapasItem) && tapasItem.scheduleType !== 'noTapas' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
-                                </h3>
-                                {tapasItem.duration !== null && tapasItem.duration > 0 && (
-                                    <>
-                                        <p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
-                                            {t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}
-                                            {tapasItem.startTime && (
-                                                <span className="ml-3 font-semibold text-indigo-700 dark:text-indigo-500">{tapasItem.startTime}</span>
-                                            )}
-                                        </p>
-                                        <div className="hidden lg:block flex justify-between items-center">
-                                        {!statusText.length && tapasItem.scheduleType === 'noTapas' && checkedUnitsCount==0 ? (
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {t('duration')}: {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
-                                            </p>
-                                        ) : (
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
-                                            </p>
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-xl font-semibold text-indigo-700 lg:mb-2">
+                                        {displayTapasName}
+                                        {tapasItem.shareReference && (
+                                            <span className={`ml-2 text-${sharedInfo.userId === userId ? 'blue-500' : 'gray-500'}`}>
+                                                <svg onClick={(event) => event.stopPropagation()} className="shareHint inline-block" fill="currentColor" height="16" width="16" icon-name="shared" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M2.239 18.723A1.235 1.235 0 0 1 1 17.488C1 11.5 4.821 6.91 10 6.505V3.616a1.646 1.646 0 0 1 2.812-1.16l6.9 6.952a.841.841 0 0 1 0 1.186l-6.9 6.852A1.645 1.645 0 0 1 10 16.284v-2.76c-2.573.243-3.961 1.738-5.547 3.445-.437.47-.881.949-1.356 1.407-.23.223-.538.348-.858.347ZM10.75 7.976c-4.509 0-7.954 3.762-8.228 8.855.285-.292.559-.59.832-.883C5.16 14 7.028 11.99 10.75 11.99h.75v4.294a.132.132 0 0 0 .09.134.136.136 0 0 0 .158-.032L18.186 10l-6.438-6.486a.135.135 0 0 0-.158-.032.134.134 0 0 0-.09.134v4.36h-.75Z"></path>
+                                                </svg>
+                                            </span>
                                         )}
-                                        <p className="text-sm text-gray-500">
+                                        {isActive(tapasItem) && tapasItem.scheduleType !== 'noTapas' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
+                                    </h3>
+                                    {tapasItem.startTime && (
+                                        <span className="ml-3 font-semibold text-indigo-700 dark:text-indigo-500">{tapasItem.startTime}</span>
+                                    )}
+                                    <p className="text-sm text-gray-500">
                                         {tapasItem.allowRecuperation && (
                                             <svg onClick={(event) => event.stopPropagation()} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className="recupHint ml-1 inline-block" fill="currentColor" height="16">
                                             {/*!Font Awesome Free v7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.*/}
@@ -2140,25 +2126,41 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                             {/*!Font Awesome Free v7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.*/}
                                             <path d="M320 576C178.6 576 64 461.4 64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576zM438 209.7C427.3 201.9 412.3 204.3 404.5 215L285.1 379.2L233 327.1C223.6 317.7 208.4 317.7 199.1 327.1C189.8 336.5 189.7 351.7 199.1 361L271.1 433C276.1 438 282.9 440.5 289.9 440C296.9 439.5 303.3 435.9 307.4 430.2L443.3 243.2C451.1 232.5 448.7 217.5 438 209.7z"/></svg>
                                         )}
+                                    </p>
+                                </div>
+                                {tapasItem.duration !== null && tapasItem.duration > 0 && (
+                                    <>
+                                        <p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
+                                            {t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}
                                         </p>
+                                        <div className="hidden lg:block flex justify-between items-center">
+                                            {!statusText.length && tapasItem.scheduleType === 'noTapas' && checkedUnitsCount==0 ? (
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    {t('duration')}: {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
+                                                </p>
+                                            ) : (
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
+                                                </p>
+                                            )}
                                         </div>
                                         {tapasItem.scheduleType === 'everyNthDays' && (<p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
                                         )}
                                         {isActive(tapasItem) && daysOver >= 0 && (
-                                            <>
+                                            <div className="text-sm font-medium mt-1 lg:mt-2">
                                             {daysRemaining <= 1 && (
-                                                <p className="text-sm font-medium text-yellow-200 mt-2">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
+                                                <p className="text-yellow-200">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
                                             )}
                                             {daysRemaining > 1 && daysToStart < 0 && (
-                                                <p className="text-sm font-medium text-blue-600 mt-2">{t('daysRemaining')}: {daysRemaining}</p>
+                                                <p className="text-blue-600">{t('daysRemaining')}: {daysRemaining}</p>
                                             )}
                                             {daysToStart >= 0 && (
-                                                <p className="text-sm font-medium text-yellow-600 dark:text-yellow-500 mt-2">
+                                                <p className="text-yellow-600 dark:text-yellow-500">
                                                     {daysToStart >=2 ? t('startsIn')+':' : t('startsIn').split(' ')[0]} {daysToStart == 0 ? t('todayX','') : daysToStart == 1 ? t('tomorrow') : daysToStart} {daysToStart > 1 ? t('days') : ''}
                                                 </p>
                                             )}
-                                            </>
+                                            </div>
                                         )}
                                     </>
                                 )}
@@ -2183,17 +2185,6 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                     <p className={`text-sm font-bold mt-1`}>
                                         {aspectDates.map((aspect, idx) => <span key={idx} className="pr-3">{aspect}</span>)}
                                     </p>
-                                )}
-                                {/* Display undone parts for active tapas */}
-                                {isActive(tapasItem) && undoneParts.length > 0 && (
-                                    <div className="mt-2">
-                                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('undonePartsToday')}:</p>
-                                        <ul className="list-disc list-inside ml-4 text-sm text-gray-600 dark:text-gray-400">
-                                            {undoneParts.map((part, idx) => (
-                                                <li key={idx}>{part}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
                                 )}
                             </div>
                         );
@@ -5299,6 +5290,14 @@ const HomePage = () => {
         return isTapasDateChecked(tapasItem.checkedDays, today);
     };
 
+    const isTapasYesterdayChecked = (tapasItem) => {
+        const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
+        const today = getTapasDay(new Date(), tapasItem, startDate);
+        const daysDelta = getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval);
+        const yesterday = getStartOfDayUTC(new Date(today.getTime() - (daysDelta * timeDayMs)));
+        return isTapasDateChecked(tapasItem.checkedDays, yesterday);
+    };
+
     const activeTapas = tapas.filter(tapas => isActiveOrCrystallization(tapas)).sort((a, b) => {
         // Custom sorting logic for active tapas
         const isATapas = a.scheduleType !== 'noTapas';
@@ -5320,11 +5319,20 @@ const HomePage = () => {
             return nameA.localeCompare(nameB);
         }
 
+        const isACheckedYesterday = isTapasYesterdayChecked(a);
+        const isBCheckedYesterday = isTapasYesterdayChecked(b);
+
+        if (isACheckedYesterday && !isBCheckedYesterday) return 1;
+        if (!isACheckedYesterday && isBCheckedYesterday) return -1;
+
         const isAChecked = isTapasTodayChecked(a);
         const isBChecked = isTapasTodayChecked(b);
 
         if (isAChecked && !isBChecked) return 1;
         if (!isAChecked && isBChecked) return -1;
+
+        if (a.allowRecuperation && !b.allowRecuperation) return 1;
+        if (!a.allowRecuperation && b.allowRecuperation) return -1;
 
         // If both are 'noTapas' or both are regular tapas, sort by end date
         if (isATapas && isBTapas) {
