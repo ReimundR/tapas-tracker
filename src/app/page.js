@@ -2141,15 +2141,15 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                         <span className="ml-3 font-semibold text-indigo-700 dark:text-indigo-500">{tapasItem.startTime}</span>
                                     )}
                                     <p className="text-sm text-gray-500">
-                                        {tapasItem.allowRecuperation && (
-                                            <svg onClick={(event) => event.stopPropagation()} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className="recupHint ml-1 inline-block" fill="currentColor" height="16">
-                                            {/*!Font Awesome Free v7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.*/}
-                                            <path d="M552 256L408 256C398.3 256 389.5 250.2 385.8 241.2C382.1 232.2 384.1 221.9 391 215L437.7 168.3C362.4 109.7 253.4 115 184.2 184.2C109.2 259.2 109.2 380.7 184.2 455.7C259.2 530.7 380.7 530.7 455.7 455.7C463.9 447.5 471.2 438.8 477.6 429.6C487.7 415.1 507.7 411.6 522.2 421.7C536.7 431.8 540.2 451.8 530.1 466.3C521.6 478.5 511.9 490.1 501 501C401 601 238.9 601 139 501C39.1 401 39 239 139 139C233.3 44.7 382.7 39.4 483.3 122.8L535 71C541.9 64.1 552.2 62.1 561.2 65.8C570.2 69.5 576 78.3 576 88L576 232C576 245.3 565.3 256 552 256z"/></svg>
-                                        )}
                                         {tapasItem.results > 0 && (
                                             <svg onClick={(event) => event.stopPropagation()} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className="resultsHint ml-1 inline-block" fill="currentColor" height="20">
                                             {/*!Font Awesome Free v7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.*/}
                                             <path d="M320 576C178.6 576 64 461.4 64 320C64 178.6 178.6 64 320 64C461.4 64 576 178.6 576 320C576 461.4 461.4 576 320 576zM438 209.7C427.3 201.9 412.3 204.3 404.5 215L285.1 379.2L233 327.1C223.6 317.7 208.4 317.7 199.1 327.1C189.8 336.5 189.7 351.7 199.1 361L271.1 433C276.1 438 282.9 440.5 289.9 440C296.9 439.5 303.3 435.9 307.4 430.2L443.3 243.2C451.1 232.5 448.7 217.5 438 209.7z"/></svg>
+                                        )}
+                                        {tapasItem.allowRecuperation && (
+                                            <svg onClick={(event) => event.stopPropagation()} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" className="recupHint ml-1 inline-block" fill="currentColor" height="16">
+                                            {/*!Font Awesome Free v7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2025 Fonticons, Inc.*/}
+                                            <path d="M552 256L408 256C398.3 256 389.5 250.2 385.8 241.2C382.1 232.2 384.1 221.9 391 215L437.7 168.3C362.4 109.7 253.4 115 184.2 184.2C109.2 259.2 109.2 380.7 184.2 455.7C259.2 530.7 380.7 530.7 455.7 455.7C463.9 447.5 471.2 438.8 477.6 429.6C487.7 415.1 507.7 411.6 522.2 421.7C536.7 431.8 540.2 451.8 530.1 466.3C521.6 478.5 511.9 490.1 501 501C401 601 238.9 601 139 501C39.1 401 39 239 139 139C233.3 44.7 382.7 39.4 483.3 122.8L535 71C541.9 64.1 552.2 62.1 561.2 65.8C570.2 69.5 576 78.3 576 88L576 232C576 245.3 565.3 256 552 256z"/></svg>
                                         )}
                                     </p>
                                 </div>
@@ -5528,7 +5528,7 @@ const HomePage = () => {
                     }
                 `}</style>
 
-                <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 shadow-md">
+                <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 pt-6 shadow-md">
                     <div className="container mx-auto flex flex-wrap justify-between items-center relative">
                         <h1 className="text-3xl font-bold">{t('appName')}</h1>
                         {isOffline && (
