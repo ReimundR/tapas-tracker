@@ -1059,7 +1059,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
 
     // Effect to synchronize duration and endDate when startDate changes
     useEffect(() => {
-        if (scheduleType === 'noTapas') {
+        if (isNoTapas(scheduleType)) {
             setScheduleInterval('');
             setAllowRecuperation(false);
             setAcknowledgeAfter(false);
@@ -1294,7 +1294,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
         // Use the name of the current locale for the main validation
         const currentLocaleName = tapasMultiLanguageData[locale]?.name || '';
 
-        if (scheduleType !== 'noTapas') {
+        if (!isNoTapas(scheduleType)) {
             if (!currentLocaleName || !startDate || !duration) { // Duration is the source of truth for calculation
                 setErrorMessage(t('nameStartDateDurationRequired'));
                 return;
@@ -1341,13 +1341,13 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
         const tapasData = {
             name: names, // Multi-language object
             startDate: new Date(startDate),
-            startTime: scheduleType === 'noTapas' ? null : startTime || null,
+            startTime: isNoTapas(scheduleType) ? null : startTime || null,
             duration: durationToSave,
             description: descriptions, // Multi-language object
             goals: goals, // Multi-language object
             parts: parts, // Multi-language object
             crystallizationTime: crystallizationTime ? parseInt(crystallizationTime) : null,
-            allowRecuperation: scheduleType === 'noTapas' ? false : allowRecuperation, // Include new field
+            allowRecuperation: isNoTapas(scheduleType) ? false : allowRecuperation, // Include new field
             // Preserve existing status, checkedDays, failureCause, and createdAt when editing
             status: editingTapas ? editingTapas.status : 'active',
             checkedDays: editingTapas ? getUniqueCheckedDays(editingTapas.checkedDays) : [], // Ensure unique on save
@@ -1361,7 +1361,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
             shareReference: editingTapas ? editingTapas.shareReference || null : null, // Preserve shareReference
             scheduleType: scheduleType,
             scheduleInterval: scheduleType === 'everyNthDays' ? parseInt(scheduleInterval) : null,
-            acknowledgeAfter: scheduleType === 'noTapas' ? false : acknowledgeAfter,
+            acknowledgeAfter: isNoTapas(scheduleType) ? false : acknowledgeAfter,
             languages: otherLanguages, // Store custom languages
             version: editingTapas ? (editingTapas.version || 1) + 1 : 1, // Increment version on update, start at 1 for new
         };
@@ -1548,7 +1548,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                         </button>
                     </div>
                 </div>
-                {scheduleType !== 'noTapas' && (
+                {!isNoTapas(scheduleType) && (
                     <div className="col-span-1">
                         <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('startTime')} ({t('causeOptional').split('(')[0].trim().toLowerCase()})</label>
                         <input
@@ -1571,7 +1571,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                             value={duration}
                             onChange={handleChangeDuration}
                             className="block w-full px-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                            required={scheduleType !== 'noTapas'}
+                            required={!isNoTapas(scheduleType)}
                             min="1"
                         />
                         <button
@@ -1607,7 +1607,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     />
                 </div>
-                {scheduleType !== 'noTapas' && (
+                {!isNoTapas(scheduleType) && (
                     <div className="col-span-full flex items-center mt-2">
                         <input
                             type="checkbox"
@@ -1659,7 +1659,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                         className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
                     ></textarea>
                 </div>
-                {scheduleType !== 'noTapas' && (
+                {!isNoTapas(scheduleType) && (
                     <>
                 <div className="col-span-full">
                     <label htmlFor="crystallizationTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('crystallizationTime')}</label>
@@ -1680,7 +1680,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                         checked={allowRecuperation}
                         onChange={(e) => setAllowRecuperation(e.target.checked)}
                         className="form-checkbox h-5 w-5 text-indigo-600 rounded"
-                        disabled={scheduleType === 'noTapas'}
+                        disabled={isNoTapas(scheduleType)}
                     />
                     <label htmlFor="allowRecuperation" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {t('allowRecuperation')}
@@ -1870,6 +1870,14 @@ const isSuccessfulOrCrystallization = (tapasItem) => {
     return isSuccessful(tapasItem) || isCrystallization(tapasItem);
 };
 
+const isNoTapas = (scheduleType) => {
+    return scheduleType === 'noTapas';
+};
+
+const isNoTapasType = (tapasItem) => {
+    return isNoTapas(tapasItem.scheduleType);
+};
+
 const getDateNow = (config) => {
     const dayTime = (config.dayTime || '04:00').split(':');
     const date = new Date();
@@ -1890,7 +1898,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
         const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
         const today = getTapasDay(dateNow, tapasItem, startDate);
 
-        if (noDuration || (tapasItem.scheduleType === 'noTapas' && tapasItem.checkedDays)) {
+        if (noDuration || (isNoTapasType(tapasItem) && tapasItem.checkedDays)) {
             let statusText = [];
             if (noDuration) {
                 const uniqueCheckedDays = getUniqueCheckedDays(tapasItem.checkedDays);
@@ -2135,7 +2143,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                                 </svg>
                                             </span>
                                         )}
-                                        {isActive(tapasItem) && tapasItem.scheduleType !== 'noTapas' && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
+                                        {isActive(tapasItem) && !isNoTapasType(tapasItem) && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
                                     </h3>
                                     {tapasItem.startTime && (
                                         <span className="ml-3 font-semibold text-indigo-700 dark:text-indigo-500">{tapasItem.startTime}</span>
@@ -2159,7 +2167,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                             {t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}
                                         </p>
                                         <div className="hidden lg:block flex justify-between items-center">
-                                            {!statusText.length && tapasItem.scheduleType === 'noTapas' && checkedUnitsCount==0 ? (
+                                            {!statusText.length && isNoTapasType(tapasItem) && checkedUnitsCount==0 ? (
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                                     {t('duration')}: {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
                                                 </p>
@@ -2267,7 +2275,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
         endDateObj.setDate(startDateObj.getDate() + tapas.duration - 1); // Reduced by one day
     }
 
-    const noTapas = tapas.scheduleType === 'noTapas';
+    const noTapas = isNoTapasType(tapas);
     const noDuration = tapas.duration === null || tapas.duration <= 0;
     const totalUnits = noDuration ? 0 : Math.ceil(tapas.duration / getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval));
     const checkedUnitsCount = tapas.checkedDays ? getUniqueCheckedDays(tapas.checkedDays).length : 0; // Use unique count
@@ -2819,7 +2827,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
     const checkDailyProgress = async () => {
         setInitMessage('');
         if (!isPeriodEndOrOver || isSuccessful(tapas) || isFailed(tapas) || isFinished(tapas)) return;
-        if (tapas.scheduleType === 'noTapas') {
+        if (isNoTapasType(tapas)) {
             await myUpdateDoc(tapasRef, { status: 'finished' });
             setMessage(t('notapasAutoMarkedFinished'));
             setSelectedTapas(prev => ({ ...prev, status: 'finished' })); // Immediately update local state for status
@@ -2861,7 +2869,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
     const handleShareTapas = async () => {
         setInitMessage('');
-        if (tapas.scheduleType === 'noTapas') {
+        if (isNoTapasType(tapas)) {
             setMessage(t('noShareNoTapas'));
             return;
         }
@@ -3198,7 +3206,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                             </p>
                         </>
                     )}
-                    {tapas.scheduleType === 'noTapas' ? (
+                    {isNoTapasType(tapas) ? (
                         <p><strong className="font-semibold">{t('schedule')}:</strong> {t(tapas.scheduleType)}</p>
                     ) : (
                         <>
@@ -3296,7 +3304,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                                 {tapas.scheduleType === 'weekly' ? t('beforeLastWeekX', t('recuperatedW')) : t('beforeYesterdayX', t('recuperatedD'))}
                                             </button>
                                         )}
-                                        {tapas.scheduleType !== 'noTapas' && (!isTodayChecked || !isTomorrowChecked) && today >= startDateObj && today <= endDateObj && (
+                                        {!isNoTapasType(tapas) && (!isTodayChecked || !isTomorrowChecked) && today >= startDateObj && today <= endDateObj && (
                                             <button
                                                 onClick={handleAdvanceUnits}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -3325,7 +3333,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     )}
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days').toLowerCase()}</p>}
                     <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessfulOrFinished(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
-                    {tapas.scheduleType !== 'noTapas' && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
+                    {!isNoTapasType(tapas) && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
                         <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t(tapas.scheduleType === 'weekly' ? 'weeksChecked' : 'daysChecked')}
                     </p>)}
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
@@ -3359,7 +3367,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                 </div>
 
                 <div className="mt-8 flex flex-wrap justify-center gap-4">
-                    {isActive(tapas) && tapas.scheduleType !== 'noTapas' && (
+                    {isActive(tapas) && !isNoTapasType(tapas) && (
                         <button
                             onClick={handleMarkFailed}
                             className="bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-red-700 transition-colors duration-200 text-lg font-medium"
@@ -3384,7 +3392,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                         </button>
                     )}
 
-                    {tapas.scheduleType !== 'noTapas' && (
+                    {!isNoTapasType(tapas) && (
                         <button
                             onClick={handleShareTapas}
                             className="flex items-center justify-center bg-indigo-500 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-indigo-600 transition-colors duration-200 text-lg font-medium"
@@ -3666,8 +3674,8 @@ const Statistics = ({ allTapas }) => {
 
     const successfulTapas = filteredTapas.filter(tapas => isSuccessfulOrCrystallization(tapas));
     const failedTapas = filteredTapas.filter(tapas => isFailed(tapas));
-    const activeTapas = filteredTapas.filter(tapas => isActive(tapas) && tapas.scheduleType !== 'noTapas' && tapas.startDate.toDate() <= today);
-    const pendingTapas = filteredTapas.filter(tapas => isActive(tapas) && tapas.scheduleType !== 'noTapas' && tapas.startDate.toDate() > today);
+    const activeTapas = filteredTapas.filter(tapas => isActive(tapas) && !isNoTapasType(tapas) && tapas.startDate.toDate() <= today);
+    const pendingTapas = filteredTapas.filter(tapas => isActive(tapas) && !isNoTapasType(tapas) && tapas.startDate.toDate() > today);
 
     const calculateAverageDuration = (tapasList) => {
         if (tapasList.length === 0) return 0;
@@ -5192,7 +5200,7 @@ const HomePage = () => {
                             dataToSave.acknowledgeAfter = false;
                         }
                         // Ensure duration is set to 0 if scheduleType is 'noTapas'
-                        if (dataToSave.scheduleType === 'noTapas') {
+                        if (isNoTapasType(dataToSave)) {
                             dataToSave.duration = 0;
                         }
                         // Set version to 1 if not present
@@ -5259,7 +5267,7 @@ const HomePage = () => {
             querySnapshot.docs.forEach(docSnapshot => {
                 const tapasData = docSnapshot.data();
                 // Only clean tapas that are not 'noTapas' or have a defined start date
-                if (tapasData.scheduleType !== 'noTapas' && tapasData.startDate) {
+                if (!isNoTapasType(tapasData) && tapasData.startDate) {
                     const startDate = tapasData.startDate.toDate();
                     startDate.setHours(0, 0, 0, 0); // Normalize
 
@@ -5271,7 +5279,7 @@ const HomePage = () => {
                         batch.delete(doc(tapasCollectionRef, docSnapshot.id));
                         deletedCount++;
                     }
-                } else if (tapasData.scheduleType === 'noTapas' && !cutoffDate) {
+                } else if (isNoTapasType(tapasData) && !cutoffDate) {
                     // If 'noTapas' and cleaning all, delete it
                     batch.delete(doc(tapasCollectionRef, docSnapshot.id));
                     deletedCount++;
@@ -5328,8 +5336,8 @@ const HomePage = () => {
 
     const activeTapas = tapas.filter(tapas => isActiveOrCrystallization(tapas)).sort((a, b) => {
         // Custom sorting logic for active tapas
-        const isATapas = a.scheduleType !== 'noTapas';
-        const isBTapas = b.scheduleType !== 'noTapas';
+        const isATapas = !isNoTapasType(a);
+        const isBTapas = !isNoTapasType(b);
 
         // If one is 'noTapas' and the other isn't, 'noTapas' goes to the end
         if (isATapas && !isBTapas) return -1;
@@ -5347,14 +5355,14 @@ const HomePage = () => {
             return nameA.localeCompare(nameB);
         }
 
-        if (a.acknowledgeAfter && !b.acknowledgeAfter) return 1;
-        if (!a.acknowledgeAfter && b.acknowledgeAfter) return -1;
-
         const isACheckedYesterday = isTapasYesterdayChecked(a);
         const isBCheckedYesterday = isTapasYesterdayChecked(b);
 
         if (isACheckedYesterday && !isBCheckedYesterday) return 1;
         if (!isACheckedYesterday && isBCheckedYesterday) return -1;
+
+        if (a.acknowledgeAfter && !b.acknowledgeAfter) return 1;
+        if (!a.acknowledgeAfter && b.acknowledgeAfter) return -1;
 
         const isAChecked = isTapasTodayChecked(a);
         const isBChecked = isTapasTodayChecked(b);
