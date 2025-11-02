@@ -914,7 +914,7 @@ const isTapasDateChecked = (checkedDays, date) => {
 };
 
 // Component for adding/editing a Tapas
-const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
+const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isOffline }) => {
     const { db, userId, t, locale } = useContext(AppContext);
 
     const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
@@ -1371,7 +1371,6 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                 const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, editingTapas.id);
                 await myUpdateDoc(tapasRef, tapasData);
                 setSuccessMessage(t('tapasUpdatedSuccessfully'));
-                onCancelEdit(); // Close edit form
             } else {
                 await myAddDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), tapasData);
                 setSuccessMessage(t('tapasAddedSuccessfully'));
@@ -1392,7 +1391,8 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                 setScheduleInterval('');
                 setAcknowledgeAfter(false);
             }
-            onTapasAdded(); // Trigger refresh in parent component
+            tapasData.startDate = Timestamp.fromDate(tapasData.startDate);
+            onTapasAddedUpdatedCancel(tapasData); // Trigger refresh in parent component
         } catch (e) {
             console.error("Error adding/updating document: ", e);
             setErrorMessage(`${t('errorSavingTapas')} ${e.message}`);
@@ -1699,7 +1699,7 @@ const TapasForm = ({ onTapasAdded, editingTapas, onCancelEdit, isOffline }) => {
                 <div className="col-span-full flex justify-end space-x-3">
                     <button
                         type="button"
-                        onClick={onCancelEdit}
+                        onClick={onTapasAddedUpdatedCancel}
                         className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
                     >
                         {t('cancel')}
@@ -3160,11 +3160,11 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                         ...
                                     </button>
                                     {showUpdateSharedTapasMenu && (
-                                        <div className={`absolute ${showUpdateSharedTapasMenu}-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100`}>
+                                        <div className={`absolute ${showUpdateSharedTapasMenu}-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100`}>
                                             {actualDataIsNewer && (
                                                 <button
                                                     onClick={handleUpdateSharedTapas}
-                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                                 >
                                                     {t('updateSharedTapas')}
                                                 </button>
@@ -3172,14 +3172,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                             {updateAvailable && (
                                                 <button
                                                     onClick={handleUpdateFromSharedTapas}
-                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                                 >
                                                     {t('updateFromShared')}
                                                 </button>
                                             )}
                                             <button
                                                 onClick={() => setDeleteSharedTapas(true)}
-                                                className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-100 dark:hover:bg-red-600"
+                                                className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-600"
                                             >
                                                 {t('deleteSharedTapasFromPublic')}
                                             </button>
@@ -3287,11 +3287,11 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                     ...
                                 </button>
                                 {showRecuperationAdvanceMenu && (
-                                    <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-100">
+                                    <div className="absolute right-0 mt-2 w-max rounded-md shadow-lg py-1 z-20 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
                                         {tapas.allowRecuperation && !isYesterdayChecked && yesterday >= startDateObj && yesterday <= endDateObj && (
                                             <button
                                                 onClick={() => handleRecuperateUnit(yesterday)}
-                                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
                                                 {tapas.scheduleType === 'weekly' ? t('lastWeekX', t('recuperatedW')) : t('yesterdayX', t('recuperatedD'))}
                                             </button>
@@ -3299,7 +3299,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                         {tapas.allowRecuperation && !isBeforeYesterdayChecked && beforeYesterday >= startDateObj && beforeYesterday <= endDateObj && (
                                             <button
                                                 onClick={() => handleRecuperateUnit(beforeYesterday)}
-                                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
                                                 {tapas.scheduleType === 'weekly' ? t('beforeLastWeekX', t('recuperatedW')) : t('beforeYesterdayX', t('recuperatedD'))}
                                             </button>
@@ -3307,21 +3307,21 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                         {!isNoTapasType(tapas) && (!isTodayChecked || !isTomorrowChecked) && today >= startDateObj && today <= endDateObj && (
                                             <button
                                                 onClick={handleAdvanceUnits}
-                                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
                                                 {t((tapas.scheduleType === 'weekly' ? 'thisNextWeek' : 'todayTomorrow') + 'FinishedInAdvance')}
                                             </button>
                                         )}
                                         <button
                                             onClick={showAcknowledgeDateRangeMenu}
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                            className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                         >
                                             {t('acknowledgeN', t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days'))}
                                         </button>
                                         {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                                             <button
                                                 onClick={handleClearLastUnit}
-                                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
                                                 {t('clearX', t('last' + (tapas.scheduleType === 'weekly' ? 'Week': 'Day')))}
                                             </button>
@@ -3412,7 +3412,6 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                         {t('deleteX', t('tapas'))}
                     </button>
                 </div>
-
 
                 {confirmDelete && (
                     <div className="mt-6 p-4 border rounded-lg bg-red-50 border-red-300 dark:bg-red-900 dark:border-red-700">
@@ -4920,9 +4919,14 @@ const HomePage = () => {
         setCurrentPage('add');
     };
 
-    const handleCancelEdit = () => {
+    const handleTapasAddedUpdatedCancel = (updatedData = null) => {
         setEditingTapas(null);
-        setCurrentPage('active'); // When canceling from 'add new', go back to active
+        if (selectedTapas) {
+            setCurrentPage('detail');
+            setSelectedTapas(prev => ({ ...prev, ...updatedData }));
+        } else {
+            setCurrentPage('active');
+        }
     };
 
     const mySignInWithPopup = async (auth, provider) => {
@@ -5838,8 +5842,8 @@ const HomePage = () => {
                                 />
                             )}
                             {currentPage === 'add' && (
-                                <TapasForm onTapasAdded={() => { setCurrentPage('active'); setEditingTapas(null); }}
-                                    editingTapas={editingTapas} onCancelEdit={handleCancelEdit}
+                                <TapasForm onTapasAddedUpdatedCancel={handleTapasAddedUpdatedCancel}
+                                    editingTapas={editingTapas}
                                     isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                                 />
                             )}
