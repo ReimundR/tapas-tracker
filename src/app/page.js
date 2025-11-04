@@ -5327,7 +5327,8 @@ const HomePage = () => {
     const isTapasTodayChecked = (tapasItem) => {
         const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
         const today = getTapasDay(new Date(), tapasItem, startDate);
-        return isTapasDateChecked(tapasItem.checkedDays, today);
+        const isTodayWithinDuration = today >= startDate;
+        return !isTodayWithinDuration || isTapasDateChecked(tapasItem.checkedDays, today);
     };
 
     const isTapasYesterdayChecked = (tapasItem) => {
@@ -5335,7 +5336,20 @@ const HomePage = () => {
         const today = getTapasDay(new Date(), tapasItem, startDate);
         const daysDelta = getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval);
         const yesterday = getStartOfDayUTC(new Date(today.getTime() - (daysDelta * timeDayMs)));
-        return isTapasDateChecked(tapasItem.checkedDays, yesterday);
+
+        const isYesterdayWithinDuration = yesterday >= startDate;
+        return !isYesterdayWithinDuration || isTapasDateChecked(tapasItem.checkedDays, yesterday);
+    };
+
+    const isTapasExpired = (tapasItem) => {
+        const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
+        if (!tapasItem.duration) {
+            return false;
+        }
+        const today = getStartOfDayUTC(new Date());
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + tapasItem.duration - 1);
+        return today > endDate;
     };
 
     const activeTapas = tapas.filter(tapas => isActiveOrCrystallization(tapas)).sort((a, b) => {
@@ -5346,6 +5360,12 @@ const HomePage = () => {
         // If one is 'noTapas' and the other isn't, 'noTapas' goes to the end
         if (isATapas && !isBTapas) return -1;
         if (!isATapas && isBTapas) return 1;
+
+        const isAExpired = isTapasExpired(a);
+        const isBExpired = isTapasExpired(b);
+
+        if (isAExpired && !isBExpired) return 1;
+        if (!isAExpired && isBExpired) return -1;
 
         const isACrystallization = isCrystallization(a);
         const isBCrystallization = isCrystallization(b);
