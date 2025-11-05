@@ -2183,7 +2183,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                         {isActive(tapasItem) && daysOver >= 0 && (
                                             <div className="text-sm font-medium mt-1 lg:mt-2">
                                             {daysRemaining <= 1 && (
-                                                <p className="text-yellow-200">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
+                                                <p className="text-yellow-500 dark:text-yellow-200">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
                                             )}
                                             {daysRemaining > 1 && daysToStart < 0 && (
                                                 <p className="text-blue-600">{t('daysRemaining')}: {daysRemaining}</p>

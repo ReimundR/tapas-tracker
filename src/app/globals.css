@@ -856,3 +856,12 @@ i.redo {
     height: 18px;
     text-decoration: none;
 }
+
+.text-yellow-500 {
+  color: var(--color-yellow-500);
+}
+.dark\:text-yellow-200 {
+  &:where(.dark, .dark *) {
+    color: var(--color-yellow-200);
+  }
+}
