@@ -1765,7 +1765,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isOffline }) => {
 
 // Helper function to calculate end date and remaining days
 const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
-    const today = getStartOfDayUTC(new Date());
+    const today = getStartOfDayUTC(getDateNow(config));
     
     // For 'noTapas' scheduleType, duration and dates are not applicable
     if (!tapasItem.duration) {
@@ -1962,7 +1962,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
             const statusText = t((isWeekly ? 'lastWeekX' : 'yesterdayX'), t('pending')).toLowerCase();
             pendingStatus = { statusText: [[statusText]], statusClass: 'text-red-600' };
         } else if (todayPending && !tapasItem.acknowledgeAfter) {
-            const isTodayPending = !isWeekly || today.getTime() == getStartOfDayUTC(new Date()).getTime();
+            const isTodayPending = !isWeekly || today.getTime() == getStartOfDayUTC(getDateNow(config)).getTime();
             const pendingDay = isTodayPending ? 'todayX' : 'thisWeekX';
             const pendingColor = isTodayPending ? 'text-orange-600' : 'text-gray-600';
             const statusText = t(pendingDay, t('pending')).toLowerCase();
@@ -2111,7 +2111,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                         // Calculate undone parts for active tapas
                         const undoneParts = [];
                         if (isActive(tapasItem) && tapasItem.parts) {
-                            const todayDateString = formatDateNoTimeToISO(new Date());
+                            const todayDateString = formatDateNoTimeToISO(getDateNow(config));
                             const checkedPartsForToday = tapasItem.checkedPartsByDate?.[todayDateString] || [];
                             
                             // Get localized parts for display
@@ -5330,14 +5330,14 @@ const HomePage = () => {
 
     const isTapasTodayChecked = (tapasItem) => {
         const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
-        const today = getTapasDay(new Date(), tapasItem, startDate);
+        const today = getTapasDay(getDateNow(config), tapasItem, startDate);
         const isTodayWithinDuration = today >= startDate;
         return !isTodayWithinDuration || isTapasDateChecked(tapasItem.checkedDays, today);
     };
 
     const isTapasYesterdayChecked = (tapasItem) => {
         const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
-        const today = getTapasDay(new Date(), tapasItem, startDate);
+        const today = getTapasDay(getDateNow(config), tapasItem, startDate);
         const daysDelta = getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval);
         const yesterday = getStartOfDayUTC(new Date(today.getTime() - (daysDelta * timeDayMs)));
 
@@ -5350,7 +5350,7 @@ const HomePage = () => {
         if (!tapasItem.duration) {
             return false;
         }
-        const today = getStartOfDayUTC(new Date());
+        const today = getStartOfDayUTC(getDateNow(config));
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + tapasItem.duration - 1);
         return today > endDate;
