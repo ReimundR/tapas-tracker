@@ -1908,7 +1908,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                 const uniqueCheckedDays = getUniqueCheckedDays(tapasItem.checkedDays);
                 if (uniqueCheckedDays && uniqueCheckedDays.length > 0) {
                     const lastDate = getLastDate(uniqueCheckedDays).toDate();
-                    const lastSince = (today.getTime() - lastDate.getTime()) / timeDayMs;
+                    const lastSince = Math.round((today.getTime() - lastDate.getTime()) / timeDayMs);
                     const lastInfo = lastSince === 0 ? t('todayX', '') : lastSince === 1 ? t('yesterdayX', '') : t('beforeXDays', lastSince);
                     statusText.push([t('isLastDay') + ': ' + lastInfo]);
                 }
