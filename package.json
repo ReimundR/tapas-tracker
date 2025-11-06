@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
-    "@tailwindcss/postcss": "^4.1.16",
+    "@tailwindcss/postcss": "^4.1.17",
     "@tailwindcss/typography": "^0.5.19",
     "marked": "^16.4.1",
     "remark": "^15.0.1",

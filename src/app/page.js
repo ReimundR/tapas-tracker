@@ -748,7 +748,9 @@ const timeDayMs = 24 * 60 * 60 * 1000;
 
 // Helper to get the start of the day in UTC from a local date
 const getStartOfDayUTC = (date) => {
-    return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const ret = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    ret.setHours(0);
+    return ret;
 };
 
 // Helper to get the start of the week (Monday) in UTC from a local date
@@ -756,7 +758,9 @@ const getStartOfWeekUTC = (date) => {
     const d = new Date(date);
     const day = d.getUTCDay(); // Sunday - 0, Monday - 1, ..., Saturday - 6
     const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
-    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
+    const ret = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
+    ret.setHours(0);
+    return ret;
 };
 
 const getStartOfIntervalUTC = (date, tapas) => {
