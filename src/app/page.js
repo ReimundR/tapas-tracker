@@ -3068,7 +3068,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                 if (!currentRangeStart) {
                     currentRangeStart = currentDate;
                     currentRangeEnd = currentDate;
-                } else if (currentDate.getTime() === currentRangeEnd.getTime() + timeDayMs) {
+                } else if (Math.abs((currentDate.getTime() - currentRangeEnd.getTime()) / timeDayMs - 1) < 0.1) {
                     currentRangeEnd = currentDate;
                 } else {
                     ranges.push({ start: currentRangeStart, end: currentRangeEnd });
@@ -5365,16 +5365,16 @@ const HomePage = () => {
         if (isATapas && !isBTapas) return -1;
         if (!isATapas && isBTapas) return 1;
 
+        const isACrystallization = isCrystallization(a);
+        const isBCrystallization = isCrystallization(b);
+        if (isACrystallization && !isBCrystallization) return -1;
+        if (!isACrystallization && isBCrystallization) return 1;
+
         const isAExpired = isTapasExpired(a);
         const isBExpired = isTapasExpired(b);
 
         if (isAExpired && !isBExpired) return 1;
         if (!isAExpired && isBExpired) return -1;
-
-        const isACrystallization = isCrystallization(a);
-        const isBCrystallization = isCrystallization(b);
-        if (isACrystallization && !isBCrystallization) return -1;
-        if (!isACrystallization && isBCrystallization) return 1;
 
         // If both are 'noTapas', sort by name alphabetically
         if (!isATapas && !isBTapas) {
