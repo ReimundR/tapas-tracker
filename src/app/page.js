@@ -799,6 +799,16 @@ const getTapasDay = (date, tapas, startDateObj) => {
     return tapasDate;
 };
 
+const getDateWeek = (date) => {
+    const currentDate = (typeof date === 'object') ? date : new Date();
+    const januaryFirst = new Date(currentDate.getFullYear(), 0, 1);
+    const daysToNextMonday = (januaryFirst.getDay() === 1) ? 0 : (7 - januaryFirst.getDay()) % 7;
+    const nextMonday = new Date(currentDate.getFullYear(), 0, januaryFirst.getDate() + daysToNextMonday);
+
+    return (currentDate < nextMonday) ? 52 : (currentDate > nextMonday ?
+        Math.ceil((currentDate - nextMonday) / (24 * 3600 * 1000) / 7) : 1);
+};
+
 // Helper to format date objects toYYYY-MM-DD strings for comparison
 const formatDateToISO = (date) => date.toISOString().split('T')[0];
 
@@ -3068,7 +3078,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                 if (!currentRangeStart) {
                     currentRangeStart = currentDate;
                     currentRangeEnd = currentDate;
-                } else if (Math.abs((currentDate.getTime() - currentRangeEnd.getTime()) / timeDayMs - 1) < 0.1) {
+                } else if (Math.abs((currentDate.getTime() - currentRangeEnd.getTime()) / timeDayMs - daysDelta) < 0.1) {
                     currentRangeEnd = currentDate;
                 } else {
                     ranges.push({ start: currentRangeStart, end: currentRangeEnd });
@@ -3081,18 +3091,23 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
             ranges.push({ start: currentRangeStart, end: currentRangeEnd });
         }
 
+        const isWeekly = tapas.scheduleType === 'weekly';
+        const getDateStr = (date) => {
+            return date.toLocaleDateString() + (isWeekly ? ' (' + t('cw') + getDateWeek(date) + ')' : '');
+        };
+
         return ranges.map(range => {
             if (range.single) {
                 return (
                     <li key={range.single.getTime()}>
-                        {range.single.toLocaleDateString()}
+                        {getDateStr(range.single)}
                         {range.isRecuperated && <span className="text-green-500 ml-2">({t('recuperated')})</span>}
                         {range.isAdvanced && <span className="text-purple-500 ml-2">({t('advanced')})</span>}
                     </li>
                 );
             } else {
-                const startStr = range.start.toLocaleDateString();
-                const endStr = range.end.toLocaleDateString();
+                const startStr = getDateStr(range.start);
+                const endStr = getDateStr(range.end);
                 return (
                     <li key={`${startStr}-${endStr}`}>
                         {startStr === endStr ? startStr : `${startStr} - ${endStr}`}
