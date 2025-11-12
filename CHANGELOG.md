@@ -1,5 +1,14 @@
 # Changelog
 
+#### = 1.3.0 (2025-11-12) =
+
+* in persistent mode write data without waiting leading to much more performant usage
+* sorting improvements
+* weekly tapas show calendar week
+* imroved colors
+* added crystallization phase
+* added new day start time to config (default 4:00)
+
 #### = 1.2.3 (2025-10-25) =
 
 * added Spanish language

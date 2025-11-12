@@ -66,7 +66,7 @@ const AppContext = createContext(null);
 
 
 // Config
-const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
+const ConfigModal = ({ onClose, db, userId, t, setConfig, wasPersistentCacheEnabled }) => {
     const persistentCacheCookie = localStorage.getItem('persistentLocalCache');
     const [dateAspects, setDateAspects] = useState([]);
     const [dateAspectDaysBefore, setDateAspectDaysBefore] = useState(7);
@@ -80,7 +80,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
     const configRef = doc(db, `artifacts/${appId}/users/${userId}/config/appConfig`);
 
     const mySetDoc = async (ref, data, cfg) => {
-        if (isOffline) {
+        if (wasPersistentCacheEnabled) {
             setDoc(ref, data, cfg);
         } else {
             return await setDoc(ref, data, cfg);
@@ -255,7 +255,7 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, isOffline }) => {
     );
 };
 
-const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedTapas, isOffline }) => {
+const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedTapas, isPersistentCacheEnabled }) => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
@@ -330,7 +330,7 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
                 update = { checkedDays: updatedCheckedDays };
             }
 
-            if (isOffline) {
+            if (isPersistentCacheEnabled) {
                 updateDoc(tapasRef, update);
             } else {
                 await updateDoc(tapasRef, update);
@@ -533,7 +533,7 @@ const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, my
     );
 };
 
-const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessage, isOffline, setDetailResults, setSelectedTapas, setInitMessage }) => {
+const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessage, isPersistentCacheEnabled, setDetailResults, setSelectedTapas, setInitMessage }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showEditResultModal, setShowEditResultModal] = useState(false);
@@ -545,7 +545,7 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
     const showDates = sortedResults.length > 1 || (sortedResults.length==1 && sortedResults[0].date && endDate && sortedResults[0].date.toDate() < endDate);
 
     const myAddDoc = async (ref, data) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             addDoc(ref, data);
         } else {
             return await addDoc(ref, data);
@@ -553,7 +553,7 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
     };
 
     const myUpdateDoc = async (ref, data) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             updateDoc(ref, data);
         } else {
             return await updateDoc(ref, data);
@@ -561,7 +561,7 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
     };
 
     const myDeleteDoc = async (ref) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             deleteDoc(ref);
         } else {
             return await deleteDoc(ref);
@@ -928,7 +928,7 @@ const isTapasDateChecked = (checkedDays, date) => {
 };
 
 // Component for adding/editing a Tapas
-const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isOffline }) => {
+const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isPersistentCacheEnabled }) => {
     const { db, userId, t, locale } = useContext(AppContext);
 
     const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
@@ -1278,7 +1278,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isOffline }) => {
     const currentTapasDataForForm = tapasMultiLanguageData[currentFormLanguage] || { name: '', description: '', goals: '', parts: '' };
 
     const myAddDoc = async (ref, data) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             addDoc(ref, data);
         } else {
             return await addDoc(ref, data);
@@ -1286,7 +1286,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isOffline }) => {
     };
 
     const myUpdateDoc = async (ref, data) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             updateDoc(ref, data);
         } else {
             return await updateDoc(ref, data);
@@ -2243,7 +2243,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 };
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isOffline }) => {
+const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -2336,7 +2336,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
 
     const myAddDoc = async (ref, data) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             addDoc(ref, data);
         } else {
             return await addDoc(ref, data);
@@ -2344,7 +2344,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
     };
 
     const myUpdateDoc = async (ref, data) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             updateDoc(ref, data);
         } else {
             return await updateDoc(ref, data);
@@ -2352,7 +2352,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
     };
 
     const myDeleteDoc = async (ref) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             deleteDoc(ref);
         } else {
             return await deleteDoc(ref);
@@ -2595,7 +2595,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
         if (confirmName === defaultName) {
             try {
                 // Delete the results sub-collection documents first
-                if (isOffline) {
+                if (isPersistentCacheEnabled) {
                     results.forEach(result => {
                         deleteDoc(doc(tapasRef, 'results', result.id));
                     });
@@ -3366,7 +3366,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                         setTapasDetailMessage={setMessage}
                         setSelectedTapas={setSelectedTapas}
                         setDetailResults={setResults}
-                        isOffline={isOffline}
+                        isPersistentCacheEnabled={isPersistentCacheEnabled}
                     />
 
                     {tapas.checkedDays && tapas.checkedDays.length > 0 && (
@@ -3849,7 +3849,7 @@ const Statistics = ({ allTapas }) => {
 };
 
 // Component for Results
-const Results = ({ tapas, setSelectedTapas, isOffline }) => {
+const Results = ({ tapas, setSelectedTapas, isPersistentCacheEnabled }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
     const [statusFilter, setStatusFilter] = useState('all');
@@ -3867,7 +3867,7 @@ const Results = ({ tapas, setSelectedTapas, isOffline }) => {
     const tapasListenersRef = useRef([]);
 
     const myAddDoc = async (ref, data) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             addDoc(ref, data);
         } else {
             return await addDoc(ref, data);
@@ -3875,7 +3875,7 @@ const Results = ({ tapas, setSelectedTapas, isOffline }) => {
     };
 
     const myUpdateDoc = async (ref, data) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             updateDoc(ref, data);
         } else {
             return await updateDoc(ref, data);
@@ -3883,7 +3883,7 @@ const Results = ({ tapas, setSelectedTapas, isOffline }) => {
     };
 
     const myDeleteDoc = async (ref) => {
-        if (isOffline) {
+        if (isPersistentCacheEnabled) {
             deleteDoc(ref);
         } else {
             return await deleteDoc(ref);
@@ -5877,20 +5877,22 @@ const HomePage = () => {
                             )}
                             {currentPage === 'diary' && (
                                 <Results tapas={tapas} setSelectedTapas={setSelectedTapas}
-                                    isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                                    isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
                             {currentPage === 'add' && (
                                 <TapasForm onTapasAddedUpdatedCancel={handleTapasAddedUpdatedCancel}
                                     editingTapas={editingTapas}
-                                    isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                                    isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
                             {selectedTapas && currentPage === 'detail' && (
                                 <TapasDetail tapas={selectedTapas} config={config} onClose={handleCloseTapasDetail} onEdit={handleEditTapas}
                                     setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage}
                                     setShowDateRangeModal={setShowAcknowledgeDateRangeModal} initMessage={tapasDetailMessage}
-                                    setInitMessage={setTapasDetailMessage} isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                                    setInitMessage={setTapasDetailMessage}
+                                    isPersistentCacheEnabled={isPersistentCacheEnabled}
+                                    isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                                 />
                             )}
                             {selectedLicense && (
@@ -5938,11 +5940,11 @@ const HomePage = () => {
                 {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
                 {showCleanDataModal && <CleanDataModal onClose={() => setShowCleanDataModal(false)} onCleanConfirmed={handleCleanDataConfirmed} />}
                 {showConfigModal && <ConfigModal onClose={() => { setShowConfigModal(false); handleCloseTapasDetail(); }} db={db} userId={userId} t={t}
-                    setConfig={setConfig} isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                    setConfig={setConfig} wasPersistentCacheEnabled={isPersistentCacheEnabled}
                 />}
                 {showAcknowledgeDateRangeModal && <AcknowledgeDateRangeModal onClose={closeAcknowledgeDateRangeModal}
                     tapas={selectedTapas} setSelectedTapas={setSelectedTapas} db={db} userId={userId} t={t}
-                    isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                    isPersistentCacheEnabled={isPersistentCacheEnabled}
                 />}
                 <InstallPrompt t={t} />
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
