@@ -230,9 +230,9 @@ export let translations = {
         "tapasWebsite": "Tapas Tracker Website",
         "aboutDescription": "Tapas Tracker is a personal development tool designed to help you track and achieve your spiritual Tapas or goals consistently."+
             "  Tapas or also known as Tapasya is a form of Yogic practice and part of the ten Yamas and Niyamas."+
-            "  The application allows you to track your Tapas success or failure, sepcify flexibly the parts of the Tapas, its goals and add results after the end of the Tapas or in case of a Tapas failure the cause for it."+
+            "  This application allows you to track your Tapas success or failure, sepcify flexibly the parts of the Tapas, its goals and add results after the end of the Tapas or in case of a Tapas failure the cause for it."+
             "  History and Statistics help analysing your Tapasya and plan repetitions of failed or successful Tapas, respectively."+
-            "  This application is Open Source. See",
+            "  The application is Open Source. See",
         "data": "Data",
         "cleanData": "Clean Data",
         "cleanDataConfirmation": "Are you sure you want to delete all Tapas with an end date older than the selected timeframe?",
@@ -313,7 +313,7 @@ export let translations = {
         "dayTime": "Tagesbeginn",
         "until": "bis",
         "enableLocalPersistence": "Lokale Datenspeicherung",
-        "persistenceHint": "Bitte nur aktivieren, wenn ein vertrauenswürdiges Gerät verwendet wird. Bitte laden Sie die App neu, nachdem Sie den Wert geändert haben",
+        "persistenceHint": "Bitte nur aktivieren, wenn ein vertrauenswürdiges Gerät verwendet wird. Bitte lade die App neu, nachdem Du den Wert geändert hast",
         "sync": "Synchronisieren",
         "config": "Konfiguration",
         "searchByName": "Suche nach Namen",
@@ -354,14 +354,14 @@ export let translations = {
         "acknowledgedSuccessfully": "Erfolgreich bestätigt",
         "tapasDeletedSuccessfully": "Tapas erfolgreich gelöscht!",
         "errorDeletingTapas": "Fehler beim Löschen der Tapas:",
-        "nameMismatch": "Namensübereinstimmung. Bitte geben Sie den Tapas-Namen korrekt ein, um das Löschen zu bestätigen.",
-        "confirmDeletion": "Um das Löschen zu bestätigen, geben Sie bitte den Tapas-Namen ein",
+        "nameMismatch": "Namensübereinstimmung. Bitte gebe den Tapas-Namen korrekt ein, um das Löschen zu bestätigen.",
+        "confirmDeletion": "Um das Löschen zu bestätigen, gebe bitte den Tapas-Namen ein",
         "typeTapasNameToConfirm": "Tapas-Namen zur Bestätigung eingeben",
         "cancel": "Abbrechen",
         "confirm": "Bestätigen",
         "confirmDelete": "Löschen bestätigen",
         "markTapasAsFailed": "Tapas als fehlgeschlagen markieren",
-        "sureMarkFailed": "Sind Sie sicher, dass Sie „%s“ als fehlgeschlagen markieren möchten?",
+        "sureMarkFailed": "Bist Du Dir sicher, dass Su „%s“ als fehlgeschlagen markieren möchtest?",
         "causeOptional": "Ursache (optional)",
         "repeatTapas": "Tapas wiederholen?",
         "noDoNotRepeat": "Nein, nicht wiederholen",
@@ -381,7 +381,7 @@ export let translations = {
         "tapasAutoMarkedSuccessful": "Tapas nach Überprüfung automatisch als erfolgreich markiert.",
         "tapasAutoMarkedCrystallization": "Tapas nach Überprüfung automatisch als Kristallisation markiert.",
         "notapasAutoMarkedFinished": "Kein-Tapas automatisch als erledigt markiert.",
-        "tapasPeriodOverNotAllDaysChecked": "Die Tapas-Periode ist abgelaufen, aber nicht alle Tage wurden überprüft. Erwägen Sie, sie als fehlgeschlagen zu markieren.",
+        "tapasPeriodOverNotAllDaysChecked": "Die Tapas-Periode ist abgelaufen, aber nicht alle Tage wurden überprüft. Erwäge, den Tapas als fehlgeschlagen zu markieren.",
         "expired": "abgelaufen",
         "addEditTapas": "Tapas hinzufügen",
         "editTapasTitle": "Tapas bearbeiten",
@@ -412,11 +412,11 @@ export let translations = {
         "failedTapasCount": "Fehlgeschlagene Tapas",
         "avgDone": "Durchschn. % erledigt",
         "welcomeTapasTracker": "Willkommen beim Tapas Tracker!",
-        "trackPersonalGoals": "Verfolgen Sie Ihre persönlichen Entwicklungsziele.",
+        "trackPersonalGoals": "Verfolge Deine persönlichen Entwicklungsziele.",
         "signInWithX": "Mit %s anmelden",
         "continueAsGuest": "Als Gast fortfahren",
         "anErrorOccurred": "Ein Fehler ist aufgetreten!",
-        "pleaseRefreshContactSupport": "Bitte aktualisieren Sie die Seite oder wenden Sie sich an den Support, wenn das Problem weiterhin besteht.",
+        "pleaseRefreshContactSupport": "Bitte aktualisiere die Seite oder wende dich an den Support, wenn das Problem weiterhin besteht.",
         "firebaseInitFailed": "Firebase-Initialisierung fehlgeschlagen:",
         "errorLoadingTapasData": "Fehler beim Laden der Tapas-Daten:",
         "googleSignInFailed": "Google-Anmeldung fehlgeschlagen:",
@@ -457,12 +457,12 @@ export let translations = {
         "exportFailed": "Fehler beim Exportieren der Tapas-Daten:",
         "importSuccessful": "Tapas-Daten erfolgreich importiert!",
         "importFailed": "Fehler beim Importieren der Tapas-Daten:",
-        "invalidJsonFile": "Ungültige JSON-Datei. Bitte laden Sie eine gültige Tapas-Datendatei hoch.",
+        "invalidJsonFile": "Ungültige JSON-Datei. Bitte lade eine gültige Tapas-Datendatei hoch.",
         "uploadFile": "Datei hochladen",
         "today": "Heute",
         "signIn": "Anmelden",
-        "sureRepeat": "Möchten Sie „%s“ wirklich wiederholen?",
-        "repeatOptionLabel": "Wählen Sie eine Wiederholungsoption:",
+        "sureRepeat": "Möchtest Du „%s“ wirklich wiederholen?",
+        "repeatOptionLabel": "Wähle eine Wiederholungsoption:",
         "confirmRepeat": "Wiederholung bestätigen",
         "tapasRepeatedSuccessfully": "Tapas erfolgreich wiederholt!",
         "filterBy": "Filtern nach",
@@ -518,14 +518,14 @@ export let translations = {
         "about": "Über uns",
         "appVersion": "App-Version",
         "tapasWebsite": "Tapas Tracker Webseite",
-        "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Ihnen hilft, Ihre spirituellen Tapas oder Ziele konsequent zu verfolgen und zu erreichen."+
+        "aboutDescription": "Tapas Tracker ist ein Tool zur persönlichen Entwicklung, das Dir hilft, Deine spirituellen Tapas oder Ziele konsequent zu verfolgen und zu erreichen."+
             "  Tapas oder auch bekannt unter Tapasya ist eine Form der Yoga-Praxis und Teil der zehn Yamas und Niyamas."+
-            "  Die Anwendung ermöglicht es Ihnen, Ihren Tapas-Erfolg oder -Misserfolg zu verfolgen, die einzelnen Tapas-Teile und Ziele flexibel zu spezifizieren und Ergebnisse nach dem Ende des Tapas oder im Falle eines Tapas-Misserfolgs die Ursache dafür hinzuzufügen."+
-            "  Verlauf und Statistiken helfen Ihnen, Ihr Tapasya zu analysieren und Wiederholungen fehlgeschlagener bzw. erfolgreicher Tapas zu planen."+
-            "  Diese Anwendung ist Open Source. Siehe",
+            "  Diese Anwendung ermöglicht es Dir, Deinen Tapas-Erfolg oder -Misserfolg zu verfolgen, die einzelnen Tapas-Teile und Ziele flexibel zu spezifizieren und Ergebnisse nach dem Ende des Tapas oder im Falle eines Tapas-Misserfolgs die Ursache dafür hinzuzufügen."+
+            "  Verlauf und Statistiken helfen Dir, Dein Tapasya zu analysieren und Wiederholungen fehlgeschlagener bzw. erfolgreicher Tapas zu planen."+
+            "  Die Anwendung ist Open Source. Siehe",
         "data": "Daten",
         "cleanData": "Daten bereinigen",
-        "cleanDataConfirmation": "Möchten Sie wirklich alle Tapas löschen, deren Enddatum älter ist als der ausgewählte Zeitraum?",
+        "cleanDataConfirmation": "Möchtest Du wirklich alle Tapas löschen, deren Enddatum älter ist als der ausgewählte Zeitraum?",
         "cleaningDataSuccessful": "Datenbereinigung erfolgreich! %s Tapas gelöscht.",
         "cleaningDataFailed": "Datenbereinigung fehlgeschlagen:",
         "selectTimeframe": "Zeitrahmen auswählen",
@@ -554,7 +554,7 @@ export let translations = {
         "adoptTapas": "Tapas übernehmen",
         "tapasAdoptedSuccessfully": "Tapas erfolgreich übernommen!",
         "errorAdoptingTapas": "Fehler beim Übernehmen der Tapas:",
-        "alreadyOwnTapas": "Sie besitzen bereits eine Tapas mit dieser Referenz.",
+        "alreadyOwnTapas": "Du besitzt bereits einen Tapas mit dieser Referenz.",
         "sharedCount": "Geteilt",
         "adoptedCount": "Übernommen",
         "acknowledgeN": "%s anerkennen",
@@ -575,9 +575,9 @@ export let translations = {
         "help": "Hilfe",
         "helpContents": [
             {q: "Wie installiere ich Tapas Tracker auf einem Android-System?",
-             a: "Gehen Sie in Chrome, Firefox oder einem anderen unterstützenden Browser zum Menü (meistens drei Punkte) und wählen Sie „Zum Startbildschirm hinzufügen“"},
+             a: "Gehe in Chrome, Firefox oder einem anderen unterstützenden Browser zum Menü (meistens drei Punkte) und wähle „Zum Startbildschirm hinzufügen“"},
             {q: "Wie installiere ich Tapas Tracker auf einem iPhone oder iPad?",
-             a: "Tippen Sie in Safari (andere Browser funktionieren nicht) auf die Schaltfläche „Teilen“ und wählen Sie „Zum Startbildschirm hinzufügen“"}
+             a: "Tippe in Safari (andere Browser funktionieren nicht) auf die Schaltfläche „Teilen“ und wähle „Zum Startbildschirm hinzufügen“"}
             ]
     },
     es: {
@@ -810,9 +810,9 @@ export let translations = {
         "tapasWebsite": "Sitio web de Tapas Tracker",
         "aboutDescription": "Tapas Tracker es una herramienta de desarrollo personal diseñada para ayudarle a seguir y alcanzar sus Tapas o metas espirituales de forma consistente."+
             "  Tapas, o también conocida como Tapasya, es una forma de práctica yóguica y parte de los diez Yamas y Niyamas."+
-            "  La aplicación le permite seguir el éxito o fracaso de sus Tapas, especificar de forma flexible las partes del Tapas, sus metas y añadir resultados tras la finalización del Tapas o, en caso de fallo del Tapas, la causa del mismo."+
+            "  Esta aplicación le permite seguir el éxito o fracaso de sus Tapas, especificar de forma flexible las partes del Tapas, sus metas y añadir resultados tras la finalización del Tapas o, en caso de fallo del Tapas, la causa del mismo."+
             "  El Historial y las Estadísticas ayudan a analizar su Tapasya y planificar repeticiones de Tapas fallidos o exitosos, respectivamente."+
-            "  Esta aplicación es de código abierto. Ver",
+            "  La aplicación es de código abierto. Ver",
         "data": "Datos",
         "cleanData": "Limpiar datos",
         "cleanDataConfirmation": "¿Está seguro de que desea eliminar todos los Tapas con una fecha de finalización anterior al marco de tiempo seleccionado?",
@@ -1100,9 +1100,9 @@ export let translations = {
         "tapasWebsite": "Site-ul Tapas Tracker",
         "aboutDescription": "Tapas Tracker este un instrument de dezvoltare personală conceput pentru a te ajuta să urmărești și să-ți atingi Tapas-urile spirituale sau obiectivele în mod constant."+
         "  Tapas sau cunoscută și sub numele de Tapasya este o formă de practică yoghină și face parte din cele zece Yama și Niyama."+
-        "  Aplicația îți permite să urmărești succesul sau eșecul Tapas-ului tău, să specifici flexibil părțile Tapas-ului, obiectivele acestuia și să adaugi rezultate după încheierea Tapas-ului sau, în cazul unui eșec Tapas, cauza acestuia."+
+        "  Această aplicație îți permite să urmărești succesul sau eșecul Tapas-ului tău, să specifici flexibil părțile Tapas-ului, obiectivele acestuia și să adaugi rezultate după încheierea Tapas-ului sau, în cazul unui eșec Tapas, cauza acestuia."+
         "  Istoricul și statisticile ajută la analizarea Tapas-ului tău și la planificarea repetărilor Tapas-urilor eșuate sau de succes, respectiv."+
-        "  Această aplicație este open source. Vedeți",
+        "  Aplicația este open source. Vedeți",
         "data": "Date",
         "cleanData": "Curăță Date",
         "cleanDataConfirmation": "Sunteți sigur că doriți să ștergeți toate Tapas-urile cu o dată de sfârșit mai veche decât perioada selectată?",
@@ -1390,9 +1390,9 @@ export let translations = {
         "tapasWebsite": "Sito web di Tapas Tracker",
         "aboutDescription": "Tapas Tracker è uno strumento di sviluppo personale progettato per aiutarti a monitorare e raggiungere i tuoi Tapas spirituali o obiettivi in ​​modo coerente."+
         "  Tapas o anche conosciuto come Tapasya è una forma di pratica yoga e fa parte dei dieci Yama e Niyama."+
-        "  L'applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa."+
+        "  Questa applicazione ti permette di monitorare il successo o il fallimento dei tuoi Tapas, di specificare in modo flessibile le parti del Tapas, i suoi obiettivi e di aggiungere i risultati al termine del Tapas o, in caso di fallimento, la causa."+
         "  Cronologia e statistiche aiutano ad analizzare i tuoi Tapasya e a pianificare le ripetizioni di Tapas fallite o riuscite."+
-        "  Questa applicazione è Open Source. Vedi",
+        "  L'applicazione è Open Source. Vedi",
         "close": "Chiudere",
         "shareTapas": "Condividi",
         "sharedTapas": "Tapas condivise",
@@ -1671,9 +1671,9 @@ export let translations = {
         "tapasWebsite": "Веб-сайт Tapas Tracker",
         "aboutDescription": "Tapas Tracker — это инструмент для личного развития, призванный помочь вам отслеживать и последовательно достигать ваших духовный тапасов или целей."+
         "  Тапас или также известный как Тапасья — это форма йогической практики и часть десяти Ям и Ниям."+
-        "  Приложение позволяет вам отслеживать успехи или неудачи в тапасах, гибко определять части тапаса, его цели и добавлять результаты после окончания тапаса или, в случае неудачи тапаса, причину ее возникновения."+
+        "  Это приложение позволяет вам отслеживать успехи или неудачи в тапасах, гибко определять части тапаса, его цели и добавлять результаты после окончания тапаса или, в случае неудачи тапаса, причину ее возникновения."+
         "  История и статистика помогают анализировать вашу тапасью и планировать повторения неудачных или успешных тапасов соответственно."+
-        "  Это приложение с открытым исходным кодом. См.",
+        "  Приложение с открытым исходным кодом. См.",
         "data": "Данные",
         "cleanData": "Очистить данные",
         "cleanDataConfirmation": "Вы уверены, что хотите удалить все Тапасы с датой окончания, старше выбранного периода?",

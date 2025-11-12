@@ -799,14 +799,16 @@ const getTapasDay = (date, tapas, startDateObj) => {
     return tapasDate;
 };
 
-const getDateWeek = (date) => {
-    const currentDate = (typeof date === 'object') ? date : new Date();
-    const januaryFirst = new Date(currentDate.getFullYear(), 0, 1);
-    const daysToNextMonday = (januaryFirst.getDay() === 1) ? 0 : (7 - januaryFirst.getDay()) % 7;
-    const nextMonday = new Date(currentDate.getFullYear(), 0, januaryFirst.getDate() + daysToNextMonday);
-
-    return (currentDate < nextMonday) ? 52 : (currentDate > nextMonday ?
-        Math.ceil((currentDate - nextMonday) / (24 * 3600 * 1000) / 7) : 1);
+const getDateWeek = (dateIn) => {
+    const date = (typeof dateIn === 'object') ? dateIn : new Date();
+    date.setHours(0, 0, 0, 0);
+    // Thursday in current week decides the year.
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    // January 4 is always in week 1.
+    var week1 = new Date(date.getFullYear(), 0, 4);
+    // Adjust to Thursday in week 1 and count number of weeks from date to week1.
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / timeDayMs
+                            - 3 + (week1.getDay() + 6) % 7) / 7);
 };
 
 // Helper to format date objects toYYYY-MM-DD strings for comparison
@@ -3098,20 +3100,20 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
         return ranges.map(range => {
             if (range.single) {
+                const singleStr = getDateStr(range.single);
                 return (
-                    <li key={range.single.getTime()}>
-                        {getDateStr(range.single)}
+                    <li key={singleStr}>
+                        {singleStr}
                         {range.isRecuperated && <span className="text-green-500 ml-2">({t('recuperated')})</span>}
                         {range.isAdvanced && <span className="text-purple-500 ml-2">({t('advanced')})</span>}
                     </li>
                 );
             } else {
                 const startStr = getDateStr(range.start);
-                const endStr = getDateStr(range.end);
+                const endStr = range.start == range.end ? null :getDateStr(range.end);
+                const text = endStr ? `${startStr} - ${endStr}` : startStr;
                 return (
-                    <li key={`${startStr}-${endStr}`}>
-                        {startStr === endStr ? startStr : `${startStr} - ${endStr}`}
-                    </li>
+                    <li key={text}>{text}</li>
                 );
             }
         });
@@ -3183,7 +3185,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                             {actualDataIsNewer && (
                                                 <button
                                                     onClick={handleUpdateSharedTapas}
-                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                    className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                                 >
                                                     {t('updateSharedTapas')}
                                                 </button>
@@ -3191,14 +3193,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                             {updateAvailable && (
                                                 <button
                                                     onClick={handleUpdateFromSharedTapas}
-                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                    className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                                 >
                                                     {t('updateFromShared')}
                                                 </button>
                                             )}
                                             <button
                                                 onClick={() => setDeleteSharedTapas(true)}
-                                                className="block w-full text-left px-4 py-2 bg-red-700 text-white hover:bg-red-600"
+                                                className="block w-full text-left px-4 py-5 md:py-2 bg-red-700 text-white hover:bg-red-600"
                                             >
                                                 {t('deleteSharedTapasFromPublic')}
                                             </button>
@@ -3310,7 +3312,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                         {tapas.allowRecuperation && !isYesterdayChecked && yesterday >= startDateObj && yesterday <= endDateObj && (
                                             <button
                                                 onClick={() => handleRecuperateUnit(yesterday)}
-                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
                                                 {tapas.scheduleType === 'weekly' ? t('lastWeekX', t('recuperatedW')) : t('yesterdayX', t('recuperatedD'))}
                                             </button>
@@ -3318,7 +3320,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                         {tapas.allowRecuperation && !isBeforeYesterdayChecked && beforeYesterday >= startDateObj && beforeYesterday <= endDateObj && (
                                             <button
                                                 onClick={() => handleRecuperateUnit(beforeYesterday)}
-                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
                                                 {tapas.scheduleType === 'weekly' ? t('beforeLastWeekX', t('recuperatedW')) : t('beforeYesterdayX', t('recuperatedD'))}
                                             </button>
@@ -3326,21 +3328,21 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                         {!isNoTapasType(tapas) && (!isTodayChecked || !isTomorrowChecked) && today >= startDateObj && today <= endDateObj && (
                                             <button
                                                 onClick={handleAdvanceUnits}
-                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
                                                 {t((tapas.scheduleType === 'weekly' ? 'thisNextWeek' : 'todayTomorrow') + 'FinishedInAdvance')}
                                             </button>
                                         )}
                                         <button
                                             onClick={showAcknowledgeDateRangeMenu}
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                            className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                         >
                                             {t('acknowledgeN', t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days'))}
                                         </button>
                                         {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                                             <button
                                                 onClick={handleClearLastUnit}
-                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
                                                 {t('clearX', t('last' + (tapas.scheduleType === 'weekly' ? 'Week': 'Day')))}
                                             </button>
