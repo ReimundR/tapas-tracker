@@ -13,8 +13,8 @@ import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
 import { Tooltip } from 'react-tooltip';
 import * as Switch from "@radix-ui/react-switch";
 import Head from 'next/head'; // Import Head from next/head for meta tags
-import GdprEN from "@/content/privacy-policy-en.mdx";
-import GdprDE from "@/content/privacy-policy-de.mdx";
+import GdprEN from "../content/privacy-policy-en.mdx";
+import GdprDE from "../content/privacy-policy-de.mdx";
 import { translations } from "./translations";
 import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt } from "./helpers";
 import 'react-tabs/style/react-tabs.css';

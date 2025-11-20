@@ -1,9 +1,9 @@
 {
   "name": "tapas",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": false,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -18,6 +18,7 @@
     "@mdx-js/react": "^3.1.1",
     "@next/mdx": "16.0.3",
     "@radix-ui/react-switch": "^1.2.6",
+    "@serwist/next": "^9.2.1",
     "@types/mdx": "^2.0.13",
     "babel-plugin-react-compiler": "^1.0.0",
     "cookies-next": "^6.1.1",
@@ -30,11 +31,12 @@
     "react-tooltip": "^5.30.0"
   },
   "devDependencies": {
-    "@ducanh2912/next-pwa": "^10.2.9",
     "@tailwindcss/postcss": "^4.1.17",
     "@tailwindcss/typography": "^0.5.19",
     "marked": "^17.0.0",
     "remark": "^15.0.1",
-    "tailwindcss": "^4"
+    "serwist": "^9.2.1",
+    "tailwindcss": "^4",
+    "typescript": "^5.9.3"
   }
 }

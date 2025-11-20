@@ -22,10 +22,6 @@ const nextConfig = {
   reactStrictMode: true,
   cacheComponents: true,
   pageExtensions: ['js', 'jsx', 'md', 'mdx'],
-  // Enable Turbopack for development mode
-  /*turbopack: {
-    enabled: true,
-  },*/
   webpack: (config, { isServer }) => {
     config.module.rules.push({
       test: /\.md$/,
@@ -39,15 +35,17 @@ const nextConfig = {
   },
 };
 
-module.exports = (phase) => {
+/** @type {(phase: string, defaultConfig: import("next").NextConfig) => Promise<import("next").NextConfig>} */
+module.exports = async (phase) => {
   if (phase === PHASE_DEVELOPMENT_SERVER || phase === PHASE_PRODUCTION_BUILD) {
-    const withPWA = require('@ducanh2912/next-pwa').default({
-      dest: "public",         // destination directory for the PWA files
-      disable: process.env.NODE_ENV === "development",        // disable PWA in the development environment
-      register: true,         // register the PWA service worker
-      skipWaiting: true,      // skip waiting for service worker activation
+    const withSerwist = (await import("@serwist/next")).default({
+      // Note: This is only an example. If you use Pages Router,
+      // use something else that works, such as "service-worker/index.ts".
+      swSrc: "app/sw.ts",
+      swDest: "public/sw.js",
     });
-    return withPWA(withMDX(nextConfig));
+    return withSerwist(withMDX(nextConfig));
   }
+
   return withMDX(nextConfig);
 };

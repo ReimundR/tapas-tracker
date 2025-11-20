@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Gdpr from "@/content/privacy-policy-en.mdx";
+import Gdpr from "../../content/privacy-policy-en.mdx";
  
 export default function Page() {
     return (

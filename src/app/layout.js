@@ -12,9 +12,36 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const APP_NAME = "Tapas Tracker";
+const APP_DEFAULT_TITLE = "Tapas Tracker";
+const APP_TITLE_TEMPLATE = "%s - Tapas Tracker";
+const APP_DESCRIPTION = "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently";
+
 export const metadata = {
-  title: "Tapas Tracker",
-  description: "Tapas Tracker is a personal development tool designed to help you track and achieve your Tapas or goals consistently",
+  applicationName: APP_NAME,
+  title: {
+    default: APP_DEFAULT_TITLE,
+    template: APP_TITLE_TEMPLATE,
+  },
+  description: APP_DESCRIPTION,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: APP_DEFAULT_TITLE,
+    // startUpImage: [],
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: {
+      default: APP_DEFAULT_TITLE,
+      template: APP_TITLE_TEMPLATE,
+    },
+    description: APP_DESCRIPTION,
+  },
   generator: "Next.js",
   manifest: "/manifest.json",
   keywords: ["Tapas", "Tapasya", "Spiritual", "Development"],
