@@ -26,6 +26,7 @@ const repUrl = "https://github.com/ReimundR/tapas-tracker";
 const LanguageSelect = ({ locale, setLocale }) => {
     return (
         <select
+            id="language"
             value={locale}
             onChange={(e) => setLocale(e.target.value)}
             className="bg-indigo-700 text-white px-2 py-1 rounded-md text-sm cursor-pointer"
