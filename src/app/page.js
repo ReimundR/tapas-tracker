@@ -2323,9 +2323,6 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
             min: 0,
             max: 1,
             calculable: false,
-            //orient: 'horizontal',
-            //left: 'center',
-            //bottom: '15%',
             show: false
         },
         series: [
@@ -3494,7 +3491,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                         <div>
                             <strong className="font-semibold">{t('checkedDates')}: </strong>
-                            {!isNoTapasType(tapas) && tapas.parts.length > 0 && (
+                            {!isNoTapasType(tapas) && tapas.parts.length > 0 && Object.keys(tapas.checkedPartsByDate).length > 0 && (
                                 <button
                                     onClick={() => setShowCheckedDetails(true)}
                                     className="bg-green-600 hover:bg-green-700 text-white px-1 py-0 my-1 rounded-full text-xs font-medium"
