@@ -17,6 +17,7 @@ import GdprEN from "../content/privacy-policy-en.mdx";
 import GdprDE from "../content/privacy-policy-de.mdx";
 import { translations } from "./translations";
 import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt } from "./helpers";
+import ReactECharts from 'echarts-for-react';
 import 'react-tabs/style/react-tabs.css';
 
 const __app_id = firebaseConfig.appId;
@@ -2245,6 +2246,123 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
     );
 };
 
+const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) => {
+    const { locale } = useContext(LocaleContext);
+    const displayTapasName = getLocalizedContent(tapas.name, locale, selectedTapasLanguage);
+    const displayParts = getLocalizedContent(tapas.parts, locale, selectedTapasLanguage);
+
+    const startDateObj = getStartOfDayUTC(tapas.startDate.toDate());
+    const endDateObj = new Date(startDateObj);
+    if (endDateObj && tapas.duration) {
+        endDateObj.setDate(startDateObj.getDate() + tapas.duration - 1); // Reduced by one day
+    }
+
+    const today = getTapasDay(getDateNow(config), tapas, startDateObj);
+    const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
+    let time = startDateObj.getTime();
+    let totalUnits;
+    if (today < endDateObj) {
+        const daysDiff = Math.floor((today.getTime() - time) / timeDayMs);
+        totalUnits = Math.ceil(daysDiff / daysDelta) + 1;
+    } else {
+        totalUnits = Math.ceil(tapas.duration / daysDelta);
+    }
+    const isDateChecked = (date) => isTapasDateChecked(tapas.checkedDays, date);
+
+    const parts = [];
+    const numParts = displayParts.length;
+    for (let part=0; part < numParts; part++) {
+        const partName = displayParts[part];
+        parts.unshift(partName.length <= 20 ? partName : partName.substring(0,17) + '...');
+    }
+    parts.unshift(t('finished'));
+
+    const dates = [];
+    const checked = [];
+    for (let day=0; day < totalUnits; day++) {
+        const date = new Date(time);
+        dates.push(date.toLocaleDateString());
+        time += daysDelta * timeDayMs;
+        if (isDateChecked(date)) {
+            checked.push([0,day,1]);
+        }
+        const todayDateString = formatDateNoTimeToISO(date);
+        const checkedPartsForToday = tapas.checkedPartsByDate?.[todayDateString] || [];
+        for (let part=0; part < checkedPartsForToday.length; part++) {
+            checked.push([numParts - checkedPartsForToday[part],day,1]);
+        }
+    }
+
+    const data = checked.map(function (item) {
+        return [item[1], item[0], item[2] || '-'];
+    });
+
+    const option = {
+        tooltip: {
+            position: 'top'
+        },
+        grid: {
+            height: '90%',
+            top: '10%'
+        },
+        xAxis: {
+            type: 'category',
+            data: dates,
+            splitArea: {
+            show: true
+            }
+        },
+        yAxis: {
+            type: 'category',
+            data: parts,
+            splitArea: {
+            show: true
+            }
+        },
+        visualMap: {
+            min: 0,
+            max: 1,
+            calculable: false,
+            //orient: 'horizontal',
+            //left: 'center',
+            //bottom: '15%',
+            show: false
+        },
+        series: [
+            {
+            name: t('checkedDates'),
+            type: 'heatmap',
+            data: data,
+            label: {
+                show: false
+            },
+            emphasis: {
+                itemStyle: {
+                    borderWidth: 1,
+                    borderColor: '#d9ff00ff',
+                    borderRadius: 5,
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(72, 255, 0, 0.5)'
+                }
+            }
+            }
+        ]
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="p-6 rounded-lg shadow-xl max-w-4xl w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                    &times;
+                </button>
+                <h2 className="text-2xl font-bold mb-1">{displayTapasName}</h2>
+                <h3 className="text-lg font-bold">{t('checkedDates')}</h3>
+                <ReactECharts option={option} />
+            </div>
+        </div>
+    );
+};
+
 // Component for a single Tapas detail view
 const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline }) => {
     const { locale } = useContext(LocaleContext);
@@ -2264,6 +2382,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
     const [showUpdateSharedTapasMenu, setShowUpdateSharedTapasMenu] = useState(false); // State for update shared tapas menu
     const [deleteSharedTapas, setDeleteSharedTapas] = useState(false);
     const [results, setResults] = useState([]);
+    const [showCheckedDetails, setShowCheckedDetails] = useState(false);
 
     if (initMessage && message != initMessage) {
         setMessage(initMessage);
@@ -3374,7 +3493,15 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
                     {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                         <div>
-                            <strong className="font-semibold">{t('checkedDates')}:</strong>
+                            <strong className="font-semibold">{t('checkedDates')}: </strong>
+                            {!isNoTapasType(tapas) && tapas.parts.length > 0 && (
+                                <button
+                                    onClick={() => setShowCheckedDetails(true)}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-1 py-0 my-1 rounded-full text-xs font-medium"
+                                >
+                                    ?
+                                </button>
+                            )}
                             <ul className="list-disc list-inside ml-4">
                                 {formatCheckedDays(tapas.checkedDays)}
                             </ul>
@@ -3560,6 +3687,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                         </div>
                     </div>
                 )}
+
+                {showCheckedDetails && (<CheckedDetails
+                    tapas={tapas}
+                    config={config}
+                    onClose={() => setShowCheckedDetails(false)}
+                    selectedTapasLanguage={selectedTapasLanguage}
+                    t={t}
+                />)}
 
                 {showRepeatDialog && (
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
