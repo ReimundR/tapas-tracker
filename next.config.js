@@ -44,6 +44,7 @@ module.exports = async (phase) => {
       swSrc: "src/app/sw.ts",
       swDest: "public/sw.js",
       cacheOnNavigation: true,
+      reloadOnOnline: false,
       //disable: process.env.NODE_ENV !== "production",
     });
     return withSerwist(withMDX(nextConfig));
