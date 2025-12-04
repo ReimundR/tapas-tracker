@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { CacheFirst, NetworkOnly, Serwist } from "serwist";
 
 // This declares the value of `injectionPoint` to TypeScript.
 // `injectionPoint` is the string that will be replaced by the
@@ -21,5 +21,13 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: defaultCache,
 });
+
+serwist.registerCapture(({ request, sameOrigin }) => {
+  return sameOrigin;// && request.destination === "image";
+}, new CacheFirst());
+
+serwist.registerCapture(({ request, sameOrigin }) => {
+  return !sameOrigin;
+}, new NetworkOnly());
 
 serwist.addEventListeners();
