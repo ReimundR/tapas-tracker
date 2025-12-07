@@ -3405,7 +3405,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                         onClick={() => handleMarkUnitFinished(today)}
                                         className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
                                     >
-                                        {tapas.scheduleType === 'weekly' ? t('thisWeekX', t('finishedW')) : t('todayX', t('finished'))}
+                                        {t('confirmX', tapas.scheduleType === 'weekly' ? t('thisWeekX', '') : t('todayX', ''))}
                                     </button>
                                 )}
                                 {!isYesterdayChecked && isYesterdayValid && (
@@ -3413,7 +3413,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                         onClick={() => handleMarkUnitFinished(yesterday)}
                                         className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
                                     >
-                                        {tapas.scheduleType === 'weekly' ? t('lastWeekX', t('finishedW')) : t('yesterdayX', t('finished'))}
+                                        {t('confirmX', tapas.scheduleType === 'weekly' ? t('lastWeekX', '') : t('yesterdayX', ''))}
                                     </button>
                                 )}
                             </div>
