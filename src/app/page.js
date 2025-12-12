@@ -3394,12 +3394,12 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     ) : (
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
                     )}
-                    {!isSuccessful(tapas) && !isFailed(tapas) && (
-                        <div className="flex justify-between space-x-2 mt-4"> {/* Use justify-between to push the "..." to the right */}
+                    {!isSuccessful(tapas) && !isFailed(tapas) && (<>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {displayDateInfo}
+                        </p>
+                        <div className="flex justify-between space-x-2"> {/* Use justify-between to push the "..." to the right */}
                             <div className="flex space-x-2">
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {displayDateInfo}
-                                </p>
                                 {!isTodayChecked && isTodayValid && !tapas.acknowledgeAfter && (
                                     <button
                                         onClick={() => handleMarkUnitFinished(today)}
@@ -3468,7 +3468,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                                 )}
                             </div>
                         </div>
-                    )}
+                    </>)}
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days').toLowerCase()}</p>}
                     <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessfulOrFinished(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
                     {!isNoTapasType(tapas) && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
