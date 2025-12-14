@@ -1,5 +1,13 @@
 # Changelog
 
+#### = 1.4.1 (2025-12-14) =
+
+* added results to export/import
+
+#### = 1.4.0 (2025-11-20) =
+
+* improved offline mode (hopefully on more browsers supported)
+
 #### = 1.3.0 (2025-11-12) =
 
 * in persistent mode write data without waiting leading to much more performant usage

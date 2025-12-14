@@ -574,7 +574,7 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
         if (!resultsColRef) return;
         setIsLoading(true);
         if (typeof tapas.results !== 'number' && tapas.results) {
-            const res = [{ id: null, content: tapas.results, date: null , dateChanged: null }];
+            const res = [{ id: null, content: tapas.results, date: null , changedDate: null }];
             setResults(res);
             setDetailResults(res);
             setIsLoading(false);
@@ -4093,7 +4093,7 @@ const Results = ({ tapas, setSelectedTapas, isPersistentCacheEnabled }) => {
             filtered.forEach(tapasItem => {
                 const tapasName = getLocalizedContent(tapasItem.name, locale);
                 if (typeof tapasItem.results !== 'number' && tapasItem.results) {
-                    const res = { tapasId: tapasItem.id, name: tapasName, id: null, content: tapasItem.results, date: null , dateChanged: null };
+                    const res = { tapasId: tapasItem.id, name: tapasName, id: null, content: tapasItem.results, date: null , changedDate: null };
                     if (!textFilter || res.content.toLowerCase().indexOf(stext) !== -1) {
                         tempResultsMap.set(tapasItem.id, [res]);
                     }
@@ -4755,6 +4755,8 @@ const HomePage = () => {
     const [selectedGDPR, setSelectedGDPR] = useState(false);
     const fileInputRef = useRef(null); // Ref for the hidden file input
     const [sharedRef, setSharedRef] = useState(null); // New state for shared tapas reference
+    const [exporting, setExporting] = useState(false);
+    const [importing, setImporting] = useState(false);
 
     // State for network and persistence settings
     const [isPersistentCacheEnabled, setPersistentCacheEnabled] = useState(false);
@@ -5177,13 +5179,16 @@ const HomePage = () => {
             return;
         }
         try {
+            setShowMenu(false); // Close main menu
+            setShowDataMenu(false); // Close data submenu
+            setExporting(true);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const tapasCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/tapas`);
             const querySnapshot = await myGetDocs(tapasCollectionRef);
             const dataToExport = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 // Convert Firestore Timestamps to ISO strings for export
-                const exportableData = {};
+                const exportableData = {id: doc.id};
                 for (const key in data) {
                     if (key !== 'id' && key !== 'userId') { // Exclude 'id' and 'userId'
                         if (key === 'checkedDays' || key === 'recuperatedDays' || key === 'advancedDays') {
@@ -5218,6 +5223,33 @@ const HomePage = () => {
                 return exportableData; // Return data without 'id' and 'userId'
             });
 
+            for (var i = 0; i < dataToExport.length; i++) {
+                const tapasId = dataToExport[i].id;
+                if (typeof dataToExport[i].results !== 'number' && dataToExport[i].results) {
+                    dataToExport[i].results = [{ content: dataToExport[i].results, date: null , changedDate: null }];
+                } else {
+                    const resultsColRef = collection(db, `artifacts/${appId}/users/${userId}/tapas/${tapasId}/results`);
+                    const rquerySnapshot = await getDocs(resultsColRef);
+                    const resultsData = rquerySnapshot.docs.map(doc => {
+                        const rdata = doc.data();
+                        const exportableData = {};
+                        for (const key in rdata) {
+                            if (rdata[key] instanceof Timestamp) {
+                                exportableData[key] = rdata[key].toDate().toISOString();
+                            } else if (rdata[key] instanceof Date) {
+                                exportableData[key] = rdata[key].toISOString();
+                            }
+                            else {
+                                exportableData[key] = rdata[key];
+                            }
+                        }
+                        return exportableData;
+                    });
+                    dataToExport[i].results = resultsData;
+                }
+                delete dataToExport[i].id;
+            }
+
             const jsonString = JSON.stringify(dataToExport, null, 2);
             const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -5228,11 +5260,11 @@ const HomePage = () => {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            setExporting(false);
             setStatusMessage(t('exportSuccessful'));
-            setShowMenu(false); // Close main menu
-            setShowDataMenu(false); // Close data submenu
         } catch (error) {
             console.error("Error exporting data:", error);
+            setExporting(false);
             setStatusMessage(`${t('exportFailed')} ${error.message}`);
         }
     };
@@ -5243,17 +5275,15 @@ const HomePage = () => {
     };
 
     const handleFileChange = async (event) => {
+        setShowMenu(false); // Close main menu after processing
+        setShowDataMenu(false); // Close data submenu
         const file = event.target.files[0];
         if (!file) {
-            setShowMenu(false); // Close menu if file selection is cancelled
-            setShowDataMenu(false); // Close submenu too
             return;
         }
 
         if (!db || !userId) {
             setStatusMessage("No user or database initialized for import.");
-            setShowMenu(false); // Close menu
-            setShowDataMenu(false); // Close submenu too
             return;
         }
 
@@ -5261,6 +5291,7 @@ const HomePage = () => {
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
+                    setImporting(true);
                     const importedData = JSON.parse(e.target.result);
                     if (!Array.isArray(importedData)) {
                         setStatusMessage(t('invalidJsonFile'));
@@ -5314,9 +5345,6 @@ const HomePage = () => {
                         } else if (Array.isArray(dataToSave.advancedDays)) {
                             dataToSave.advancedDays = getUniqueCheckedDays(dataToSave.advancedDays);
                         }
-                        if (!dataToSave.results) {
-                            dataToSave.results = null;
-                        }
                         // Handle multi-language fields during import
                         if (dataToSave.name && typeof dataToSave.name === 'string') {
                             dataToSave.name = { [locale]: dataToSave.name }; // Convert old string to object
@@ -5347,7 +5375,6 @@ const HomePage = () => {
                             dataToSave.languages = {};
                         }
 
-
                         if (!dataToSave.scheduleType) {
                             dataToSave.scheduleType = 'daily';
                         }
@@ -5366,24 +5393,37 @@ const HomePage = () => {
                             dataToSave.version = 1;
                         }
 
+                        const results = dataToSave.results;
+                        dataToSave.results = results.length;
 
                         await setDoc(newDocRef, { ...dataToSave, userId: userId }); // Assign current userId
+
+                        for (const resItem of results) {
+                            const resDataToSave = { ...resItem };
+                            if (resDataToSave.date && typeof resDataToSave.date === 'string') {
+                                resDataToSave.date = new Date(resDataToSave.date);
+                            }
+                            else if (resDataToSave.changedDate && typeof resDataToSave.changedDate === 'string') {
+                                resDataToSave.changedDate = new Date(resDataToSave.changedDate);
+                            }
+                            const resultsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/tapas/${newDocRef.id}/results`);
+                            const newResDocRef = doc(resultsCollectionRef);
+                            await setDoc(newResDocRef, { ...resDataToSave });
+                        }
                     }
                     setStatusMessage(t('importSuccessful'));
                 } catch (parseError) {
                     console.error("Error parsing JSON or saving data:", parseError);
                     setStatusMessage(`${t('invalidJsonFile')} ${parseError.message}`);
-                } finally {
-                    setShowMenu(false); // Close main menu after processing
-                    setShowDataMenu(false); // Close data submenu
+                }
+                finally {
+                    setImporting(false);
                 }
             };
             reader.readAsText(file);
         } catch (error) {
             console.error("Error importing data:", error);
             setStatusMessage(`${t('importFailed')} ${error.message}`);
-            setShowMenu(false); // Close menu on error
-            setShowDataMenu(false); // Close submenu on error
         } finally {
             event.target.value = ''; // Clear the input so the same file can be selected again
         }
@@ -5765,6 +5805,7 @@ const HomePage = () => {
                                 <button
                                     onClick={() => setShowMenu(!showMenu)}
                                     className="bg-white text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold hover:bg-indigo-100 transition-colors duration-200"
+                                    disabled={exporting || importing}
                                 >
                                     {t('menu')}
                                 </button>
@@ -5927,6 +5968,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'active' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
+                            disabled={exporting || importing}
                         >
                             {t('active')}
                         </button>
@@ -5935,7 +5977,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'history' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase}
+                            disabled={loadingFirebase || exporting || importing}
                         >
                             {t('history')}
                         </button>
@@ -5944,7 +5986,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'statistics' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase}
+                            disabled={loadingFirebase || exporting || importing}
                         >
                             {t('statistics')}
                         </button>
@@ -5953,7 +5995,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'diary' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase}
+                            disabled={loadingFirebase || exporting || importing}
                         >
                             {t('diary')}
                         </button>
@@ -5963,7 +6005,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-2xl font-medium transition-colors duration-200 font-bold ${
                                 currentPage === 'add' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase}
+                            disabled={loadingFirebase || exporting || importing}
                         >
                             +
                         </button>
@@ -5984,15 +6026,23 @@ const HomePage = () => {
                         />
                     ) : (
                         <>
-                            {currentPage === 'active' && loadingFirebase && (
+                            {loadingFirebase && (
                                 <div className="flex justify-center items-center h-screen">
                                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
                                 </div>
                             )}
-                            {currentPage === 'active' && !loadingFirebase && (
+                            {(exporting || importing) && (
+                                <div className="flex justify-center items-center h-screen">
+                                    <button type="button" className="inline-flex items-center text-white bg-indigo-500 border border-default hover:bg-neutral-secondary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary-soft shadow-xs font-medium leading-5 rounded-md text-sm px-4 py-2.5 focus:outline-none">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                        {t(importing ? 'importing' : 'exporting')}…
+                                    </button>
+                                </div>
+                            )}
+                            {currentPage === 'active' && !loadingFirebase && !exporting && !importing && (
                                 <TapasList tapas={activeTapas} config={config} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} selectedTapasLanguage={selectedTapasLanguage} />
                             )}
-                            {currentPage === 'history' && (
+                            {currentPage === 'history' && !exporting && !importing && (
                                 <TapasList
                                     tapas={baseHistoryTapas}
                                     sharedTapasInfoMap={sharedTapasInfoMap}
@@ -6007,21 +6057,21 @@ const HomePage = () => {
                                     selectedTapasLanguage={selectedTapasLanguage}
                                 />
                             )}
-                            {currentPage === 'statistics' && (
+                            {currentPage === 'statistics' && !exporting && !importing && (
                                 <Statistics allTapas={tapas} />
                             )}
-                            {currentPage === 'diary' && (
+                            {currentPage === 'diary' && !exporting && !importing && (
                                 <Results tapas={tapas} setSelectedTapas={setSelectedTapas}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
-                            {currentPage === 'add' && (
+                            {currentPage === 'add' && !exporting && !importing && (
                                 <TapasForm onTapasAddedUpdatedCancel={handleTapasAddedUpdatedCancel}
                                     editingTapas={editingTapas}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
-                            {selectedTapas && currentPage === 'detail' && (
+                            {selectedTapas && currentPage === 'detail' && !exporting && !importing && (
                                 <TapasDetail tapas={selectedTapas} config={config} onClose={handleCloseTapasDetail} onEdit={handleEditTapas}
                                     setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage}
                                     setShowDateRangeModal={setShowAcknowledgeDateRangeModal} initMessage={tapasDetailMessage}
