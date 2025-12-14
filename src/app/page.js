@@ -5,8 +5,12 @@
 
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef, Suspense } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, disableNetwork, enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, getDocsFromCache, getDocFromCache, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp, setDoc, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
+    signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, disableNetwork,
+    enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, getDocsFromCache,
+    getDocFromCache, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp,
+    setDoc, writeBatch } from 'firebase/firestore';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
 import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
@@ -4755,8 +4759,8 @@ const HomePage = () => {
     const [selectedGDPR, setSelectedGDPR] = useState(false);
     const fileInputRef = useRef(null); // Ref for the hidden file input
     const [sharedRef, setSharedRef] = useState(null); // New state for shared tapas reference
-    const [exporting, setExporting] = useState(false);
-    const [importing, setImporting] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const [processingText, setProcessingText] = useState('');
 
     // State for network and persistence settings
     const [isPersistentCacheEnabled, setPersistentCacheEnabled] = useState(false);
@@ -5181,7 +5185,8 @@ const HomePage = () => {
         try {
             setShowMenu(false); // Close main menu
             setShowDataMenu(false); // Close data submenu
-            setExporting(true);
+            setProcessingText(t('exporting'));
+            setProcessing(true);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const tapasCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/tapas`);
             const querySnapshot = await myGetDocs(tapasCollectionRef);
@@ -5260,11 +5265,11 @@ const HomePage = () => {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            setExporting(false);
+            setProcessing(false);
             setStatusMessage(t('exportSuccessful'));
         } catch (error) {
             console.error("Error exporting data:", error);
-            setExporting(false);
+            setProcessing(false);
             setStatusMessage(`${t('exportFailed')} ${error.message}`);
         }
     };
@@ -5291,7 +5296,8 @@ const HomePage = () => {
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
-                    setImporting(true);
+                    setProcessingText(t('importing'));
+                    setProcessing(true);
                     const importedData = JSON.parse(e.target.result);
                     if (!Array.isArray(importedData)) {
                         setStatusMessage(t('invalidJsonFile'));
@@ -5417,7 +5423,7 @@ const HomePage = () => {
                     setStatusMessage(`${t('invalidJsonFile')} ${parseError.message}`);
                 }
                 finally {
-                    setImporting(false);
+                    setProcessing(false);
                 }
             };
             reader.readAsText(file);
@@ -5443,6 +5449,9 @@ const HomePage = () => {
         }
 
         try {
+            setShowCleanDataModal(false);
+            setProcessingText(t('cleanData'));
+            setProcessing(true);
             let cutoffDate = new Date();
             cutoffDate.setHours(0, 0, 0, 0); // Normalize to start of day
 
@@ -5460,10 +5469,9 @@ const HomePage = () => {
             const querySnapshot = await getDocs(q);
 
             let deletedCount = 0;
-            const batch = writeBatch(db); // Use a batch for efficient deletion
-
-            querySnapshot.docs.forEach(docSnapshot => {
+            for (const docSnapshot of querySnapshot.docs) {
                 const tapasData = docSnapshot.data();
+                let doDelete = false;
                 // Only clean tapas that are not 'noTapas' or have a defined start date
                 if (!isNoTapasType(tapasData) && tapasData.startDate) {
                     const startDate = tapasData.startDate.toDate();
@@ -5474,18 +5482,28 @@ const HomePage = () => {
                     endDate.setHours(0, 0, 0, 0);
 
                     if (!cutoffDate || endDate < cutoffDate) {
-                        batch.delete(doc(tapasCollectionRef, docSnapshot.id));
-                        deletedCount++;
+                        doDelete = true;
                     }
                 } else if (isNoTapasType(tapasData) && !cutoffDate) {
                     // If 'noTapas' and cleaning all, delete it
-                    batch.delete(doc(tapasCollectionRef, docSnapshot.id));
+                    doDelete = true;
+                }
+
+                if (doDelete) {
+                    const tapaDocRef = doc(tapasCollectionRef, docSnapshot.id);
+                    const resultsCollectionRef = collection(tapaDocRef, 'results');
+                    const resultsSnapshot = await getDocs(query(resultsCollectionRef));
+                    const resultsBatch = writeBatch(db);
+                    resultsSnapshot.docs.forEach(resultsDoc => {
+                        resultsBatch.delete(doc(resultsCollectionRef, resultsDoc.id));
+                    });
+                    await resultsBatch.commit();
+                    await deleteDoc(tapaDocRef);
                     deletedCount++;
                 }
-            });
+            }
 
             if (deletedCount > 0) {
-                await batch.commit();
                 setStatusMessage(t('cleaningDataSuccessful', deletedCount));
             } else {
                 setStatusMessage("No old Tapas found to clean.");
@@ -5495,7 +5513,7 @@ const HomePage = () => {
             console.error("Error cleaning data:", error);
             setStatusMessage(`${t('cleaningDataFailed')} ${error.message}`);
         } finally {
-            setShowCleanDataModal(false);
+            setProcessing(false);
         }
     };
 
@@ -5805,7 +5823,7 @@ const HomePage = () => {
                                 <button
                                     onClick={() => setShowMenu(!showMenu)}
                                     className="bg-white text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold hover:bg-indigo-100 transition-colors duration-200"
-                                    disabled={exporting || importing}
+                                    disabled={processing}
                                 >
                                     {t('menu')}
                                 </button>
@@ -5968,7 +5986,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'active' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={exporting || importing}
+                            disabled={processing}
                         >
                             {t('active')}
                         </button>
@@ -5977,7 +5995,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'history' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase || exporting || importing}
+                            disabled={loadingFirebase || processing}
                         >
                             {t('history')}
                         </button>
@@ -5986,7 +6004,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'statistics' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase || exporting || importing}
+                            disabled={loadingFirebase || processing}
                         >
                             {t('statistics')}
                         </button>
@@ -5995,7 +6013,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
                                 currentPage === 'diary' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase || exporting || importing}
+                            disabled={loadingFirebase || processing}
                         >
                             {t('diary')}
                         </button>
@@ -6005,7 +6023,7 @@ const HomePage = () => {
                             className={`px-4 py-2 rounded-md text-2xl font-medium transition-colors duration-200 font-bold ${
                                 currentPage === 'add' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase || exporting || importing}
+                            disabled={loadingFirebase || processing}
                         >
                             +
                         </button>
@@ -6031,18 +6049,18 @@ const HomePage = () => {
                                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
                                 </div>
                             )}
-                            {(exporting || importing) && (
+                            {processing && (
                                 <div className="flex justify-center items-center h-screen">
                                     <button type="button" className="inline-flex items-center text-white bg-indigo-500 border border-default hover:bg-neutral-secondary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary-soft shadow-xs font-medium leading-5 rounded-md text-sm px-4 py-2.5 focus:outline-none">
                                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                        {t(importing ? 'importing' : 'exporting')}…
+                                        {processingText}…
                                     </button>
                                 </div>
                             )}
-                            {currentPage === 'active' && !loadingFirebase && !exporting && !importing && (
+                            {currentPage === 'active' && !loadingFirebase && !processing && (
                                 <TapasList tapas={activeTapas} config={config} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} selectedTapasLanguage={selectedTapasLanguage} />
                             )}
-                            {currentPage === 'history' && !exporting && !importing && (
+                            {currentPage === 'history' && !processing && (
                                 <TapasList
                                     tapas={baseHistoryTapas}
                                     sharedTapasInfoMap={sharedTapasInfoMap}
@@ -6057,21 +6075,21 @@ const HomePage = () => {
                                     selectedTapasLanguage={selectedTapasLanguage}
                                 />
                             )}
-                            {currentPage === 'statistics' && !exporting && !importing && (
+                            {currentPage === 'statistics' && !processing && (
                                 <Statistics allTapas={tapas} />
                             )}
-                            {currentPage === 'diary' && !exporting && !importing && (
+                            {currentPage === 'diary' && !processing && (
                                 <Results tapas={tapas} setSelectedTapas={setSelectedTapas}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
-                            {currentPage === 'add' && !exporting && !importing && (
+                            {currentPage === 'add' && !processing && (
                                 <TapasForm onTapasAddedUpdatedCancel={handleTapasAddedUpdatedCancel}
                                     editingTapas={editingTapas}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
-                            {selectedTapas && currentPage === 'detail' && !exporting && !importing && (
+                            {selectedTapas && currentPage === 'detail' && !processing && (
                                 <TapasDetail tapas={selectedTapas} config={config} onClose={handleCloseTapasDetail} onEdit={handleEditTapas}
                                     setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage}
                                     setShowDateRangeModal={setShowAcknowledgeDateRangeModal} initMessage={tapasDetailMessage}

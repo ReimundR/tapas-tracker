@@ -3,6 +3,7 @@
 #### = 1.4.1 (2025-12-14) =
 
 * added results to export/import
+* delete results on clean data
 
 #### = 1.4.0 (2025-11-20) =
 
