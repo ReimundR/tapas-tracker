@@ -2518,10 +2518,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
 
     const handlePartCheckboxChange = async (index) => {
+        const newVal = !checkedPartsSelection[index];
         const newCheckedPartsSelection = {
             ...checkedPartsSelection,
-            [index]: !checkedPartsSelection[index]
+            [index]: newVal
         };
+        if (!newVal) {
+            delete newCheckedPartsSelection[index];
+        }
         setCheckedPartsSelection(newCheckedPartsSelection);
 
         const updatedCheckedPartsIndices = Object.keys(newCheckedPartsSelection)
@@ -2532,6 +2536,9 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
             ...(tapas.checkedPartsByDate || {}),
             [todayDateString]: updatedCheckedPartsIndices
         };
+        if (updatedCheckedPartsIndices.length == 0) {
+            delete updatedCheckedPartsByDate[todayDateString];
+        }
 
         try {
             await myUpdateDoc(tapasRef, { checkedPartsByDate: updatedCheckedPartsByDate });
