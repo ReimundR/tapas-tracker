@@ -755,7 +755,7 @@ const timeDayMs = 24 * 60 * 60 * 1000;
 // Helper to get the start of the day in UTC from a local date
 const getStartOfDayUTC = (date) => {
     const ret = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    ret.setHours(0);
+    //ret.setHours(0);
     return ret;
 };
 
@@ -765,7 +765,7 @@ const getStartOfWeekUTC = (date) => {
     const day = d.getUTCDay(); // Sunday - 0, Monday - 1, ..., Saturday - 6
     const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
     const ret = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff));
-    ret.setHours(0);
+    //ret.setHours(0);
     return ret;
 };
 
@@ -2535,6 +2535,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
         try {
             await myUpdateDoc(tapasRef, { checkedPartsByDate: updatedCheckedPartsByDate });
+            setSelectedTapas(prev => ({ ...prev, checkedPartsByDate: updatedCheckedPartsByDate })); // Immediately update local state
         } catch (error) {
             console.error("Error updating checked parts for today:", error);
             setMessage("Error saving part progress.");
@@ -2562,9 +2563,9 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
         try {
             await myUpdateDoc(tapasRef, { checkedDays: updatedCheckedDays, });
             setMessage(t(successMessageKey));
-            if (dateForCheckedDays.toISOString().split('T')[0] === todayDateString) {
+            /*if (dateForCheckedDays.toISOString().split('T')[0] === todayDateString) {
                  setCheckedPartsSelection({}); // Clear the UI selection state for parts for next day/interaction
-            }
+            }*/
             setSelectedTapas(prev => ({ ...prev, checkedDays: updatedCheckedDays })); // Immediately update local state
         } catch (error) {
             console.error("Error marking unit finished:", error);
@@ -3273,6 +3274,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
     const sharedInfoColor = actualDataIsNewer ? 'orange' : (updateAvailable ? 'green' : 'gray');
     const sharedInfoBgColor = actualDataIsNewer ? 'bg-orange-500' : (updateAvailable ? 'bg-green-600' : 'bg-gray-400 dark:bg-gray-600');
     const posRight = true;
+    const isActiveTapas = !isSuccessful(tapas) && !isFailed(tapas);
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
@@ -3379,15 +3381,16 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     {displayParts && displayParts.length > 0 ? (
                         <div>
                             <strong className="font-semibold">{t('parts')}:</strong>
-                            <ul className="list-none ml-4 space-y-2">
+                            <ul className={`list-${isActiveTapas ? 'none' : 'disc'} ml-4 space-y-2`}>
                                 {displayParts.map((part, index) => (
-                                    <li key={index} className="flex space-x-2">
-                                        {!isSuccessful(tapas) && !isFailed(tapas) && (
+                                    <li key={index} className={`${isActiveTapas ? 'flex space-x-2' : 'ml-4'}`}>
+                                        {isActiveTapas && (
                                             <input
                                                 type="checkbox"
                                                 checked={!!checkedPartsSelection[index]}
                                                 onChange={() => handlePartCheckboxChange(index)}
                                                 className="form-checkbox mt-1 h-4 w-4 text-indigo-600 rounded"
+                                                disabled={isTodayChecked}
                                             />
                                         )}
                                         <span className={`${!!checkedPartsSelection[index] ? 'line-through text-gray-500' : ''}`}>{part}</span>
@@ -3398,7 +3401,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     ) : (
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
                     )}
-                    {!isSuccessful(tapas) && !isFailed(tapas) && (<>
+                    {isActiveTapas && (<>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             {displayDateInfo}
                         </p>

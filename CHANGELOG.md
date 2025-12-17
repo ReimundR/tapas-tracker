@@ -1,5 +1,11 @@
 # Changelog
 
+#### = 1.4.2 (2025-12-17) =
+
+* fixed checked parts disabled after finished
+* fixed checked parts don't clear after acknowledging today
+* fixed checked parts not shown correctly aftetr changing and acknowledging the date directly afterwards
+
 #### = 1.4.1 (2025-12-14) =
 
 * added results to export/import
