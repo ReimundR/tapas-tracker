@@ -3504,15 +3504,17 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
                     {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                         <div>
-                            <strong className="font-semibold">{t('checkedDates')}: </strong>
-                            {!isNoTapasType(tapas) && tapas.parts.length > 0 && Object.keys(tapas.checkedPartsByDate).length > 0 && (
-                                <button
-                                    onClick={() => setShowCheckedDetails(true)}
-                                    className="bg-green-600 hover:bg-green-700 text-white px-1 py-0 my-1 rounded-full text-xs font-medium"
-                                >
-                                    ?
-                                </button>
-                            )}
+                            <div className="row">
+                                <strong className="font-semibold">{t('checkedDates')}: </strong>
+                                {!isNoTapasType(tapas) && tapas.parts.length > 0 && Object.keys(tapas.checkedPartsByDate).length > 0 && (
+                                    <button
+                                        onClick={() => setShowCheckedDetails(true)}
+                                        className="bg-green-600 hover:bg-green-700 text-white align-middle px-1 ml-1 rounded-full text-xs font-medium"
+                                    >
+                                        {t('details')}
+                                    </button>
+                                )}
+                            </div>
                             <ul className="list-disc list-inside ml-4">
                                 {formatCheckedDays(tapas.checkedDays)}
                             </ul>
