@@ -3281,7 +3281,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
     const sharedInfoColor = actualDataIsNewer ? 'orange' : (updateAvailable ? 'green' : 'gray');
     const sharedInfoBgColor = actualDataIsNewer ? 'bg-orange-500' : (updateAvailable ? 'bg-green-600' : 'bg-gray-400 dark:bg-gray-600');
     const posRight = true;
-    const isActiveTapas = !isSuccessful(tapas) && !isFailed(tapas);
+    const isActiveAndValid = isActive(tapas) && isTodayValid;
+    const isActiveOrCryst = isActiveOrCrystallization(tapas);
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
@@ -3388,10 +3389,10 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     {displayParts && displayParts.length > 0 ? (
                         <div>
                             <strong className="font-semibold">{t('parts')}:</strong>
-                            <ul className={`list-${isActiveTapas ? 'none' : 'disc'} ml-4 space-y-2`}>
+                            <ul className={`list-${isActiveAndValid ? 'none' : 'disc'} ml-4 space-y-2`}>
                                 {displayParts.map((part, index) => (
-                                    <li key={index} className={`${isActiveTapas ? 'flex space-x-2' : 'ml-4'}`}>
-                                        {isActiveTapas && (
+                                    <li key={index} className={`${isActiveAndValid ? 'flex space-x-2' : 'ml-4'}`}>
+                                        {isActiveAndValid && (
                                             <input
                                                 type="checkbox"
                                                 checked={!!checkedPartsSelection[index]}
@@ -3408,7 +3409,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     ) : (
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
                     )}
-                    {isActiveTapas && (<>
+                    {isActiveOrCryst && (<>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             {displayDateInfo}
                         </p>
