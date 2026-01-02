@@ -965,9 +965,10 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isPersistentCacheE
     const [scheduleInterval, setScheduleInterval] = useState(''); // For 'everyNthDays'
     const [acknowledgeAfter, setAcknowledgeAfter] = useState(false); // New state for acknowledgeAfter
     const [showAddLanguageDropdown, setShowAddLanguageDropdown] = useState(false); // State for showing language selector dropdown
-    const [showOtherLanguageModal, setShowOtherLanguageModal] = useState(false); // State for "Other Language" input modal
+    //const [showOtherLanguageModal, setShowOtherLanguageModal] = useState(false); // State for "Other Language" input modal
     const [newLangCodeInput, setNewLangCodeInput] = useState('');
     const [newLangNameInput, setNewLangNameInput] = useState('');
+    const otherLanguageModal = useModalState("otherLanguage");
 
     // Effect to set form fields when editingTapas prop changes
     useEffect(() => {
@@ -1256,7 +1257,8 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isPersistentCacheE
 
         setNewLangCodeInput('');
         setNewLangNameInput('');
-        setShowOtherLanguageModal(false);
+        otherLanguageModal.close();
+        //setShowOtherLanguageModal(false);
         setShowAddLanguageDropdown(false); // Close main dropdown
         setErrorMessage('');
     };
@@ -1467,7 +1469,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isPersistentCacheE
                             )}
                             <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
                             <button
-                                onClick={() => { setShowOtherLanguageModal(true); setShowAddLanguageDropdown(false); }}
+                                onClick={() => { otherLanguageModal.open(); setShowAddLanguageDropdown(false); }}
                                 className="block w-full text-left px-4 py-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
                             >
                                 {t('otherLanguage')}...
@@ -1739,7 +1741,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isPersistentCacheE
                 </div>
             </form>
 
-            {showOtherLanguageModal && (
+            {otherLanguageModal.isOpen && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
                     <div className="p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                         <h3 className="text-xl font-bold mb-4">{t('addLanguage')}</h3>
@@ -1766,7 +1768,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isPersistentCacheE
                         />
                         <div className="flex justify-end space-x-4">
                             <button
-                                onClick={() => { setShowOtherLanguageModal(false); setErrorMessage(''); }}
+                                onClick={() => { otherLanguageModal.close(); setErrorMessage(''); }}
                                 className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
                             >
                                 {t('cancel')}
@@ -2369,7 +2371,7 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
 };
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShowDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline }) => {
+const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, openDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -2662,7 +2664,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
     };
 
     const showAcknowledgeDateRangeMenu = () => {
-        setShowDateRangeModal(true);
+        openDateRangeModal(true);
     };
 
     const handleClearLastUnit = async () => {
@@ -4359,9 +4361,9 @@ const HelpModal = ({ onClose }) => {
 
                 {t('helpContents').map((helpItem, index) => {
                     return (
-                        <div key={index} className="text-sm mb-4">
-                          <p className="text-blue-300"><strong>{helpItem.q}</strong></p>
-                          <p>{helpItem.a}</p>
+                        <div key={index} className="mb-4">
+                          <p className="text-base font-bold text-blue-700 dark:text-blue-300">{helpItem.q}</p>
+                          <p className="text-sm">{helpItem.a}</p>
                         </div>
                     );
                 })}
@@ -6104,7 +6106,7 @@ const HomePage = () => {
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
-                            {tapasEditModal.isOpen && !processing && (
+                            {tapasEditModal.isActive && !processing && (
                                 <TapasForm onTapasAddedUpdatedCancel={tapasEditModal.close}
                                     editingTapas={editingTapas}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
@@ -6113,7 +6115,7 @@ const HomePage = () => {
                             {selectedTapas && tapasDetailModal.isActive && !tapasEditModal.isOpen && !processing && (
                                 <TapasDetail tapas={selectedTapas} config={config} onClose={tapasDetailModal.close} onEdit={handleEditTapas}
                                     setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage}
-                                    setShowDateRangeModal={() => acknowledgeDateRangeModal.open(closeAcknowledgeDateRangeModal)}
+                                    openDateRangeModal={() => acknowledgeDateRangeModal.open(closeAcknowledgeDateRangeModal)}
                                     initMessage={tapasDetailMessage}
                                     setInitMessage={setTapasDetailMessage}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
