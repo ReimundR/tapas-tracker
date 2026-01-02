@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.5.0 (2026-01-02) =
+
+* added back functionality to all windows and modals
+
 #### = 1.4.2 (2025-12-17) =
 
 * fixed checked parts disabled after finished

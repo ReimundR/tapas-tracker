@@ -11,6 +11,7 @@ import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, 
     enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, getDocsFromCache,
     getDocFromCache, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp,
     setDoc, writeBatch } from 'firebase/firestore';
+import { useRouter } from "next/navigation";
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
 import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
@@ -20,7 +21,7 @@ import Head from 'next/head'; // Import Head from next/head for meta tags
 import GdprEN from "../content/privacy-policy-en.mdx";
 import GdprDE from "../content/privacy-policy-de.mdx";
 import { translations } from "./translations";
-import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt } from "./helpers";
+import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt, useModalState } from "./helpers";
 import ReactECharts from 'echarts-for-react';
 import 'react-tabs/style/react-tabs.css';
 
@@ -542,9 +543,10 @@ const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, my
 const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessage, isPersistentCacheEnabled, setDetailResults, setSelectedTapas, setInitMessage }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [showEditResultModal, setShowEditResultModal] = useState(false);
+    //const [showEditResultModal, setShowEditResultModal] = useState(false);
     const [selectedResult, setSelectedResult] = useState(null);
     const [showPreview, setShowPreview] = useState(true);
+    const editResultModal = useModalState("editResult");
 
     const resultsColRef = tapas ? collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapas.id, 'results') : null;
     const sortedResults = [...results].sort((a, b) => (a.date ? a.date.toMillis() : 0) - (b.date ? b.date.toMillis() : 0));
@@ -641,7 +643,8 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
                 <button
                     onClick={() => {
                         setSelectedResult(null);
-                        setShowEditResultModal(!showEditResultModal);
+                        editResultModal.open();
+                        //setShowEditResultModal(!showEditResultModal);
                     }}
                     className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 my-1 rounded text-xs font-medium"
                 >
@@ -677,7 +680,8 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
                                         className="relative px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer transition-colors duration-200"
                                         onClick={() => {
                                             setSelectedResult(res);
-                                            setShowEditResultModal(true);
+                                            editResultModal.open();
+                                            //setShowEditResultModal(true);
                                         }}
                                     >
                                         {showDates && (
@@ -696,9 +700,9 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessag
                     </div>
                 )}
             </div>
-            {showEditResultModal && (
+            {editResultModal.isOpen && (
                 <EditResultModal
-                    onClose={() => setShowEditResultModal(false)}
+                    onClose={editResultModal.close}
                     db={db}
                     t={t}
                     userId={userId}
@@ -2371,19 +2375,21 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [confirmName, setConfirmName] = useState('');
-    const [showFailDialog, setShowFailDialog] = useState(false);
+    //const [showFailDialog, setShowFailDialog] = useState(false);
     const [failureCause, setFailureCause] = useState('');
     const [repeatOption, setRepeatOption] = useState('sameDuration'); // Default for repeat dialog
     const [newRepeatDuration, setNewRepeatDuration] = useState('');
     const [message, setMessage] = useState('');
     const [checkedPartsSelection, setCheckedPartsSelection] = useState({}); // { index: true, ... } for parts checked today (transient)
-    const [showRepeatDialog, setShowRepeatDialog] = useState(false); // New state for repeat dialog
+    //const [showRepeatDialog, setShowRepeatDialog] = useState(false); // New state for repeat dialog
     const [showRecuperationAdvanceMenu, setShowRecuperationAdvanceMenu] = useState(false); // State for dropdown menu
     const [publicSharedTapas, setPublicSharedTapas] = useState(null); // State for public shared tapas data
     const [showUpdateSharedTapasMenu, setShowUpdateSharedTapasMenu] = useState(false); // State for update shared tapas menu
     const [deleteSharedTapas, setDeleteSharedTapas] = useState(false);
     const [results, setResults] = useState([]);
     const [showCheckedDetails, setShowCheckedDetails] = useState(false);
+    const failedModal = useModalState("failed");
+    const repeatModal = useModalState("repeat");
 
     if (initMessage && message != initMessage) {
         setMessage(initMessage);
@@ -2705,7 +2711,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                 status: (isSuccessfulOrCrystallization(tapas) && getUniqueCheckedDays(newCheckedDays).length < totalUnits) ? 'active' : tapas.status
             }));
 
-            setMessage(t('dayClearedSuccessfully')); // Re-using dayClearedSuccessfully
+            setMessage(t('dateClearedSuccessfully'));
 
             if (isSuccessfulOrCrystallization(tapas) && getUniqueCheckedDays(newCheckedDays).length < totalUnits) {
                 setMessage(t('tapasAutoMarkedActive'));
@@ -2772,7 +2778,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
     const handleMarkFailed = async () => {
         setInitMessage('');
-        setShowFailDialog(true);
+        failedModal.open();
+        //setShowFailDialog(true);
         // Ensure repeatOption is reset when opening the fail dialog
         setRepeatOption('none');
         setNewRepeatDuration('');
@@ -2780,7 +2787,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
     const handleRepeat = () => {
         setInitMessage('');
-        setShowRepeatDialog(true);
+        repeatModal.open();
+        //setShowRepeatDialog(true);
         // Set a sensible default for the repeat dialog
         setRepeatOption('sameDuration');
         setNewRepeatDuration('');
@@ -2930,7 +2938,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
         try {
             await myUpdateDoc(tapasRef, { status: 'failed', failureCause: failureCause || null });
             setMessage(t('tapasMarkedAsFailed'));
-            setShowFailDialog(false);
+            failedModal.close();
+            //setShowFailDialog(false);
 
             if (repeatOption !== 'none') {
                 const newTapasData = repeatTapas();
@@ -2943,7 +2952,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
             console.error("Error marking failed or repeating: ", e);
             setMessage(`${t('errorMarkingFailedRepeating')} ${e.message}`);
         } finally {
-            setShowFailDialog(false);
+            failedModal.close();
+            //setShowFailDialog(false);
             setFailureCause('');
             setRepeatOption('none');
             setNewRepeatDuration('');
@@ -2957,7 +2967,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             await myAddDoc(collection(db, `artifacts/${appId}/users/${userId}/tapas`), newTapasData);
             setMessage(t('tapasRepeatedSuccessfully'));
-            setShowRepeatDialog(false); // Close the dialog
+            repeatModal.close();
+            //setShowRepeatDialog(false); // Close the dialog
             onClose(); // Close the detail view
         } catch (e) {
             console.error("Error repeating tapas: ", e);
@@ -3604,7 +3615,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     </div>
                 )}
 
-                {showFailDialog && (
+                {failedModal.isOpen && (
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
                         <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                             <h3 className="text-xl font-bold mb-4">{t('markTapasAsFailed')}</h3>
@@ -3686,7 +3697,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
                             <div className="flex justify-around space-x-4">
                                 <button
-                                    onClick={() => setShowFailDialog(false)}
+                                    onClick={failedModal.close}
                                     className="flex-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
                                 >
                                     {t('cancel')}
@@ -3710,7 +3721,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
                     t={t}
                 />)}
 
-                {showRepeatDialog && (
+                {repeatModal.isOpen && (
                     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
                         <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                             <h3 className="text-xl font-bold mb-4">{t('repeatTapas')}</h3>
@@ -3772,7 +3783,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, setShow
 
                             <div className="flex justify-around space-x-4">
                                 <button
-                                    onClick={() => setShowRepeatDialog(false)}
+                                    onClick={repeatModal.close}
                                     className="flex-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
                                 >
                                     {t('cancel')}
@@ -4013,8 +4024,9 @@ const Results = ({ tapas, setSelectedTapas, isPersistentCacheEnabled }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [resultsMessage, setResultsMessage] = useState('');
     const [selectedResult, setSelectedResult] = useState(null);
-    const [showEditResultModal, setShowEditResultModal] = useState(false);
+    //const [showEditResultModal, setShowEditResultModal] = useState(false);
     const [update, setUpdate] = useState(0);
+    const editResultModal = useModalState("editResult");
 
     const tapasListenersRef = useRef([]);
 
@@ -4273,7 +4285,8 @@ const Results = ({ tapas, setSelectedTapas, isPersistentCacheEnabled }) => {
                                             className="ml-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer"
                                             onClick={() => {
                                                 setSelectedResult(res);
-                                                setShowEditResultModal(true);
+                                                editResultModal.open();
+                                                //setShowEditResultModal(true);
                                             }}
                                         >
                                             <p className="ml-1 whitespace-pre-wrap">{res.content}</p>
@@ -4288,9 +4301,9 @@ const Results = ({ tapas, setSelectedTapas, isPersistentCacheEnabled }) => {
                     )}
                 </div>
             )}
-            {showEditResultModal && (
+            {editResultModal.isOpen && (
                 <EditResultModal
-                    onClose={() => setShowEditResultModal(false)}
+                    onClose={editResultModal.close}
                     db={db}
                     t={t}
                     userId={userId}
@@ -4767,9 +4780,6 @@ const HomePage = () => {
     const [showTapasLanguageMenu, setShowTapasLanguageMenu] = useState(false); // New state for Tapas Language submenu
     const [selectedTapasLanguage, setSelectedTapasLanguage] = useState(null); // New state for selected Tapas language
     const [customTapasLanguages, setCustomTapasLanguages] = useState({}); // New state for custom languages from user preferences
-    const [selectedLicense, setSelectedLicense] = useState(false);
-    const [selectedLegalNotice, setSelectedLegalNotice] = useState(false);
-    const [selectedGDPR, setSelectedGDPR] = useState(false);
     const fileInputRef = useRef(null); // Ref for the hidden file input
     const [sharedRef, setSharedRef] = useState(null); // New state for shared tapas reference
     const [processing, setProcessing] = useState(false);
@@ -4790,7 +4800,7 @@ const HomePage = () => {
     const [showLoginPrompt, setShowLoginPrompt] = useState(false); // Changed to false by default
     const [statusMessage, setStatusMessage] = useState(''); // For import/export feedback
     const [isGuestUser, setIsGuestUser] = useState(false); // New state to track if user is anonymous
-    const [pageBeforeDetail, setPageBeforeDetail] = useState('active'); // New state to remember previous page
+    //const [pageBeforeDetail, setPageBeforeDetail] = useState('active'); // New state to remember previous page
     const [scrollPosition, setScrollPosition] = useState(-1);
     const [sharedTapasInfoMap, setSharedTapasInfoMap] = useState({}); // Moved here
     const [isOffline, setIsOffline] = useState(false);
@@ -4803,12 +4813,18 @@ const HomePage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showEmailLoginForm, setShowEmailLoginForm] = useState(false); // Toggle email/password form
-    const [showAboutModal, setShowAboutModal] = useState(false); // State for About modal
-    const [showHelpModal, setShowHelpModal] = useState(false); // State for Help modal
-    const [showCleanDataModal, setShowCleanDataModal] = useState(false); // State for Clean Data modal
-    const [showConfigModal, setShowConfigModal] = useState(false);
-    const [showAcknowledgeDateRangeModal, setShowAcknowledgeDateRangeModal] = useState(false);
-    
+
+    const aboutModal = useModalState("about");
+    const helpModal = useModalState("help");
+    const cleanDataModal = useModalState("cleanData");
+    const configModal = useModalState("config");
+    const acknowledgeDateRangeModal = useModalState("acknowledgeDateRange");
+    const tapasDetailModal = useModalState("tapasDetail");
+    const tapasEditModal = useModalState("tapasEdit");
+    const licenseModal = useModalState("license");
+    const legalNoticeModal = useModalState("legalNotice");
+    const gdprModal = useModalState("GDPR");
+
     const { locale, setLocale, t } = useContext(LocaleContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
 
@@ -4829,7 +4845,6 @@ const HomePage = () => {
     };
 
     const closeAcknowledgeDateRangeModal = useCallback((message) => {
-        setShowAcknowledgeDateRangeModal(false);
         if (message) {
             setTapasDetailMessage(message);
         }
@@ -5062,43 +5077,34 @@ const HomePage = () => {
 
     const handleSelectTapas = (tapasItem) => {
         setScrollPosition(window.pageYOffset);
-        setPageBeforeDetail(currentPage); // Store current page before opening detail
+        //setPageBeforeDetail(currentPage); // Store current page before opening detail
         setSelectedTapas(tapasItem);
         setTapasDetailMessage(null);
-        setCurrentPage('detail');
+        //setCurrentPage('detail');
+        tapasDetailModal.open(handleCloseTapasDetail);
     };
 
     const handleCloseTapasDetail = () => {
         setSelectedTapas(null);
         setTapasDetailMessage(null);
-        setCurrentPage(pageBeforeDetail); // Go back to the page that was active before
+        //setCurrentPage(pageBeforeDetail); // Go back to the page that was active before
         setTimeout(() => window.scrollTo(0, scrollPosition), 30);
-    };
-
-    const handleCloseLicense = () => {
-        setSelectedLicense(null);
-    };
-
-    const handleCloseLegalNotice = () => {
-        setSelectedLegalNotice(null);
-    };
-    
-    const handleCloseGDPR = () => {
-        setSelectedGDPR(null);
     };
 
     const handleEditTapas = (tapasItem) => {
         setEditingTapas(tapasItem);
-        setCurrentPage('add');
+        tapasEditModal.open(handleTapasAddedUpdatedCancel);
+        //setCurrentPage('add');
     };
 
     const handleTapasAddedUpdatedCancel = (updatedData = null) => {
         setEditingTapas(null);
         if (selectedTapas) {
-            setCurrentPage('detail');
+            //setCurrentPage('detail');
+            //tapasDetailModal.open(handleCloseTapasDetail);
             setSelectedTapas(prev => ({ ...prev, ...updatedData }));
         } else {
-            setCurrentPage('active');
+            //setCurrentPage('active');
         }
     };
 
@@ -5449,7 +5455,7 @@ const HomePage = () => {
     };
 
     const handleCleanData = () => {
-        setShowCleanDataModal(true);
+        cleanDataModal.open();
         setShowMenu(false); // Close main menu
         setShowDataMenu(false); // Close data submenu
     };
@@ -5457,12 +5463,12 @@ const HomePage = () => {
     const handleCleanDataConfirmed = async (timeframe) => {
         if (!db || !userId) {
             setStatusMessage("No user or database initialized for cleaning.");
-            setShowCleanDataModal(false);
+            cleanDataModal.close();
             return;
         }
 
         try {
-            setShowCleanDataModal(false);
+            cleanDataModal.close();
             setProcessingText(t('cleanData'));
             setProcessing(true);
             let cutoffDate = new Date();
@@ -5651,8 +5657,8 @@ const HomePage = () => {
         return endDateA.getTime() - endDateB.getTime(); // Sort by end date ascending (earliest first)
     });
 
-    if (loadingFirebase && !theme) {
-        return ;
+    if (loadingFirebase || !theme) {
+        return <div style={{ visibility: 'hidden' }}>Loading...</div>;
     }
 
     // Only show login prompt if userId is null or if it's a guest user, and Firebase is done loading, and showLoginPrompt is true
@@ -5888,9 +5894,11 @@ const HomePage = () => {
                                         <button
                                             onClick={() => {
                                                 setScrollPosition(window.pageYOffset);
-                                                setPageBeforeDetail(currentPage);
-                                                setCurrentPage('');
-                                                setShowConfigModal(true); }}
+                                                //setPageBeforeDetail(currentPage);
+                                                //setCurrentPage('');
+                                                configModal.open(handleCloseTapasDetail);
+                                                setShowMenu(false);
+                                            }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                         >
                                             {t('config')}
@@ -5967,13 +5975,13 @@ const HomePage = () => {
                                         )}
                                         <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div> {/* Separator */}
                                         <button
-                                            onClick={() => { setShowHelpModal(true); setShowMenu(false); }}
+                                            onClick={() => { helpModal.open(); setShowMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                         >
                                             {t('help')}
                                         </button>
                                         <button
-                                            onClick={() => { setShowAboutModal(true); setShowMenu(false); }}
+                                            onClick={() => { aboutModal.open(); setShowMenu(false); }}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600"
                                         >
                                             {t('about')}
@@ -5997,7 +6005,7 @@ const HomePage = () => {
                         <button
                             onClick={() => { setCurrentPage('active'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'active' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'active' && !tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                             disabled={processing}
                         >
@@ -6006,7 +6014,7 @@ const HomePage = () => {
                         <button
                             onClick={() => { setCurrentPage('history'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'history' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'history' && !tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                             disabled={loadingFirebase || processing}
                         >
@@ -6015,7 +6023,7 @@ const HomePage = () => {
                         <button
                             onClick={() => { setCurrentPage('statistics'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'statistics' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'statistics' && !tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                             disabled={loadingFirebase || processing}
                         >
@@ -6024,17 +6032,17 @@ const HomePage = () => {
                         <button
                             onClick={() => { setCurrentPage('diary'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'diary' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'diary' && !tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                             disabled={loadingFirebase || processing}
                         >
                             {t('diary')}
                         </button>
                         <button
-                            onClick={() => { setCurrentPage('add'); setSelectedTapas(null); }}
+                            onClick={() => { setSelectedTapas(null); tapasEditModal.open(handleTapasAddedUpdatedCancel) }}
                             aria-label={t('addNew')}
                             className={`px-4 py-2 rounded-md text-2xl font-medium transition-colors duration-200 font-bold ${
-                                currentPage === 'add' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
                             disabled={loadingFirebase || processing}
                         >
@@ -6070,10 +6078,10 @@ const HomePage = () => {
                                     </button>
                                 </div>
                             )}
-                            {currentPage === 'active' && !loadingFirebase && !processing && (
+                            {currentPage === 'active' && !loadingFirebase && !processing && !tapasEditModal.isOpen && (
                                 <TapasList tapas={activeTapas} config={config} onSelectTapas={handleSelectTapas} sharedTapasInfoMap={sharedTapasInfoMap} selectedTapasLanguage={selectedTapasLanguage} />
                             )}
-                            {currentPage === 'history' && !processing && (
+                            {currentPage === 'history' && !processing && !tapasEditModal.isOpen && (
                                 <TapasList
                                     tapas={baseHistoryTapas}
                                     sharedTapasInfoMap={sharedTapasInfoMap}
@@ -6088,38 +6096,33 @@ const HomePage = () => {
                                     selectedTapasLanguage={selectedTapasLanguage}
                                 />
                             )}
-                            {currentPage === 'statistics' && !processing && (
+                            {currentPage === 'statistics' && !processing && !tapasEditModal.isOpen && (
                                 <Statistics allTapas={tapas} />
                             )}
-                            {currentPage === 'diary' && !processing && (
+                            {currentPage === 'diary' && !processing && !tapasEditModal.isOpen && (
                                 <Results tapas={tapas} setSelectedTapas={setSelectedTapas}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
-                            {currentPage === 'add' && !processing && (
-                                <TapasForm onTapasAddedUpdatedCancel={handleTapasAddedUpdatedCancel}
+                            {tapasEditModal.isOpen && !processing && (
+                                <TapasForm onTapasAddedUpdatedCancel={tapasEditModal.close}
                                     editingTapas={editingTapas}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
-                            {selectedTapas && currentPage === 'detail' && !processing && (
-                                <TapasDetail tapas={selectedTapas} config={config} onClose={handleCloseTapasDetail} onEdit={handleEditTapas}
+                            {selectedTapas && tapasDetailModal.isActive && !tapasEditModal.isOpen && !processing && (
+                                <TapasDetail tapas={selectedTapas} config={config} onClose={tapasDetailModal.close} onEdit={handleEditTapas}
                                     setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage}
-                                    setShowDateRangeModal={setShowAcknowledgeDateRangeModal} initMessage={tapasDetailMessage}
+                                    setShowDateRangeModal={() => acknowledgeDateRangeModal.open(closeAcknowledgeDateRangeModal)}
+                                    initMessage={tapasDetailMessage}
                                     setInitMessage={setTapasDetailMessage}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                     isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
                                 />
                             )}
-                            {selectedLicense && (
-                                <License onClose={handleCloseLicense} />
-                            )}
-                            {selectedLegalNotice && (
-                                <LegalNotice onClose={handleCloseLegalNotice} />
-                            )}
-                            {selectedGDPR && (
-                                <GDPR onClose={handleCloseGDPR} />
-                            )}
+                            {licenseModal.isOpen && (<License onClose={licenseModal.close} />)}
+                            {legalNoticeModal.isOpen && (<LegalNotice onClose={legalNoticeModal.close} />)}
+                            {gdprModal.isOpen && (<GDPR onClose={gdprModal.close} />)}
                         </>
                     )}
                 </main>
@@ -6129,21 +6132,21 @@ const HomePage = () => {
                     <span className="text-nav">{t('appName')} &copy; {new Date().getFullYear()} by Reimund Renner</span>
                     <div className="flex justify-center space-x-4 mt-2">
                         <button
-                            onClick={() => { setSelectedGDPR(true); }}
+                            onClick={() => gdprModal.open()}
                             className="px-4 py-1 rounded-md text-sm font-medium transition-colors duration-200 text-lightblue-700 hover:text-blue-700 hover:bg-blue-100"
                         >
                             {t('gdpr')}
                         </button>
                         <span className="text-gray-500 py-1">|</span>
                         <button
-                            onClick={() => { setSelectedLegalNotice(true); }}
+                            onClick={() => legalNoticeModal.open()}
                             className="px-4 py-1 rounded-md text-sm font-medium transition-colors duration-200 text-lightblue-700 hover:text-blue-700 hover:bg-blue-100"
                         >
                             {t('legalNotice')}
                         </button>
                         <span className="text-gray-500 py-1">|</span>
                         <button
-                            onClick={() => { setSelectedLicense(true); }}
+                            onClick={() => licenseModal.open()}
                             className="px-4 py-1 rounded-md text-sm font-medium transition-colors duration-200 text-lightblue-700 hover:text-blue-700 hover:bg-blue-100"
                         >
                             {t('license')}
@@ -6152,13 +6155,13 @@ const HomePage = () => {
                 </footer>
 
                 {/* Modals/Overlays */}
-                {showAboutModal && <AboutModal onClose={() => setShowAboutModal(false)} />}
-                {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
-                {showCleanDataModal && <CleanDataModal onClose={() => setShowCleanDataModal(false)} onCleanConfirmed={handleCleanDataConfirmed} />}
-                {showConfigModal && <ConfigModal onClose={() => { setShowConfigModal(false); handleCloseTapasDetail(); }} db={db} userId={userId} t={t}
+                {aboutModal.isOpen && <AboutModal onClose={aboutModal.close} />}
+                {helpModal.isOpen && <HelpModal onClose={helpModal.close} />}
+                {cleanDataModal.isOpen && <CleanDataModal onClose={cleanDataModal.close} onCleanConfirmed={handleCleanDataConfirmed} />}
+                {configModal.isOpen && <ConfigModal onClose={configModal.close} db={db} userId={userId} t={t}
                     setConfig={setConfig} wasPersistentCacheEnabled={isPersistentCacheEnabled}
                 />}
-                {showAcknowledgeDateRangeModal && <AcknowledgeDateRangeModal onClose={closeAcknowledgeDateRangeModal}
+                {acknowledgeDateRangeModal.isOpen && <AcknowledgeDateRangeModal onClose={acknowledgeDateRangeModal.close}
                     tapas={selectedTapas} setSelectedTapas={setSelectedTapas} db={db} userId={userId} t={t}
                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                 />}
@@ -6173,7 +6176,9 @@ const HomePage = () => {
 const WrappedHomePage = () => (
     <LocaleProvider>
         <ThemeProvider>
-            <HomePage />
+            <Suspense fallback={<div>Loading...</div>}>
+                <HomePage />
+            </Suspense>
         </ThemeProvider>
     </LocaleProvider>
 );

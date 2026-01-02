@@ -1,7 +1,7 @@
-import { useState, useEffect, createContext, useCallback } from 'react';
+import { useState, useEffect, createContext, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { LocaleContext } from './components/editor';
 import { translations } from "./translations";
-
 import { setCookie, getCookie } from 'cookies-next';
 
 export let firebaseConfig;
@@ -226,3 +226,43 @@ export const InstallPrompt = ({ t }) => {
     </>
   );
 };
+
+export function useModalState(modalId) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [dynamicOnClose, setDynamicOnClose] = useState(null);
+  const currentModalInUrl = searchParams.get("modal");
+  const isOpen = currentModalInUrl === modalId;
+  const prevIsOpen = useRef(isOpen);
+  const isActive = prevIsOpen.current || isOpen;
+
+  // This effect handles the "event" of the modal closing,
+  // no matter how that closure was triggered (back button or code)
+  useEffect(() => {
+    const isNavigatingBackAwayFromModals = prevIsOpen.current && !isOpen && !currentModalInUrl;
+    if (isNavigatingBackAwayFromModals && dynamicOnClose) {
+        dynamicOnClose();
+        setDynamicOnClose(null); // Clear after execution
+    }
+    prevIsOpen.current = isOpen
+  }, [isOpen, currentModalInUrl, dynamicOnClose]);
+
+  const open = useCallback((onCloseCallback) => {
+    if (onCloseCallback) setDynamicOnClose(() => onCloseCallback);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("modal", modalId);
+    // Push adds a new entry to the history stack for the back button to catch
+    router.push(`${pathname}?${params.toString()}`);
+  }, [modalId, pathname, router, searchParams]);
+
+  const close = useCallback(() => {
+    // Navigating back removes the query param and updates the state
+    if (isOpen) {
+      router.back();
+    }
+  }, [isOpen, router]);
+
+  return { isOpen, isActive, open, close };
+}
