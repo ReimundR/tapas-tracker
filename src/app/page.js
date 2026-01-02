@@ -6007,36 +6007,36 @@ const HomePage = () => {
                         <button
                             onClick={() => { setCurrentPage('active'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'active' && !tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'active' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={processing}
+                            disabled={processing || tapasEditModal.isOpen}
                         >
                             {t('active')}
                         </button>
                         <button
                             onClick={() => { setCurrentPage('history'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'history' && !tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'history' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase || processing}
+                            disabled={loadingFirebase || processing || tapasEditModal.isOpen}
                         >
                             {t('history')}
                         </button>
                         <button
                             onClick={() => { setCurrentPage('statistics'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'statistics' && !tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'statistics' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase || processing}
+                            disabled={loadingFirebase || processing || tapasEditModal.isOpen}
                         >
                             {t('statistics')}
                         </button>
                         <button
                             onClick={() => { setCurrentPage('diary'); setSelectedTapas(null); setEditingTapas(null); }}
                             className={`px-4 py-2 rounded-md text-lg font-medium transition-colors duration-200 ${
-                                currentPage === 'diary' && !tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                currentPage === 'diary' ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase || processing}
+                            disabled={loadingFirebase || processing || tapasEditModal.isOpen}
                         >
                             {t('diary')}
                         </button>
@@ -6044,9 +6044,9 @@ const HomePage = () => {
                             onClick={() => { setSelectedTapas(null); tapasEditModal.open(handleTapasAddedUpdatedCancel) }}
                             aria-label={t('addNew')}
                             className={`px-4 py-2 rounded-md text-2xl font-medium transition-colors duration-200 font-bold ${
-                                tapasEditModal.isOpen ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                                tapasEditModal.isOpen && !tapasDetailModal.isActive ? 'bg-blue-600 text-white shadow-lg border-2 border-blue-800' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                             }`}
-                            disabled={loadingFirebase || processing}
+                            disabled={loadingFirebase || processing || tapasDetailModal.isActive}
                         >
                             +
                         </button>
