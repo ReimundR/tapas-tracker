@@ -6157,7 +6157,11 @@ const HomePage = () => {
 const WrappedHomePage = () => (
     <LocaleProvider>
         <ThemeProvider>
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={
+                        <div className="flex justify-center items-center h-screen">
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div>
+                        </div>
+                    }>
                 <HomePage />
             </Suspense>
         </ThemeProvider>
