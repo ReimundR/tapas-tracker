@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useCallback, useRef } from 'react';
+import { useState, useEffect, createContext, useCallback, useTransition } from 'react';
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { LocaleContext } from './components/editor';
 import { translations } from "./translations";
@@ -227,42 +227,92 @@ export const InstallPrompt = ({ t }) => {
   );
 };
 
-export function useModalState(modalId) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+export function useModalState() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
-  const [dynamicOnClose, setDynamicOnClose] = useState(null);
-  const currentModalInUrl = searchParams.get("modal");
-  const isOpen = currentModalInUrl === modalId;
-  const prevIsOpen = useRef(isOpen);
-  const isActive = prevIsOpen.current || isOpen;
+    const [isPending, startTransition] = useTransition();
 
-  // This effect handles the "event" of the modal closing,
-  // no matter how that closure was triggered (back button or code)
-  useEffect(() => {
-    const isNavigatingBackAwayFromModals = prevIsOpen.current && !isOpen && !currentModalInUrl;
-    if (isNavigatingBackAwayFromModals && dynamicOnClose) {
-        dynamicOnClose();
-        setDynamicOnClose(null); // Clear after execution
-    }
-    prevIsOpen.current = isOpen
-  }, [isOpen, currentModalInUrl, dynamicOnClose]);
+    const [modalOrder, setModalOrder] = useState([]);
+    const [dynamicOnClose, setDynamicOnClose] = useState({});
 
-  const open = useCallback((onCloseCallback) => {
-    if (onCloseCallback) setDynamicOnClose(() => onCloseCallback);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("modal", modalId);
-    // Push adds a new entry to the history stack for the back button to catch
-    router.push(`${pathname}?${params.toString()}`);
-  }, [modalId, pathname, router, searchParams]);
+    const currentModalInUrl = searchParams.get("modal");
 
-  const close = useCallback(() => {
-    // Navigating back removes the query param and updates the state
-    if (isOpen) {
-      router.back();
-    }
-  }, [isOpen, router]);
+    useEffect(() => {
+        if (isPending) return;
 
-  return { isOpen, isActive, open, close };
+        const lastIndex = modalOrder.length - 1;
+        const lastId = modalOrder[lastIndex];
+        const previousId = modalOrder[lastIndex - 1];
+
+        // Detection logic for a modal being closed (back button or code)
+        const isLastClosed = (!currentModalInUrl && modalOrder.length > 0) ||
+                             (modalOrder.length > 1 && currentModalInUrl === previousId);
+
+        if (isLastClosed) {
+            // Fix: Retrieve callback before updating state
+            const onClose = dynamicOnClose[lastId];
+
+            // Fix: Avoid direct mutation (delete modalOrder[i] is incorrect for arrays)
+            setModalOrder(prev => prev.slice(0, -1));
+
+            if (onClose) {
+                // Fix: Immutably clear the callback
+                setDynamicOnClose(prev => {
+                    const next = { ...prev };
+                    delete next[lastId];
+                    return next;
+                });
+                onClose();
+            }
+        }
+    }, [currentModalInUrl, modalOrder, dynamicOnClose]);
+
+    const openModal = useCallback((modalId, onCloseCallback) => {
+        const lastId = modalOrder[modalOrder.length - 1];
+        if (lastId === modalId) return;
+
+        startTransition(() => {
+            if (onCloseCallback) {
+                // Fix: Use bracket notation [modalId] instead of .modalId literal
+                setDynamicOnClose(prev => ({ ...prev, [modalId]: onCloseCallback }));
+            }
+
+            // Fix: Create a new array reference for React to detect change
+            setModalOrder(prev => [...prev, modalId]);
+
+            const params = new URLSearchParams(searchParams.toString());
+            params.set("modal", modalId);
+            router.push(`${pathname}?${params.toString()}`);
+        });
+    }, [modalOrder, pathname, router, searchParams]);
+
+    const closeModal = useCallback((modalId, ...args) => {
+        const lastId = modalOrder[modalOrder.length - 1];
+        if (lastId === modalId) {
+            const onClose = dynamicOnClose[modalId];
+            if (args && onClose) {
+                setDynamicOnClose(prev => {
+                    const next = { ...prev };
+                    delete next[lastId];
+                    return next;
+                });
+                onClose(...args);
+            }
+            router.back();
+        }
+    }, [modalOrder, router]);
+
+    // Renamed from 'use' to follow React Hook Naming Rules
+    const getModalProps = (modalId) => {
+        return {
+            isOpen: currentModalInUrl === modalId,
+            isActive: modalOrder.includes(modalId),
+            open: (onCloseCallback) => openModal(modalId, onCloseCallback),
+            close: (...args) => closeModal(modalId, ...args),
+        };
+    };
+
+    return { getModalProps };
 }

@@ -71,7 +71,6 @@ const getLocalizedContent = (contentObject, currentLocale, selectedTapasLanguage
 // Define context for Firebase and user data
 const AppContext = createContext(null);
 
-
 // Config
 const ConfigModal = ({ onClose, db, userId, t, setConfig, wasPersistentCacheEnabled }) => {
     const persistentCacheCookie = localStorage.getItem('persistentLocalCache');
@@ -540,12 +539,12 @@ const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, my
     );
 };
 
-const ResultHistoryView = ({ tapas, endDate, db, userId, t, setTapasDetailMessage, isPersistentCacheEnabled, setDetailResults, setSelectedTapas, setInitMessage }) => {
+const ResultHistoryView = ({ tapas, endDate, db, userId, t, modalState, setTapasDetailMessage, isPersistentCacheEnabled, setDetailResults, setSelectedTapas, setInitMessage }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedResult, setSelectedResult] = useState(null);
     const [showPreview, setShowPreview] = useState(true);
-    const editResultModal = useModalState("editResult");
+    const editResultModal = modalState.getModalProps("editResult");
 
     const resultsColRef = tapas ? collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapas.id, 'results') : null;
     const sortedResults = [...results].sort((a, b) => (a.date ? a.date.toMillis() : 0) - (b.date ? b.date.toMillis() : 0));
@@ -937,7 +936,7 @@ const isTapasDateChecked = (checkedDays, date) => {
 };
 
 // Component for adding/editing a Tapas
-const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isPersistentCacheEnabled }) => {
+const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPersistentCacheEnabled }) => {
     const { db, userId, t, locale } = useContext(AppContext);
 
     const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
@@ -964,7 +963,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, isPersistentCacheE
     const [showAddLanguageDropdown, setShowAddLanguageDropdown] = useState(false); // State for showing language selector dropdown
     const [newLangCodeInput, setNewLangCodeInput] = useState('');
     const [newLangNameInput, setNewLangNameInput] = useState('');
-    const otherLanguageModal = useModalState("otherLanguage");
+    const otherLanguageModal = modalState.getModalProps("otherLanguage");
 
     // Effect to set form fields when editingTapas prop changes
     useEffect(() => {
@@ -2366,7 +2365,7 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
 };
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, openDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline }) => {
+const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalState, openDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -2383,8 +2382,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, openDat
     const [deleteSharedTapas, setDeleteSharedTapas] = useState(false);
     const [results, setResults] = useState([]);
     const [showCheckedDetails, setShowCheckedDetails] = useState(false);
-    const failedModal = useModalState("failed");
-    const repeatModal = useModalState("repeat");
+    const failedModal = modalState.getModalProps("failed");
+    const repeatModal = modalState.getModalProps("repeat");
 
     if (initMessage && message != initMessage) {
         setMessage(initMessage);
@@ -3497,6 +3496,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, openDat
                         db={db}
                         userId={userId}
                         t={t}
+                        modalState={modalState}
                         setInitMessage={setInitMessage}
                         setTapasDetailMessage={setMessage}
                         setSelectedTapas={setSelectedTapas}
@@ -4002,7 +4002,7 @@ const Statistics = ({ allTapas }) => {
 };
 
 // Component for Results
-const Results = ({ tapas, setSelectedTapas, isPersistentCacheEnabled }) => {
+const Results = ({ tapas, setSelectedTapas, modalState, isPersistentCacheEnabled }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
     const [statusFilter, setStatusFilter] = useState('all');
@@ -4015,7 +4015,7 @@ const Results = ({ tapas, setSelectedTapas, isPersistentCacheEnabled }) => {
     const [resultsMessage, setResultsMessage] = useState('');
     const [selectedResult, setSelectedResult] = useState(null);
     const [update, setUpdate] = useState(0);
-    const editResultModal = useModalState("editResult");
+    const editResultModal = modalState.getModalProps("editResult");
 
     const tapasListenersRef = useRef([]);
 
@@ -4801,16 +4801,17 @@ const HomePage = () => {
     const [password, setPassword] = useState('');
     const [showEmailLoginForm, setShowEmailLoginForm] = useState(false); // Toggle email/password form
 
-    const aboutModal = useModalState("about");
-    const helpModal = useModalState("help");
-    const cleanDataModal = useModalState("cleanData");
-    const configModal = useModalState("config");
-    const acknowledgeDateRangeModal = useModalState("acknowledgeDateRange");
-    const tapasDetailModal = useModalState("tapasDetail");
-    const tapasEditModal = useModalState("tapasEdit");
-    const licenseModal = useModalState("license");
-    const legalNoticeModal = useModalState("legalNotice");
-    const gdprModal = useModalState("GDPR");
+    const modalState = useModalState();
+    const aboutModal = modalState.getModalProps("about");
+    const helpModal = modalState.getModalProps("help");
+    const cleanDataModal = modalState.getModalProps("cleanData");
+    const configModal = modalState.getModalProps("config");
+    const acknowledgeDateRangeModal = modalState.getModalProps("acknowledgeDateRange");
+    const tapasDetailModal = modalState.getModalProps("tapasDetail");
+    const tapasEditModal = modalState.getModalProps("tapasEdit");
+    const licenseModal = modalState.getModalProps("license");
+    const legalNoticeModal = modalState.getModalProps("legalNotice");
+    const gdprModal = modalState.getModalProps("GDPR");
 
     const { locale, setLocale, t } = useContext(LocaleContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
@@ -5075,16 +5076,16 @@ const HomePage = () => {
         setTimeout(() => window.scrollTo(0, scrollPosition), 30);
     };
 
-    const handleEditTapas = (tapasItem) => {
-        setEditingTapas(tapasItem);
-        tapasEditModal.open(handleTapasAddedUpdatedCancel);
-    };
-
     const handleTapasAddedUpdatedCancel = (updatedData = null) => {
         setEditingTapas(null);
         if (selectedTapas) {
             setSelectedTapas(prev => ({ ...prev, ...updatedData }));
         }
+    };
+
+    const handleEditTapas = (tapasItem) => {
+        setEditingTapas(tapasItem);
+        tapasEditModal.open(handleTapasAddedUpdatedCancel);
     };
 
     const mySignInWithPopup = async (auth, provider) => {
@@ -6082,12 +6083,14 @@ const HomePage = () => {
                             )}
                             {currentPage === 'diary' && !processing && !tapasEditModal.isOpen && (
                                 <Results tapas={tapas} setSelectedTapas={setSelectedTapas}
+                                    modalState={modalState}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
                             {tapasEditModal.isActive && !processing && (
                                 <TapasForm onTapasAddedUpdatedCancel={tapasEditModal.close}
                                     editingTapas={editingTapas}
+                                    modalState={modalState}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                 />
                             )}
@@ -6095,7 +6098,7 @@ const HomePage = () => {
                                 <TapasDetail tapas={selectedTapas} config={config} onClose={tapasDetailModal.close} onEdit={handleEditTapas}
                                     setSelectedTapas={setSelectedTapas} selectedTapasLanguage={selectedTapasLanguage}
                                     openDateRangeModal={() => acknowledgeDateRangeModal.open(closeAcknowledgeDateRangeModal)}
-                                    initMessage={tapasDetailMessage}
+                                    modalState={modalState} initMessage={tapasDetailMessage}
                                     setInitMessage={setTapasDetailMessage}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                     isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
