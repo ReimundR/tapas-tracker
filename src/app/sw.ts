@@ -19,10 +19,19 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [
+    {
+      matcher: ({ url }) => url.pathname === "/",
+      handler: new CacheFirst({
+        cacheName: "base-url",
+        matchOptions: {
+          ignoreSearch: true, // Specifically ignores search params for this route
+        },
+      }),
+    },
+  ],
   precacheOptions: {
      ignoreURLParametersMatching: [/.*/],
-     //navigateFallback: '/',
   },
 });
 
