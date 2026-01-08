@@ -5577,8 +5577,10 @@ const HomePage = () => {
         if (isACrystallization && !isBCrystallization) return -1;
         if (!isACrystallization && isBCrystallization) return 1;
 
-        const isAExpired = isTapasExpired(a);
-        const isBExpired = isTapasExpired(b);
+        const isACheckedYesterday = isTapasYesterdayChecked(a);
+        const isBCheckedYesterday = isTapasYesterdayChecked(b);
+        const isAExpired = isTapasExpired(a) && isACheckedYesterday;
+        const isBExpired = isTapasExpired(b) && isBCheckedYesterday;
 
         if (isAExpired && !isBExpired) return 1;
         if (!isAExpired && isBExpired) return -1;
@@ -5589,9 +5591,6 @@ const HomePage = () => {
             const nameB = getLocalizedContent(b.name, locale, selectedTapasLanguage);
             return nameA.localeCompare(nameB);
         }
-
-        const isACheckedYesterday = isTapasYesterdayChecked(a);
-        const isBCheckedYesterday = isTapasYesterdayChecked(b);
 
         if (isACheckedYesterday && !isBCheckedYesterday) return 1;
         if (!isACheckedYesterday && isBCheckedYesterday) return -1;
