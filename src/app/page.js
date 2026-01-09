@@ -2364,6 +2364,21 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     );
 };
 
+function getLocaleDateFormat() {
+  const parts = new Intl.DateTimeFormat().formatToParts(new Date());
+  return parts
+    .map(part => {
+      switch (part.type) {
+        case 'day':   return 'DD';
+        case 'month': return 'MM';
+        case 'year':  return 'YYYY';
+        case 'literal': return part.value;
+        default: return '';
+      }
+    })
+    .join('');
+}
+
 // Component for a single Tapas detail view
 const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalState, openDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline }) => {
     const { locale } = useContext(LocaleContext);
@@ -3190,36 +3205,30 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
         const ranges = [];
         let currentRangeStart = null;
         let currentRangeEnd = null;
+        let currentType = null;
 
         for (let i = 0; i < sortedDates.length; i++) {
             const currentDate = new Date(sortedDates[i]);
             const isRecuperated = isDateRecuperated(currentDate);
             const isAdvanced = isDateAdvanced(currentDate);
+            const type = isRecuperated ? 1 : isAdvanced ? 2 : 0;
 
-            if (isRecuperated || isAdvanced) {
-                // If the current date is recuperated or advanced, it cannot be part of a range
-                if (currentRangeStart) {
-                    ranges.push({ start: currentRangeStart, end: currentRangeEnd });
-                    currentRangeStart = null;
-                    currentRangeEnd = null;
-                }
-                ranges.push({ single: currentDate, isRecuperated, isAdvanced });
+            // Not recuperated or advanced, can be part of a range
+            if (!currentRangeStart) {
+                currentRangeStart = currentDate;
+                currentRangeEnd = currentDate;
+                currentType = type;
+            } else if (currentType === type && Math.abs((currentDate.getTime() - currentRangeEnd.getTime()) / timeDayMs - daysDelta) < 0.1) {
+                currentRangeEnd = currentDate;
             } else {
-                // Not recuperated or advanced, can be part of a range
-                if (!currentRangeStart) {
-                    currentRangeStart = currentDate;
-                    currentRangeEnd = currentDate;
-                } else if (Math.abs((currentDate.getTime() - currentRangeEnd.getTime()) / timeDayMs - daysDelta) < 0.1) {
-                    currentRangeEnd = currentDate;
-                } else {
-                    ranges.push({ start: currentRangeStart, end: currentRangeEnd });
-                    currentRangeStart = currentDate;
-                    currentRangeEnd = currentDate;
-                }
+                ranges.push({ start: currentRangeStart, end: currentRangeEnd, type: currentType});
+                currentRangeStart = currentDate;
+                currentRangeEnd = currentDate;
+                currentType = type;
             }
         }
         if (currentRangeStart) {
-            ranges.push({ start: currentRangeStart, end: currentRangeEnd });
+            ranges.push({ start: currentRangeStart, end: currentRangeEnd, type: currentType });
         }
 
         const isWeekly = tapas.scheduleType === 'weekly';
@@ -3227,24 +3236,56 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             return date.toLocaleDateString() + (isWeekly ? ' (' + t('cw') + getDateWeek(date) + ')' : '');
         };
 
-        return ranges.map(range => {
-            if (range.single) {
-                const singleStr = getDateStr(range.single);
-                return (
-                    <li key={singleStr}>
-                        {singleStr}
-                        {range.isRecuperated && <span className="text-green-500 ml-2">({t('recuperated')})</span>}
-                        {range.isAdvanced && <span className="text-purple-500 ml-2">({t('advanced')})</span>}
-                    </li>
-                );
-            } else {
-                const startStr = getDateStr(range.start);
-                const endStr = range.start == range.end ? null :getDateStr(range.end);
-                const text = endStr ? `${startStr} - ${endStr}` : startStr;
-                return (
-                    <li key={text}>{text}</li>
-                );
+        const fmt = getLocaleDateFormat();
+        const adate = getDateStr(new Date());
+        let sep;
+        for (let i=0; i<adate.length; i++) {
+            sep = adate[i];
+            if (sep < '0' || sep > '9') {
+                break;
             }
+        }
+        const reductions = fmt.endsWith('MM' + sep + 'YYYY') ? 2 : fmt.endsWith('YYYY') ? 1 : 0;
+
+        return ranges.map(range => {
+            let startStr = getDateStr(range.start);
+            const endStr = range.start == range.end ? null :getDateStr(range.end);
+            let text;
+            if (endStr) {
+                const n = Math.min(startStr.length, endStr.length);
+                let x = 0;
+                let reds = reductions;
+                for (let i=1; i <= n && reds != 0; i++) {
+                    const v = startStr[startStr.length-i];
+                    if (v != endStr[endStr.length-i]) {
+                        break;
+                    }
+                    if (v==sep) {
+                        x = i;
+                        reds--;
+                    }
+                }
+                if (x > 0) {
+                    startStr = startStr.substring(0, startStr.length+1-x);
+                }
+                text = `${startStr} - ${endStr}`;
+            } else {
+                text = startStr;
+            }
+
+            return (
+                <li key={text}>
+                    {text}
+                    {range.type===1 && <span className="text-white bg-green-500 rounded-full font-medium px-1 ml-2"
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-html={t('recuperated')}
+                        >{t('recuperated')[0]}</span>}
+                    {range.type===2 && <span className="text-white bg-purple-500 rounded-full font-medium px-1 ml-2"
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-html={t('advanced')}
+                        >{t('advanced')[0]}</span>}
+                </li>
+            );
         });
     };
 
@@ -3286,6 +3327,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
+            <Tooltip id="my-tooltip" />
             <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{displayTapasName}</h2>

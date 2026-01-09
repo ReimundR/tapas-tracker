@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.5.1 (2026-01-10) =
+
+* added reduced date range formating and reduced date type display
+
 #### = 1.5.0 (2026-01-02) =
 
 * added back functionality to all windows and modals
