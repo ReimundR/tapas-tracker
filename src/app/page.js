@@ -3233,7 +3233,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
         const isWeekly = tapas.scheduleType === 'weekly';
         const getDateStr = (date) => {
-            return date.toLocaleDateString() + (isWeekly ? ' (' + t('cw') + getDateWeek(date) + ')' : '');
+            return date.toLocaleDateString();
         };
 
         const fmt = getLocaleDateFormat();
@@ -3269,8 +3269,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     startStr = startStr.substring(0, startStr.length+1-x);
                 }
                 text = `${startStr} - ${endStr}`;
+                if (isWeekly) {
+                    text += ' (' + t('cw') + getDateWeek(range.start) + ' - ' + getDateWeek(range.end) + ')';
+                }
             } else {
                 text = startStr;
+                if (isWeekly) {
+                    text += ' (' + t('cw') + getDateWeek(range.start) + ')';
+                }
             }
 
             return (

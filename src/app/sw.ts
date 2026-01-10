@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { CacheFirst, NetworkOnly, Serwist } from "serwist";
+import { NetworkFirst, NetworkOnly, Serwist } from "serwist";
 
 // This declares the value of `injectionPoint` to TypeScript.
 // `injectionPoint` is the string that will be replaced by the
@@ -22,7 +22,7 @@ const serwist = new Serwist({
   runtimeCaching: [
     {
       matcher: ({ url }) => url.pathname === "/",
-      handler: new CacheFirst({
+      handler: new NetworkFirst({
         cacheName: "base-url",
         matchOptions: {
           ignoreSearch: true, // Specifically ignores search params for this route
@@ -37,7 +37,7 @@ const serwist = new Serwist({
 
 serwist.registerCapture(({ request, sameOrigin }) => {
   return sameOrigin;// && request.destination === "image";
-}, new CacheFirst());
+}, new NetworkFirst());
 
 serwist.registerCapture(({ request, sameOrigin }) => {
   return !sameOrigin;
