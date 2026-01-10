@@ -1531,7 +1531,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
                         >
                             <option value="daily">{t('daily')}</option>
                             <option value="weekly">{t('weekly')}</option>
-                            <option value="everyNthDays">{t('everyNthDays', t('nth'))}</option>
+                            <option value="everyNthDays">{t('everyNthDays', t('nth'))} {t('days')}</option>
                             <option value="noTapas">{t('noTapas')}</option>
                         </select>
                     </div>
@@ -1650,7 +1650,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
                     </div>
                 )}
                 <div className="col-span-full">
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')}</label>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('descriptionAndGoal')} ({t('optional')})</label>
                     <RichTextEditor
                         key={`${currentFormLanguage}-${tapasDataInitialized}`} // Key to force remount on language change
                         initialContent={currentTapasDataForForm.description}
@@ -1684,7 +1684,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
                 {!isNoTapas(scheduleType) && (
                     <>
                 <div className="col-span-full">
-                    <label htmlFor="crystallizationTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('crystallizationTime')}</label>
+                    <label htmlFor="crystallizationTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('crystallizationTime')} [{t('days')}] ({t('optional')})</label>
                     <input
                         type="number"
                         id="crystallizationTime"
@@ -2200,7 +2200,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                             )}
                                         </div>
                                         {tapasItem.scheduleType === 'everyNthDays' && (<p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
-                                            {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()}</p>
+                                            {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()} {t('days')}</p>
                                         )}
                                         {isActive(tapasItem) && daysOver >= 0 && (
                                             <div className="text-sm font-medium mt-1 lg:mt-2">
@@ -3411,7 +3411,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     ) : (
                         <>
                             {tapas.scheduleType === 'everyNthDays' && (
-                            <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(tapas.duration / tapas.scheduleInterval))} {t('everyNthDays', tapas.scheduleInterval).toLowerCase()}</p>
+                            <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(tapas.duration / tapas.scheduleInterval))} {t('everyNthDays', tapas.scheduleInterval).toLowerCase()} {t('days')}</p>
                             )}
                             {tapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
                         </>
@@ -3532,7 +3532,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                             </div>
                         </div>
                     </>)}
-                    {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days').toLowerCase()}</p>}
+                    {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days')}</p>}
                     <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessfulOrFinished(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
                     {!isNoTapasType(tapas) && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
                         <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t(tapas.scheduleType === 'weekly' ? 'weeksChecked' : 'daysChecked')}
@@ -4649,7 +4649,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                     {sharedTapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {sharedTapas.startTime}</p>}
                     <p><strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(sharedTapas.duration / getTotalUnits(sharedTapas.scheduleType))} {t(sharedTapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}</p>
                     {sharedTapas.scheduleType === 'everyNthDays' && (
-                    <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(sharedTapas.duration / sharedTapas.scheduleInterval))} {t('everyNthDays', sharedTapas.scheduleInterval).toLowerCase()}</p>
+                    <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(sharedTapas.duration / sharedTapas.scheduleInterval))} {t('everyNthDays', sharedTapas.scheduleInterval).toLowerCase()} {t('days')}</p>
                     )}
                     {sharedTapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
                     {displayDescription && (<div><strong className="font-semibold">{t('description')}:</strong>
