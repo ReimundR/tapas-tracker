@@ -261,6 +261,46 @@ const ConfigModal = ({ onClose, db, userId, t, setConfig, wasPersistentCacheEnab
     );
 };
 
+const getDateStr = (date) => {
+    return date.toLocaleDateString();
+};
+
+const getDateRangeReductionFormat = () => {
+    const fmt = getLocaleDateFormat();
+    const adate = getDateStr(new Date());
+    let sep;
+    for (let i=0; i<adate.length; i++) {
+        sep = adate[i];
+        if (sep < '0' || sep > '9') {
+            break;
+        }
+    }
+    const maxReductions = fmt.endsWith('MM' + sep + 'YYYY') ? 2 : fmt.endsWith('YYYY') ? 1 : 0;
+    return {sep, maxReductions};
+};
+
+const redFormat = getDateRangeReductionFormat();
+
+const reduceDateRange = (startStr, endStr) => {
+    const n = Math.min(startStr.length, endStr.length);
+    let x = 0;
+    let reds = redFormat.maxReductions;
+    for (let i=1; i <= n && reds != 0; i++) {
+        const v = startStr[startStr.length-i];
+        if (v != endStr[endStr.length-i]) {
+            break;
+        }
+        if (v==redFormat.sep) {
+            x = i;
+            reds--;
+        }
+    }
+    if (x > 0) {
+        startStr = startStr.substring(0, startStr.length+1-x);
+    }
+    return `${startStr} - ${endStr}`;
+};
+
 const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedTapas, isPersistentCacheEnabled }) => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
@@ -2186,7 +2226,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                 {tapasItem.duration !== null && tapasItem.duration > 0 && (
                                     <>
                                         <p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
-                                            {t('timeframe')}: {tapasItem.startDate.toDate().toLocaleDateString()} - {endDate.toLocaleDateString()}
+                                            {t('timeframe')}: {reduceDateRange(tapasItem.startDate.toDate().toLocaleDateString(), endDate.toLocaleDateString())}
                                         </p>
                                         <div className="hidden lg:block flex justify-between items-center">
                                             {!statusText.length && isNoTapasType(tapasItem) && checkedUnitsCount==0 ? (
@@ -3232,43 +3272,13 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
         }
 
         const isWeekly = tapas.scheduleType === 'weekly';
-        const getDateStr = (date) => {
-            return date.toLocaleDateString();
-        };
-
-        const fmt = getLocaleDateFormat();
-        const adate = getDateStr(new Date());
-        let sep;
-        for (let i=0; i<adate.length; i++) {
-            sep = adate[i];
-            if (sep < '0' || sep > '9') {
-                break;
-            }
-        }
-        const reductions = fmt.endsWith('MM' + sep + 'YYYY') ? 2 : fmt.endsWith('YYYY') ? 1 : 0;
 
         return ranges.map(range => {
             let startStr = getDateStr(range.start);
-            const endStr = range.start == range.end ? null :getDateStr(range.end);
+            const endStr = range.start == range.end ? null : getDateStr(range.end);
             let text;
             if (endStr) {
-                const n = Math.min(startStr.length, endStr.length);
-                let x = 0;
-                let reds = reductions;
-                for (let i=1; i <= n && reds != 0; i++) {
-                    const v = startStr[startStr.length-i];
-                    if (v != endStr[endStr.length-i]) {
-                        break;
-                    }
-                    if (v==sep) {
-                        x = i;
-                        reds--;
-                    }
-                }
-                if (x > 0) {
-                    startStr = startStr.substring(0, startStr.length+1-x);
-                }
-                text = `${startStr} - ${endStr}`;
+                text = reduceDateRange(startStr, endStr);
                 if (isWeekly) {
                     text += ' (' + t('cw') + getDateWeek(range.start) + ' - ' + getDateWeek(range.end) + ')';
                 }
@@ -3398,7 +3408,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     {noDuration ? (
                         <p><strong className="font-semibold">{t('startDate')}:</strong> {tapas.startDate?.toDate().toLocaleDateString()}</p>
                     ) : (<>
-                            <p><strong className="font-semibold">{t('timeframe')}:</strong> {tapas.startDate?.toDate().toLocaleDateString()} - {endDate?.toLocaleDateString()}
+                            <p><strong className="font-semibold">{t('timeframe')}:</strong> {reduceDateRange(tapas.startDate?.toDate().toLocaleDateString(), endDate?.toLocaleDateString())}
                             </p>
                             {tapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {tapas.startTime}</p>}
                             <p>
