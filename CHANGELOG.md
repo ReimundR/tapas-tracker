@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.5.2 (2026-01-31) =
+
+* small improvements
+
 #### = 1.5.1 (2026-01-10) =
 
 * added reduced date range formating and reduced date type display

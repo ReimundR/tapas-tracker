@@ -846,7 +846,7 @@ const getTapasDay = (date, tapas, startDateObj) => {
 };
 
 const getDateWeek = (dateIn) => {
-    const date = (typeof dateIn === 'object') ? dateIn : new Date();
+    const date = (typeof dateIn === 'object') ? new Date(dateIn.getTime()) : new Date();
     date.setHours(0, 0, 0, 0);
     // Thursday in current week decides the year.
     date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
@@ -2321,12 +2321,16 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     }
     parts.unshift(t('finished'));
 
+    const isWeekly = tapas.scheduleType === 'weekly';
     const dates = [];
     const checked = [];
     for (let day=0; day < totalUnits; day++) {
         const date = new Date(time);
-        dates.push(date.toLocaleDateString());
-        time += daysDelta * timeDayMs;
+        if (isWeekly) {
+            dates.push(t('cw') + getDateWeek(date));
+        } else {
+            dates.push(date.toLocaleDateString());
+        }
         if (isDateChecked(date)) {
             checked.push([0,day,1]);
         }
@@ -2335,6 +2339,7 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
         for (let part=0; part < checkedPartsForToday.length; part++) {
             checked.push([numParts - checkedPartsForToday[part],day,1]);
         }
+        time += daysDelta * timeDayMs;
     }
 
     const data = checked.map(function (item) {
@@ -3571,7 +3576,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                         onClick={() => setShowCheckedDetails(true)}
                                         className="bg-green-600 hover:bg-green-700 text-white align-middle px-1 ml-1 rounded-full text-xs font-medium"
                                     >
-                                        {t('details')}
+                                        {t('overview')}
                                     </button>
                                 )}
                             </div>
