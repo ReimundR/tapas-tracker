@@ -2975,7 +2975,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             userId: userId,
             checkedPartsByDate: {},
             results: null, // New tapas starts with no results
-            shareReference: tapas.shareReference || null, // Carry over share reference if exists
+            shareReference: null, // Don't carry over share reference
             scheduleType: tapas.scheduleType || 'daily', // Carry over schedule type
             scheduleInterval: tapas.scheduleInterval || '', // Carry over schedule interval
             acknowledgeAfter: tapas.acknowledgeAfter || false, // Carry over acknowledgeAfter

@@ -1,5 +1,10 @@
 # Changelog
 
+#### = 1.5.3 (2026-02-11) =
+
+* changed don't carry over share reference on shared tapas repeat
+  (need to share repeated tapas again if needed)
+
 #### = 1.5.2 (2026-01-31) =
 
 * small improvements
