@@ -1,6 +1,6 @@
 {
   "name": "tapas",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "private": false,
   "scripts": {
     "dev": "next dev --webpack",
@@ -35,7 +35,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/typography": "^0.5.19",
-    "marked": "^17.0.1",
+    "marked": "^17.0.2",
     "remark": "^15.0.1",
     "serwist": "^9.5.5",
     "tailwindcss": "^4",

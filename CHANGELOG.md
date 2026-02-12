@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.5.4 (2026-02-12) =
+
+* checked dates overview graph now in any case available
+
 #### = 1.5.3 (2026-02-11) =
 
 * changed don't carry over share reference on shared tapas repeat

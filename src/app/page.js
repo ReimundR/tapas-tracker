@@ -2290,34 +2290,53 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
     );
 };
 
+const getFirstDate = (dates) => {
+    let first = dates[0];
+    dates.forEach(timestamp => {
+        if (timestamp.seconds < first.seconds) first = timestamp;
+    });
+    return first;
+};
+
 const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) => {
     const { locale } = useContext(LocaleContext);
     const displayTapasName = getLocalizedContent(tapas.name, locale, selectedTapasLanguage);
-    const displayParts = getLocalizedContent(tapas.parts, locale, selectedTapasLanguage);
 
-    const startDateObj = getStartOfDayUTC(tapas.startDate.toDate());
-    const endDateObj = new Date(startDateObj);
-    if (endDateObj && tapas.duration) {
-        endDateObj.setDate(startDateObj.getDate() + tapas.duration - 1); // Reduced by one day
-    }
-
+    let startDateObj = getStartOfDayUTC(tapas.startDate.toDate());
     const today = getTapasDay(getDateNow(config), tapas, startDateObj);
-    const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-    let time = startDateObj.getTime();
-    let totalUnits;
-    if (today < endDateObj) {
-        const daysDiff = Math.floor((today.getTime() - time) / timeDayMs);
-        totalUnits = Math.ceil(daysDiff / daysDelta) + 1;
+
+    let endDateObj;
+    if (!startDateObj || !tapas.duration) {
+        if (!startDateObj) {
+            const first = getFirstDate(tapas.checkedDays);
+            startDateObj = getStartOfDayUTC(first.toDate());
+        }
+        endDateObj = today;
     } else {
-        totalUnits = Math.ceil(tapas.duration / daysDelta);
+        endDateObj = new Date(startDateObj);
+        if (endDateObj && tapas.duration) {
+            endDateObj.setDate(startDateObj.getDate() + tapas.duration - 1); // Reduced by one day
+        }
+        if (today < endDateObj) {
+            endDateObj = today;
+        }
     }
+
+    const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
+    let startTime = startDateObj.getTime();
+    const daysDiff = Math.floor((endDateObj.getTime() - startTime) / timeDayMs);
+    const totalUnits = Math.ceil(daysDiff / daysDelta) + 1;
     const isDateChecked = (date) => isTapasDateChecked(tapas.checkedDays, date);
 
-    const parts = [];
+    const showParts = !isNoTapasType(tapas) && tapas.parts.length > 0 && Object.keys(tapas.checkedPartsByDate).length > 0;
+    const displayParts = getLocalizedContent(tapas.parts, locale, selectedTapasLanguage);
     const numParts = displayParts.length;
-    for (let part=0; part < numParts; part++) {
-        const partName = displayParts[part];
-        parts.unshift(partName.length <= 20 ? partName : partName.substring(0,17) + '...');
+    const parts = [];
+    if (showParts) {
+        for (let part=0; part < numParts; part++) {
+            const partName = displayParts[part];
+            parts.unshift(partName.length <= 20 ? partName : partName.substring(0,17) + '...');
+        }
     }
     parts.unshift(t('finished'));
 
@@ -2325,7 +2344,7 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     const dates = [];
     const checked = [];
     for (let day=0; day < totalUnits; day++) {
-        const date = new Date(time);
+        const date = new Date(startTime);
         if (isWeekly) {
             dates.push(t('cw') + getDateWeek(date));
         } else {
@@ -2334,12 +2353,14 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
         if (isDateChecked(date)) {
             checked.push([0,day,1]);
         }
-        const todayDateString = formatDateNoTimeToISO(date);
-        const checkedPartsForToday = tapas.checkedPartsByDate?.[todayDateString] || [];
-        for (let part=0; part < checkedPartsForToday.length; part++) {
-            checked.push([numParts - checkedPartsForToday[part],day,1]);
+        if (showParts) {
+            const todayDateString = formatDateNoTimeToISO(date);
+            const checkedPartsForToday = tapas.checkedPartsByDate?.[todayDateString] || [];
+            for (let part=0; part < checkedPartsForToday.length; part++) {
+                checked.push([numParts - checkedPartsForToday[part],day,1]);
+            }
         }
-        time += daysDelta * timeDayMs;
+        startTime += daysDelta * timeDayMs;
     }
 
     const data = checked.map(function (item) {
@@ -3571,14 +3592,12 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                         <div>
                             <div className="row">
                                 <strong className="font-semibold">{t('checkedDates')}: </strong>
-                                {!isNoTapasType(tapas) && tapas.parts.length > 0 && Object.keys(tapas.checkedPartsByDate).length > 0 && (
-                                    <button
-                                        onClick={() => setShowCheckedDetails(true)}
-                                        className="bg-green-600 hover:bg-green-700 text-white align-middle px-1 ml-1 rounded-full text-xs font-medium"
-                                    >
-                                        {t('overview')}
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setShowCheckedDetails(true)}
+                                    className="bg-green-600 hover:bg-green-700 text-white align-middle px-1 ml-1 rounded-full text-xs font-medium"
+                                >
+                                    {t('overview')}
+                                </button>
                             </div>
                             <ul className="list-disc list-inside ml-4">
                                 {formatCheckedDays(tapas.checkedDays)}
