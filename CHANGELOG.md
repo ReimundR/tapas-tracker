@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.5.5 (2026-02-17) =
+
+* disabled back button (problems with offline caching)
+
 #### = 1.5.4 (2026-02-12) =
 
 * checked dates overview graph now in any case available
