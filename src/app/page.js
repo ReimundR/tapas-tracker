@@ -2419,7 +2419,7 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div className="p-6 rounded-lg shadow-xl max-w-4xl w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-5xl font-bold">
                     &times;
                 </button>
                 <h2 className="text-2xl font-bold mb-1">{displayTapasName}</h2>
@@ -3373,7 +3373,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             <div className="p-6 rounded-lg shadow-xl max-w-lg w-full mx-auto my-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{displayTapasName}</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-3xl font-bold">
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-5xl font-bold">
                         &times;
                     </button>
                 </div>
@@ -4752,7 +4752,7 @@ const License = ({ onClose }) => {
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
-                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-5xl font-bold">
                     &times;
                 </button>
                 <div className="flex justify-between items-center mb-6">
@@ -4775,7 +4775,7 @@ const LegalNotice = ({ onClose }) => {
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
-                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-3xl font-bold">
+                <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-5xl font-bold">
                     &times;
                 </button>
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">{t('legalNotice')}</h2>
