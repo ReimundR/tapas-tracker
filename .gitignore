@@ -25,6 +25,9 @@ public/swe-worker*
 /build
 /android
 
+# deploy
+*.tar.gz
+
 # misc
 .DS_Store
 *.pem
