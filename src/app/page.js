@@ -4,13 +4,17 @@
 // This file will contain your main application logic as a Next.js page component.
 
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef, Suspense } from 'react';
-import { initializeApp } from 'firebase/app';
+import PouchDB from 'pouchdb';
+import PouchAuth from 'pouchdb-authentication';
+import { signIn, signOut, useSession } from "next-auth/react";
+/*import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
     signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentSingleTabManager, disableNetwork,
     enableNetwork, getFirestore, collection, addDoc, getDocs, getDoc, getDocsFromCache,
     getDocFromCache, doc, updateDoc, deleteDoc, query, where, onSnapshot, orderBy, Timestamp,
     setDoc, writeBatch } from 'firebase/firestore';
+*/
 //import { useRouter } from "next/navigation";
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { RichTextEditor, LexicalHtmlRenderer, LocaleContext } from './components/editor';
@@ -24,6 +28,20 @@ import { translations } from "./translations";
 import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt, useModalState } from "./helpers";
 import ReactECharts from 'echarts-for-react';
 import 'react-tabs/style/react-tabs.css';
+
+PouchDB.plugin(PouchAuth);
+
+const db = new PouchDB('https://test.tapas-tracker.app', {skip_setup: true});
+
+const startSync = () => {
+  const localDB = new PouchDB('tapas_local');
+  localDB.sync(db, {
+    live: true,
+    retry: true,
+    filter: 'auth/by_user', // Only sync my own data
+    query_params: { user_id: currentUserEmail }
+  });
+};
 
 const __app_id = firebaseConfig.appId;
 const appVersion = process.env.version;
@@ -5172,7 +5190,7 @@ const HomePage = () => {
 
     const mySignInWithPopup = async (auth, provider) => {
         try {
-            await signInWithPopup(auth, provider);
+            //await signInWithPopup(auth, provider);
         } catch (error) {
             if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
                 // ignore user abort
@@ -5187,8 +5205,9 @@ const HomePage = () => {
     const handleGoogleSignIn = async () => {
         if (!auth) return;
         try {
-            const provider = new GoogleAuthProvider();
-            const ok = await mySignInWithPopup(auth, provider);
+            const ok = signIn('google');
+            //const provider = new GoogleAuthProvider();
+            //const ok = await mySignInWithPopup(auth, provider);
             if (ok) {
                 setFirebaseError('');
                 setShowLoginPrompt(false); // Close login prompt after successful sign-in
@@ -5203,10 +5222,19 @@ const HomePage = () => {
     const handleEmailSignUp = async () => {
         if (!auth) return;
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
-            setFirebaseError('');
-            setShowLoginPrompt(false); // Close login prompt after successful sign-up
-            setShowMenu(false); // Close menu after login
+            const res = await fetch('/api/auth/signup', {
+                method: 'POST',
+                body: JSON.stringify({ email, password }),
+            });
+            if (res.ok) {
+                setFirebaseError('');
+                setShowLoginPrompt(false); // Close login prompt after successful sign-up
+                setShowMenu(false); // Close menu after login
+            } else {
+                const data = await res.json();
+                console.error("Signup failed:", data.error);
+                setFirebaseError(`Error signing up: ${data.error}`);
+            }
         } catch (error) {
             console.error("Error signing up with email:", error);
             setFirebaseError(`Error signing up: ${error.message}`);
@@ -5216,7 +5244,7 @@ const HomePage = () => {
     const handleEmailSignIn = async () => {
         if (!auth) return;
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            await signIn('credentials', { email, password, callbackUrl: '/' });
             setFirebaseError('');
             setShowLoginPrompt(false); // Close login prompt after successful sign-in
             setShowMenu(false); // Close menu after login

@@ -8,6 +8,9 @@ SSH_EXEC="ssh root@$SRV"
 echo \* building application
 npm run build
 
+echo \* stop application
+$SSH_EXEC /root/stop_all.sh
+
 echo \* packing application for deploy
 tar cf - $DEPLOY | pv -s $(du -sb $DEPLOY | awk '{sum += $1} END {print sum}') | gzip > $ARCHIVE
 #tar cfz tapas-tracker.tar.gz $DEPLOY & progress -mp $!
@@ -24,3 +27,6 @@ $SSH_EXEC "pv -f $TARGET/$ARCHIVE | tar -xzf - -C $TARGET"
 echo \* remove deploy package
 $SSH_EXEC rm -rf $TARGET/$ARCHIVE
 rm -rf $ARCHIVE
+
+echo \* start application
+$SSH_EXEC /root/start_all.sh
