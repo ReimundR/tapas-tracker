@@ -20,7 +20,7 @@ const { version } = require('./package.json');
 const nextConfig = {
   reactCompiler: true,
   reactStrictMode: true,
-  cacheComponents: true,
+  cacheComponents: false,
   pageExtensions: ['js', 'jsx', 'md', 'mdx'],
   webpack: (config, { isServer }) => {
     config.module.rules.push({
@@ -43,7 +43,7 @@ module.exports = async (phase) => {
       // use something else that works, such as "service-worker/index.ts".
       swSrc: "src/app/sw.ts",
       swDest: "public/sw.js",
-      cacheOnNavigation: true,
+      cacheOnNavigation: false,
       reloadOnOnline: false,
       //disable: process.env.NODE_ENV !== "production",
     });
