@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'; // Force Next.js, not to check this page on build
+
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";

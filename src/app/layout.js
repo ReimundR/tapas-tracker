@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CookieConsentBanner from './components/CookieConsentBanner'; // Import the banner component
-import AuthProvider from "@/components/AuthProvider";
+import AuthProvider from "./components/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
