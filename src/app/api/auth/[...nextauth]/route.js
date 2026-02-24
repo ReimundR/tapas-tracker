@@ -3,7 +3,15 @@ export const dynamic = 'force-dynamic'; // Force Next.js, not to check this page
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import PouchDB from 'pouchdb';
+
+//import PouchDB from 'pouchdb';
+
+//import PouchDB from 'pouchdb-node';
+// RR (more secure for VPS):
+import PouchDBHttp from 'pouchdb-adapter-http';
+import PouchDBAuth from 'pouchdb-authentication';
+import PouchDBCore from 'pouchdb-core';
+const PouchDB = PouchDBCore.plugin(PouchDBHttp).plugin(PouchDBAuth);
 
 const handler = NextAuth({
   providers: [
