@@ -50,6 +50,12 @@
       ]
     },
     {
+        "name": "Attach to Chrome on Android",
+        "type": "android-webview",
+        "request": "attach",
+        "application": "com.android.chrome",
+    },
+    {
       "name": "Next.js: debug full stack",
       "type": "node",
       "request": "launch",
