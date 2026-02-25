@@ -17,9 +17,31 @@
       "name": "Next.js: debug client-side (Firefox)",
       "type": "firefox",
       "request": "launch",
+      "firefoxExecutable": "/usr/bin/flatpak",
+      "firefoxArgs": ["run", "org.mozilla.firefox",
+        //"-no-remote",
+        "-P", "debug-profile",
+        "--start-debugger-server"],
+      "port": 6000,
       "url": "http://localhost:3000",
-      "tmpDir": "/home/reimund/Dokumente/shared/Arbeit/Tapas_App/tapas/.tmp",
+      "webRoot": "${workspaceFolder}",
+      "tmpDir": "${workspaceFolder}/.tmp",
       "reAttach": true,
+      "pathMappings": [
+        {
+          "url": "webpack://_N_E",
+          "path": "${workspaceFolder}"
+        }
+      ]
+    },
+    {
+      "name": "next.js Attach (Firefox)",
+      "type": "firefox",
+      "request": "attach",
+      "port": 6000,
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}",
+      "reloadOnAttach": true,
       "pathMappings": [
         {
           "url": "webpack://_N_E",

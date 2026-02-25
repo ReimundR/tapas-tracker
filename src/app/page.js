@@ -4898,8 +4898,8 @@ const HomePage = () => {
     const { locale, setLocale, t } = useContext(LocaleContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
 
-    const myGetDoc = async (ref) => {
-        if (isPersistentCacheEnabled && (isNetworkDisabled || isOffline)) {
+    const myGetDoc = async (ref, useCache=false) => {
+        if (useCache || (isPersistentCacheEnabled && (isNetworkDisabled || isOffline))) {
             return await getDocFromCache(ref);
         } else {
             return await getDoc(ref);
@@ -4939,6 +4939,7 @@ const HomePage = () => {
                 const persistentCacheCookie = localStorage.getItem('persistentLocalCache');
                 const networkDisabledCookie = localStorage.getItem('networkDisabled');
                 const app = initializeApp(firebaseConfig);
+                const usePersistentCache = persistentCacheCookie === 'true';
 
                 let firestore;
                 let authentication;
@@ -4946,7 +4947,7 @@ const HomePage = () => {
                     firestore = db;
                     authentication = auth;
                 } else {
-                    if (typeof window !== 'undefined' && (persistentCacheCookie === 'true' || (!persistentCacheCookie && isStandalone))) {
+                    if (typeof window !== 'undefined' && (usePersistentCache || (!persistentCacheCookie && isStandalone))) {
                         try {
                             // persistentLocalCache is required to enable offline querying
                             firestore = initializeFirestore(app, {
@@ -4965,7 +4966,7 @@ const HomePage = () => {
                         firestore = getFirestore(app);
                     }
 
-                    if (persistentCacheCookie === 'true' && networkDisabledCookie === 'true') {
+                    if (usePersistentCache && networkDisabledCookie === 'true') {
                         disableNetwork(firestore);
                         setNetworkDisabled(true);
                     }
@@ -4987,6 +4988,7 @@ const HomePage = () => {
                         setCurrentPage('active');
 
                         // Load user preferences for Tapas language
+                        let offline = false;
                         const userPrefsRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/preferences/tapas`);
                         let userPrefsSnap = null;
                         try {
@@ -4994,6 +4996,7 @@ const HomePage = () => {
                         } catch (e) {
                             userPrefsSnap = null;
                             if (e.code === 'unavailable') {
+                                offline = true;
                                 setIsOffline(true);
                             } else {
                                 alert("Failed to connect.");
@@ -5019,7 +5022,8 @@ const HomePage = () => {
 
                         // Load config
                         const configRef = doc(firestore, `artifacts/${appId}/users/${user.uid}/config/appConfig`);
-                        const configSnap = await myGetDoc(configRef);
+                        const useCache = usePersistentCache && offline;
+                        const configSnap = await myGetDoc(configRef, useCache);
                         if (configSnap.exists()) {
                             const config = configSnap.data();
                             setConfig(config || {});

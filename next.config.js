@@ -20,7 +20,7 @@ const { version } = require('./package.json');
 const nextConfig = {
   reactCompiler: true,
   reactStrictMode: true,
-  cacheComponents: true,
+  cacheComponents: false,
   pageExtensions: ['js', 'jsx', 'md', 'mdx'],
   webpack: (config, { isServer }) => {
     config.module.rules.push({
