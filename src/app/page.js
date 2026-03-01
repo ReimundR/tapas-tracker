@@ -2247,10 +2247,10 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                             {daysRemaining <= 1 && (
                                                 <p className="text-yellow-500 dark:text-yellow-200">{daysRemaining == 1 ? t('tomorrow') + ' ' : ''}{t('isLastDay')}</p>
                                             )}
-                                            {daysRemaining > 1 && daysToStart < 0 && (
+                                            {daysRemaining > 1 && (daysToStart < 0 || (daysToStart==0 && checkedUnitsCount>0)) && (
                                                 <p className="text-blue-600">{t('daysRemaining')}: {daysRemaining}</p>
                                             )}
-                                            {daysToStart >= 0 && (
+                                            {daysToStart >= 0 && checkedUnitsCount==0 && (
                                                 <p className="text-yellow-600 dark:text-yellow-500">
                                                     {daysToStart >=2 ? t('startsIn')+':' : t('startsIn').split(' ')[0]} {daysToStart == 0 ? t('todayX','') : daysToStart == 1 ? t('tomorrow') : daysToStart} {daysToStart > 1 ? t('days') : ''}
                                                 </p>
