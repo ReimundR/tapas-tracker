@@ -10,8 +10,8 @@
     ],
     "lib": [
       "dom",
-      "es2020",
-      // Other libs...
+      "dom.iterable",
+      "esnext",
       // Add this! Doing so adds WebWorker and ServiceWorker types to the global.
       "webworker"
     ],
@@ -23,7 +23,7 @@
     "incremental": true,
     "module": "esnext",
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
@@ -34,6 +34,7 @@
     ]
   },
   "exclude": [
+    "node_modules",
     "public/sw.js"
   ],
   "include": [
