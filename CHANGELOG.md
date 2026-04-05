@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.6.0 (2026-04-05) =
+
+* reworked code for date related bugs on end of day switch, summer/winter-time change
+
 #### = 1.5.5 (2026-02-17) =
 
 * disabled back button (problems with offline caching)
