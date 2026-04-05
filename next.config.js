@@ -21,11 +21,11 @@ const nextConfig = {
   reactCompiler: true,
   reactStrictMode: true,
   cacheComponents: false,
-  pageExtensions: ['js', 'jsx', 'md', 'mdx'],
-  webpack: (config, { isServer }) => {
+  pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
+  webpack: (config) => {
     config.module.rules.push({
       test: /\.md$/,
-      use: 'raw-loader',
+      use: 'asset/source',
     });
     return config;
   },
