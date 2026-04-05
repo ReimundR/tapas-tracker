@@ -3835,7 +3835,6 @@ const Statistics = ({ allTapas }) => {
     const { t } = useContext(AppContext);
     const [statisticsTimeFilter, setStatisticsTimeFilter] = useState('all');
     const today = getStartOfDayUTC(new Date());
-    const startDate = startOfDay(tapas.startDate.toDate());
 
     const filterTapasByTime = useCallback((tapasList) => {
         if (statisticsTimeFilter === 'all') {
@@ -3871,6 +3870,7 @@ const Statistics = ({ allTapas }) => {
                 return false;
             }
 
+            const startDate = startOfDay(tapas.startDate.toDate());
             const endDate = addDays(startDate, tapas.duration - 1);
             return !isBefore(endDate, filterDate);
         });
@@ -3880,8 +3880,10 @@ const Statistics = ({ allTapas }) => {
 
     const successfulTapas = filteredTapas.filter(tapas => isSuccessfulOrCrystallization(tapas));
     const failedTapas = filteredTapas.filter(tapas => isFailed(tapas));
-    const activeTapas = filteredTapas.filter(tapas => isActive(tapas) && !isNoTapasType(tapas) && !isAfter(startDate, today));
-    const pendingTapas = filteredTapas.filter(tapas => isActive(tapas) && !isNoTapasType(tapas) && isAfter(startDate, today));
+    const activeTapas = filteredTapas.filter(tapas =>
+        isActive(tapas) && !isNoTapasType(tapas) && !isAfter(startOfDay(tapas.startDate.toDate()), today));
+    const pendingTapas = filteredTapas.filter(tapas =>
+        isActive(tapas) && !isNoTapasType(tapas) && isAfter(startOfDay(tapas.startDate.toDate()), today));
 
     const calculateAverageDuration = (tapasList) => {
         if (tapasList.length === 0) return 0;
@@ -3901,7 +3903,7 @@ const Statistics = ({ allTapas }) => {
         let totalDuration;
         if (active) {
             totalDuration = tapasList.reduce((sum, tapas) =>
-                sum + Math.min(tapas.duration, differenceInCalendarDays(today, startDate) + 1), 0);
+                sum + Math.min(tapas.duration, differenceInCalendarDays(today, startOfDay(tapas.startDate.toDate())) + 1), 0);
         } else {
             totalDuration = tapasList.reduce((sum, tapas) => sum + tapas.duration, 0);
         }
@@ -5039,7 +5041,6 @@ const HomePage = () => {
                 }
             });
             setCustomTapasLanguages(gatheredCustomLangs);
-
 
             // Fetch shared tapas info for all tapas items here
             if (!isNetworkDisabled) {
