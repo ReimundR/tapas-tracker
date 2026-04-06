@@ -340,7 +340,7 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
     const handleAcknowledge = async () => {
         setIsLoading(true);
         try {
-            const startDateObj = getStartOfDayUTC(tapas.startDate.toDate());
+            const startDateObj = startOfDay(tapas.startDate.toDate());
             const endDateObj = tapas.duration > 0 ? addDays(startDateObj, tapas.duration - 1) : null;
 
             let unitsToAcknowledge = [];
@@ -348,7 +348,7 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
 
             //for (let i = numberOfDays - 1; i >= 2; i--) {
             for (let i = 0; i < numberOfDays; i++) {
-                const dateToAcknowledge = getStartOfDayUTC(addDays(currentRefDate, i * daysDelta));
+                const dateToAcknowledge = startOfDay(addDays(currentRefDate, i * daysDelta));
 
                 // Ensure the date is within the tapas duration
                 if (isBefore(dateToAcknowledge, startDateObj) || (endDateObj && isAfter(dateToAcknowledge, endDateObj))) {
@@ -789,11 +789,6 @@ const ConfirmDialog = ({ t, message, onConfirm, onCancel, confirmText="", cancel
     );
 };
 
-// Helper to get the start of the day in UTC from a local date
-const getStartOfDayUTC = (date) => {
-    return startOfDay(date);
-};
-
 // Helper to get the start of the week (Monday) in UTC from a local date
 const getStartOfWeekUTC = (date) => {
     return startOfWeek(date, { weekStartsOn: 1 });
@@ -825,14 +820,14 @@ const getTapasDay = (date, tapas, startDateObj) => {
     let tapasDate;
     if (tapas.scheduleType === 'weekly') {
         if (!startDateObj) {
-            startDateObj = getStartOfDayUTC(tapas.startDate.toDate()); // Use UTC start of day
+            startDateObj = startOfDay(tapas.startDate.toDate()); // Use UTC start of day
         }
         const deltaDays = getTapasWeekDiff(startDateObj);
         tapasDate = getTapasWeekDayUTC(date, deltaDays);
     } else if (tapas.scheduleType === 'everyNthDays') {
         tapasDate = getTapasIntervalDayUTC(date, tapas);
     } else {
-        tapasDate = getStartOfDayUTC(date);
+        tapasDate = startOfDay(date);
     }
     return tapasDate;
 };
@@ -843,10 +838,10 @@ const getDateWeek = (dateIn) => {
 };
 
 // Helper to format date objects toYYYY-MM-DD strings for comparison
-const formatDateToISO = (date) => format(date, 'yyyy-MM-dd')
+const formatDateToISO = (date) => format(date, 'yyyy-MM-dd');
 
 const formatDateNoTimeToISO = (date) => {
-    return formatDateToISO(getStartOfDayUTC(date));
+    return formatDateToISO(startOfDay(date));
 };
 
 const formatStartOfWeekNoTimeToISO = (date) => {
@@ -911,13 +906,14 @@ const getUniqueCheckedDays = (checkedDaysArray) => {
     if (!checkedDaysArray || checkedDaysArray.length === 0) {
         return [];
     }
+    //return checkedDaysArray;
     const uniqueDateStrings = new Set();
     const uniqueTimestamps = [];
 
     checkedDaysArray.forEach(timestamp => {
         const dateObj = timestampToDate(timestamp);
         // Normalize to UTC start of day for comparison and storage
-        const utcStartOfDay = getStartOfDayUTC(dateObj);
+        const utcStartOfDay = startOfDay(dateObj);
         const dateString = formatDateToISO(utcStartOfDay);
 
         if (!uniqueDateStrings.has(dateString)) {
@@ -1793,14 +1789,14 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
 
 // Helper function to calculate end date and remaining days
 const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
-    const today = getStartOfDayUTC(getDateNow(config));
+    const today = startOfDay(getDateNow(config));
     
     // For 'noTapas' scheduleType, duration and dates are not applicable
     if (!tapasItem.duration) {
         return { endDate: null, daysRemaining: null, daysOver: null };
     }
 
-    const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
+    const startDate = startOfDay(tapasItem.startDate.toDate());
     const endDate = addDays(startDate, tapasItem.duration - 1);
 
     const daysOver = differenceInCalendarDays(endDate, today);
@@ -1816,7 +1812,7 @@ const getTapasDatesInfo = (tapasItem, config={}, t={}) => {
             const aspectDate = addDays(startDate, aspectDays);
             const aspectDiff = differenceInCalendarDays(aspectDate, today);
             if ((aspectDiff < 0 && -aspectDiff <= daysAfter) || (aspectDiff >= 0 && aspectDiff <= daysBefore)) {
-                const aspectDateUTC = getStartOfDayUTC(aspectDate);
+                const aspectDateUTC = startOfDay(aspectDate);
                 let adate;
                 if (isToday(aspectDateUTC)) {
                     adate = t('today');
@@ -1920,7 +1916,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
     // Helper to get detailed status for active tapas display
     const getDetailedStatus = useCallback((tapasItem) => {
         const noDuration = tapasItem.duration === null || tapasItem.duration <= 0;
-        const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
+        const startDate = startOfDay(tapasItem.startDate.toDate());
         const today = getTapasDay(dateNow, tapasItem, startDate);
 
         if (noDuration || (isNoTapasType(tapasItem) && tapasItem.checkedDays)) {
@@ -1940,7 +1936,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                 let statusStat = [];
                 Object.keys(dates).forEach(name => {
                     const duration = dates[name];
-                    const date = getStartOfDayUTC(subDays(today, duration));
+                    const date = startOfDay(subDays(today, duration));
                     const checkedDates = countCheckedSince(uniqueCheckedDays, date);
                     const status = t('last' + name) + ': ' + checkedDates;
                     if (checkedDates == 0 && !statusStat.length) {
@@ -1967,8 +1963,8 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
         const isWeekly = tapasItem.scheduleType === 'weekly';
 
         const daysDelta = getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval);
-        const yesterday = getStartOfDayUTC(subDays(today, daysDelta));
-        const tomorrow = getStartOfDayUTC(addDays(today, daysDelta));
+        const yesterday = startOfDay(subDays(today, daysDelta));
+        const tomorrow = startOfDay(addDays(today, daysDelta));
 
         const isTodayWithinDuration = isWithinInterval(today, { start: startDate, end: endDate });
         const isTodayChecked = isTapasDateChecked(tapasItem.checkedDays, today);
@@ -2264,14 +2260,14 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     const { locale } = useContext(LocaleContext);
     const displayTapasName = getLocalizedContent(tapas.name, locale, selectedTapasLanguage);
 
-    let startDateObj = getStartOfDayUTC(tapas.startDate.toDate());
+    let startDateObj = startOfDay(tapas.startDate.toDate());
     const today = getTapasDay(getDateNow(config), tapas, startDateObj);
 
     let endDateObj;
     if (!startDateObj || !tapas.duration) {
         if (!startDateObj) {
             const first = getFirstDate(tapas.checkedDays);
-            startDateObj = getStartOfDayUTC(first.toDate());
+            startDateObj = startOfDay(first.toDate());
         }
         endDateObj = today;
     } else {
@@ -2315,7 +2311,7 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
             checked.push([0,day,1]);
         }
         if (showParts) {
-            const todayDateString = formatDateNoTimeToISO(date);
+            const todayDateString = formatDateToISO(date);
             const checkedPartsForToday = tapas.checkedPartsByDate?.[todayDateString] || [];
             for (let part=0; part < checkedPartsForToday.length; part++) {
                 checked.push([numParts - checkedPartsForToday[part],day,1]);
@@ -2446,7 +2442,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
     const tapasRef = doc(db, `artifacts/${appId}/users/${userId}/tapas`, tapas.id);
     const publicSharedTapasCollectionRef = collection(db, `artifacts/${appId}/public/data/sharedTapas`);
 
-    const startDateObj = tapas.startDate ? getStartOfDayUTC(tapas.startDate.toDate()) : null; // Use UTC start of day
+    const startDateObj = tapas.startDate ? startOfDay(tapas.startDate.toDate()) : null; // Use UTC start of day
     const endDateObj = startDateObj && tapas.duration ? addDays(startDateObj, tapas.duration - 1) : null;
 
     const noTapas = isNoTapasType(tapas);
@@ -2471,16 +2467,16 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
     const today = getTapasDay(getDateNow(config), tapas, startDateObj);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-    const beforeYesterday = getStartOfDayUTC(subDays(today, 2 * daysDelta));
-    const yesterday = getStartOfDayUTC(subDays(today, daysDelta));
-    const tomorrow = getStartOfDayUTC(addDays(today, daysDelta));
+    const beforeYesterday = startOfDay(subDays(today, 2 * daysDelta));
+    const yesterday = startOfDay(subDays(today, daysDelta));
+    const tomorrow = startOfDay(addDays(today, daysDelta));
 
     const isTodayChecked = isDateChecked(today);
     const isBeforeYesterdayChecked = isDateChecked(beforeYesterday);
     const isYesterdayChecked = isDateChecked(yesterday);
     const isTomorrowChecked = isDateChecked(tomorrow);
 
-    const todayDateString = formatDateNoTimeToISO(today);
+    const todayDateString = formatDateToISO(today);
 
     // Check if the tapas period is over
     const isTodayValid = !isAfter(startDateObj, today) && (noDuration || !isAfter(today, endDateObj));
@@ -2590,7 +2586,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
         setInitMessage('');
         let successMessageKey;
 
-        const dateForCheckedDays = getStartOfDayUTC(dateToMark);
+        const dateForCheckedDays = startOfDay(dateToMark);
         if (tapas.scheduleType === 'weekly') {
             successMessageKey = 'weekCheckedSuccessfully';
         } else {
@@ -2899,7 +2895,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
     const repeatTapas = () => {
         let newDurationDays = tapas.duration; // Default to original duration in days
-        let newStartDate = getStartOfDayUTC(new Date()); // New tapas starts today in UTC
+        let newStartDate = startOfDay(new Date()); // New tapas starts today in UTC
 
         if (repeatOption === 'newDuration') {
             if (isNaN(parseInt(newRepeatDuration)) || parseInt(newRepeatDuration) <= 0) {
@@ -3835,7 +3831,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 const Statistics = ({ allTapas }) => {
     const { t } = useContext(AppContext);
     const [statisticsTimeFilter, setStatisticsTimeFilter] = useState('all');
-    const today = getStartOfDayUTC(new Date());
+    const today = startOfDay(new Date());
 
     const filterTapasByTime = useCallback((tapasList) => {
         if (statisticsTimeFilter === 'all') {
@@ -5568,28 +5564,28 @@ const HomePage = () => {
     const tapasLanguagesForMenu = Object.keys(customTapasLanguages).filter(lang => lang !== locale);
 
     const isTapasTodayChecked = (tapasItem) => {
-        const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
+        const startDate = startOfDay(tapasItem.startDate.toDate());
         const today = getTapasDay(getDateNow(config), tapasItem, startDate);
         const isTodayWithinDuration = !isBefore(today, startDate);
         return !isTodayWithinDuration || isTapasDateChecked(tapasItem.checkedDays, today);
     };
 
     const isTapasYesterdayChecked = (tapasItem) => {
-        const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
+        const startDate = startOfDay(tapasItem.startDate.toDate());
         const today = getTapasDay(getDateNow(config), tapasItem, startDate);
         const daysDelta = getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval);
-        const yesterday = getStartOfDayUTC(subDays(today, daysDelta));
+        const yesterday = startOfDay(subDays(today, daysDelta));
 
         const isYesterdayWithinDuration = !isBefore(yesterday, startDate);
         return !isYesterdayWithinDuration || isTapasDateChecked(tapasItem.checkedDays, yesterday);
     };
 
     const isTapasExpired = (tapasItem) => {
-        const startDate = getStartOfDayUTC(tapasItem.startDate.toDate());
+        const startDate = startOfDay(tapasItem.startDate.toDate());
         if (!tapasItem.duration) {
             return false;
         }
-        const today = getStartOfDayUTC(getDateNow(config));
+        const today = startOfDay(getDateNow(config));
         const endDate = addDays(startDate, tapasItem.duration - 1);
         return today > endDate;
     };
