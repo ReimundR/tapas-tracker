@@ -18,7 +18,7 @@ import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
 import { Tooltip } from 'react-tooltip';
 import * as Switch from "@radix-ui/react-switch";
 import Head from 'next/head'; // Import Head from next/head for meta tags
-import { startOfDay, startOfWeek, addDays, subDays, differenceInCalendarDays, getISOWeek,
+import { startOfDay, startOfWeek, addDays, subDays, subMonths, subYears, differenceInCalendarDays, getISOWeek,
     isToday, isYesterday, isTomorrow, isBefore, isAfter, isSameDay, isWithinInterval, format } from 'date-fns';
 import GdprEN from "../content/privacy-policy-en.mdx";
 import GdprDE from "../content/privacy-policy-de.mdx";
@@ -2056,7 +2056,8 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
         // Apply name filter
         if (historyNameFilter) {
             const sname = historyNameFilter.toLowerCase();
-            filtered = filtered.filter(tapas => tapas.name.toLowerCase().indexOf(sname) !== -1);
+            filtered = filtered.filter(tapas =>
+                getLocalizedContent(tapas.name, locale, selectedTapasLanguage).toLowerCase().indexOf(sname) !== -1);
         }
 
         return filtered;
@@ -3955,11 +3956,11 @@ const Statistics = ({ allTapas }) => {
     const avgFailedCompletionPercentage = calculateAverageCompletion(failedTapas);
 
 
+            //<h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">{t('tapasStatistics')}</h2>
     return (
         <div className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">{t('tapasStatistics')}</h2>
 
-            <div className="mb-4 flex flex-col sm:flex-row justify-end items-center gap-4">
+            <div className="mb-4 flex flex-col sm:flex-row justify-center items-center gap-4">
                 <div className="flex items-center space-x-2">
                     <span className="font-medium text-gray-700 dark:text-gray-300">{t('timeframe')}:</span>
                     <select
