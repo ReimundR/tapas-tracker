@@ -906,7 +906,7 @@ const getUniqueCheckedDays = (checkedDaysArray) => {
     if (!checkedDaysArray || checkedDaysArray.length === 0) {
         return [];
     }
-    //return checkedDaysArray;
+    return checkedDaysArray;
     const uniqueDateStrings = new Set();
     const uniqueTimestamps = [];
 
