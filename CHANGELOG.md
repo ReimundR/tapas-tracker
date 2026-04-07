@@ -1,5 +1,9 @@
 # Changelog
 
+#### = 1.6.1 (2026-04-07) =
+
+* fixed checked days overview (since 1.6.0)
+
 #### = 1.6.0 (2026-04-05) =
 
 * reworked code for date related bugs on end of day switch, summer/winter-time change

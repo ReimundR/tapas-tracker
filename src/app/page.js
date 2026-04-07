@@ -2273,7 +2273,7 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     } else {
         endDateObj = new Date(startDateObj);
         if (endDateObj && tapas.duration) {
-            endDateObj = addDays(startDateObj.getDate(), tapas.duration - 1);
+            endDateObj = addDays(startDateObj, tapas.duration - 1);
         }
         if (isBefore(today, endDateObj)) {
             endDateObj = today;
