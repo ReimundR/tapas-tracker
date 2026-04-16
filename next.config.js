@@ -22,13 +22,13 @@ const nextConfig = {
   reactStrictMode: true,
   cacheComponents: false,
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
-  webpack: (config) => {
+  /*webpack: (config) => {
     config.module.rules.push({
       test: /\.md$/,
-      use: 'asset/source',
+      type: 'asset/source',
     });
     return config;
-  },
+  },*/
   env: {
     version,
     FIREBASE_WEBAPP_CONFIG: process.env.FIREBASE_WEBAPP_CONFIG

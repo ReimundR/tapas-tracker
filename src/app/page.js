@@ -26,6 +26,13 @@ import { translations } from "./translations";
 import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt, useModalState } from "./helpers";
 import ReactECharts from 'echarts-for-react';
 import 'react-tabs/style/react-tabs.css';
+//import ChangelogContent from '../../CHANGELOG.md';
+import dynamic from 'next/dynamic';
+
+const ChangelogContent = dynamic(() => import('../../CHANGELOG.md'), {
+  loading: () => <div className="flex justify-center items-center">
+    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500"></div></div>,
+});
 
 const __app_id = firebaseConfig.appId;
 const appVersion = process.env.version;
@@ -430,7 +437,8 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
     );
 };
 
-const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, myAddDoc, myUpdateDoc, myDeleteDoc, setSelectedTapas, setMessage, setInitMessage=null, onResultAdded=null }) => {
+const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, myAddDoc, myUpdateDoc, myDeleteDoc,
+        setSelectedTapas, setMessage, setInitMessage=null, onResultAdded=null }) => {
     const isNew = result === null;
     const [content, setContent] = useState(result ? result.content : '');
     const [isLoading, setIsLoading] = useState(false);
@@ -578,7 +586,8 @@ const EditResultModal = ({ onClose, db, userId, t, allTapas, tapasId, result, my
     );
 };
 
-const ResultHistoryView = ({ tapas, endDate, db, userId, t, modalState, setTapasDetailMessage, isPersistentCacheEnabled, setDetailResults, setSelectedTapas, setInitMessage }) => {
+const ResultHistoryView = ({ tapas, endDate, db, userId, t, modalState, setTapasDetailMessage,
+        myAddDoc, myUpdateDoc, myDeleteDoc, setDetailResults, setSelectedTapas, setInitMessage }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedResult, setSelectedResult] = useState(null);
@@ -588,30 +597,6 @@ const ResultHistoryView = ({ tapas, endDate, db, userId, t, modalState, setTapas
     const resultsColRef = tapas ? collection(db, 'artifacts', __app_id, 'users', userId, 'tapas', tapas.id, 'results') : null;
     const sortedResults = [...results].sort((a, b) => (a.date ? a.date.toMillis() : 0) - (b.date ? b.date.toMillis() : 0));
     const showDates = sortedResults.length > 1 || (sortedResults.length==1 && sortedResults[0].date && endDate && isBefore(startOfDay(sortedResults[0].date.toDate()), endDate));
-
-    const myAddDoc = async (ref, data) => {
-        if (isPersistentCacheEnabled) {
-            addDoc(ref, data);
-        } else {
-            return await addDoc(ref, data);
-        }
-    };
-
-    const myUpdateDoc = async (ref, data) => {
-        if (isPersistentCacheEnabled) {
-            updateDoc(ref, data);
-        } else {
-            return await updateDoc(ref, data);
-        }
-    };
-
-    const myDeleteDoc = async (ref) => {
-        if (isPersistentCacheEnabled) {
-            deleteDoc(ref);
-        } else {
-            return await deleteDoc(ref);
-        }
-    };
 
     useEffect(() => {
         if (!resultsColRef) return;
@@ -928,7 +913,7 @@ const getUniqueCheckedDays = (checkedDaysArray) => {
 
 const getTotalUnits = (unit) => {
     let value;
-    if (unit === 'weeks' || isWeeklyTapasType(unit)) {
+    if (unit === 'weeks' || isWeeklyTapas(unit)) {
         value = 7;
     } else {
         value = 1;
@@ -938,7 +923,7 @@ const getTotalUnits = (unit) => {
 
 const getScheduleFactor = (unit, scheduleInterval) => {
     let value;
-    if (unit === 'weeks' || isWeeklyTapasType(unit)) {
+    if (unit === 'weeks' || isWeeklyTapas(unit)) {
         value = 7;
     } else if (isIntervalTapas(unit)) {
         value = scheduleInterval;
@@ -959,7 +944,7 @@ const isTapasDateChecked = (checkedDays, date) => {
 };
 
 // Component for adding/editing a Tapas
-const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPersistentCacheEnabled }) => {
+const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddDoc, myUpdateDoc }) => {
     const { db, userId, t, locale } = useContext(AppContext);
 
     const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
@@ -1291,22 +1276,6 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
 
 
     const currentTapasDataForForm = tapasMultiLanguageData[currentFormLanguage] || { name: '', description: '', goals: '', parts: '' };
-
-    const myAddDoc = async (ref, data) => {
-        if (isPersistentCacheEnabled) {
-            addDoc(ref, data);
-        } else {
-            return await addDoc(ref, data);
-        }
-    };
-
-    const myUpdateDoc = async (ref, data) => {
-        if (isPersistentCacheEnabled) {
-            updateDoc(ref, data);
-        } else {
-            return await updateDoc(ref, data);
-        }
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -2429,7 +2398,9 @@ function getLocaleDateFormat() {
 }
 
 // Component for a single Tapas detail view
-const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalState, openDateRangeModal, initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline }) => {
+const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalState, openDateRangeModal,
+        initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline,
+        myAddDoc, myUpdateDoc, myDeleteDoc }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
 
@@ -2517,31 +2488,6 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
     const displayDescription = getLocalizedContent(tapas.description, locale, selectedTapasLanguage);
     const displayGoals = getLocalizedContent(tapas.goals, locale, selectedTapasLanguage);
     const displayParts = getLocalizedContent(tapas.parts, locale, selectedTapasLanguage);
-
-
-    const myAddDoc = async (ref, data) => {
-        if (isPersistentCacheEnabled) {
-            addDoc(ref, data);
-        } else {
-            return await addDoc(ref, data);
-        }
-    };
-
-    const myUpdateDoc = async (ref, data) => {
-        if (isPersistentCacheEnabled) {
-            updateDoc(ref, data);
-        } else {
-            return await updateDoc(ref, data);
-        }
-    };
-
-    const myDeleteDoc = async (ref) => {
-        if (isPersistentCacheEnabled) {
-            deleteDoc(ref);
-        } else {
-            return await deleteDoc(ref);
-        }
-    };
 
     // Fetch public shared tapas data if shareReference exists
     useEffect(() => {
@@ -3563,7 +3509,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                         setTapasDetailMessage={setMessage}
                         setSelectedTapas={setSelectedTapas}
                         setDetailResults={setResults}
-                        isPersistentCacheEnabled={isPersistentCacheEnabled}
+                        myAddDoc={myAddDoc} myUpdateDoc={myUpdateDoc} myDeleteDoc={myDeleteDoc}
                     />
 
                     {tapas.checkedDays && tapas.checkedDays.length > 0 && (
@@ -4066,7 +4012,7 @@ const Statistics = ({ allTapas }) => {
 };
 
 // Component for Results
-const Results = ({ tapas, setSelectedTapas, modalState, isPersistentCacheEnabled }) => {
+const Results = ({ tapas, setSelectedTapas, modalState, myAddDoc, myUpdateDoc, myDeleteDoc }) => {
     const { locale } = useContext(LocaleContext);
     const { db, userId, t } = useContext(AppContext);
     const [statusFilter, setStatusFilter] = useState('all');
@@ -4082,30 +4028,6 @@ const Results = ({ tapas, setSelectedTapas, modalState, isPersistentCacheEnabled
     const editResultModal = modalState.getModalProps("editResult");
 
     const tapasListenersRef = useRef([]);
-
-    const myAddDoc = async (ref, data) => {
-        if (isPersistentCacheEnabled) {
-            addDoc(ref, data);
-        } else {
-            return await addDoc(ref, data);
-        }
-    };
-
-    const myUpdateDoc = async (ref, data) => {
-        if (isPersistentCacheEnabled) {
-            updateDoc(ref, data);
-        } else {
-            return await updateDoc(ref, data);
-        }
-    };
-
-    const myDeleteDoc = async (ref) => {
-        if (isPersistentCacheEnabled) {
-            deleteDoc(ref);
-        } else {
-            return await deleteDoc(ref);
-        }
-    };
 
     const clearNameOnly = () => {
         setNameOnly('');
@@ -4819,6 +4741,82 @@ const handleClearOldResults = async (db, appId, userId, tapasId, results, myUpda
     }
 };
 
+function getLatestVersionOnly(text) {
+  // Extrahiert alles bis zum zweiten großen Header (##)
+  const sections = text.split(/^## /m);
+  return sections.length > 1 ? `## ${sections[1]}` : text;
+}
+
+function getVersionDiff(text, stored, current) {
+  // Logik um alles zwischen der alten und neuen Version zu finden
+  // In der einfachsten Form: Zeige die aktuelle Version
+  return getLatestVersionOnly(text);
+}
+
+const ChangelogOverlay = ({ lastSeenVersion, onClose, t }) => {
+  let stopRendering = false;
+
+  const components = {
+    h1: () => null, // Wir verstecken die Hauptüberschrift "Changelog" aus der MD.md
+    h3: (props) => {
+      const content = props.children?.toString() || "";
+      
+      // Wenn wir die Version finden, die der User schon kennt -> Stop-Schild hoch!
+      if (lastSeenVersion && content.includes(lastSeenVersion)) {
+        stopRendering = true;
+        return null; // Die alte Version selbst auch nicht mehr anzeigen
+      }
+
+      if (stopRendering) return null;
+      return <h3 {...props} className="text-lg font-semibold text-blue-600 mt-4" />;
+    },
+    h4: (props) => {
+        if (stopRendering) return null;
+        const label = props.children?.toString().toLowerCase();
+        
+        return (
+            <h4 {...props} className="flex items-center gap-2 font-bold mt-2">
+            {label.includes('added') && '✨ '}
+            {label.includes('fixed') && '🛠️ '}
+            {label.includes('improved') && '🚀 '}
+            {label.includes('changed') && '⚙️ '}
+            {label.includes('removed') && '🗑️ '}
+            {props.children}
+            </h4>
+        );
+    },
+    // Alle anderen Elemente prüfen das Stop-Schild
+    ul: (props) => stopRendering ? null : <ul {...props} className="list-disc ml-5 mb-4" />,
+    li: (props) => stopRendering ? null : <li {...props} />,
+    p: (props) => stopRendering ? null : <p {...props} />,
+    hr: () => null, // Dies löscht alle Trennlinien aus dem Rendering
+    "\\n": () => null, // MDX-Zeilenumbrüche ignorieren
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl">
+        <div className="p-6 overflow-y-auto prose dark:prose-invert">
+          <h2 className="text-2xl font-bold mb-6 border-b pb-2">
+            {t('whatsNew')} v{appVersion}?
+          </h2>
+          <div className="changelog-wrapper">
+            <ChangelogContent components={components} />
+          </div>
+        </div>
+        <div className="p-4 border-t flex justify-end bg-zinc-50 dark:bg-zinc-800/50 rounded-b-xl">
+          <button 
+            onClick={onClose}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-lg"
+          >
+            {t('Iunderstand')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main App Component (now the default export for pages/index.js)
 const HomePage = () => {
     const [currentPage, setCurrentPage] = useState('active');
@@ -4870,6 +4868,7 @@ const HomePage = () => {
     const helpModal = modalState.getModalProps("help");
     const cleanDataModal = modalState.getModalProps("cleanData");
     const configModal = modalState.getModalProps("config");
+    const changelogModal = modalState.getModalProps("changelog");
     const acknowledgeDateRangeModal = modalState.getModalProps("acknowledgeDateRange");
     const tapasDetailModal = modalState.getModalProps("tapasDetail");
     const tapasEditModal = modalState.getModalProps("tapasEdit");
@@ -4879,6 +4878,30 @@ const HomePage = () => {
 
     const { locale, setLocale, t } = useContext(LocaleContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
+
+    const myAddDoc = async (ref, data) => {
+        if (isPersistentCacheEnabled) {
+            addDoc(ref, data);
+        } else {
+            return await addDoc(ref, data);
+        }
+    };
+
+    const myUpdateDoc = async (ref, data) => {
+        if (isPersistentCacheEnabled) {
+            updateDoc(ref, data);
+        } else {
+            return await updateDoc(ref, data);
+        }
+    };
+
+    const myDeleteDoc = async (ref) => {
+        if (isPersistentCacheEnabled) {
+            deleteDoc(ref);
+        } else {
+            return await deleteDoc(ref);
+        }
+    };
 
     const myGetDoc = async (ref, useCache=false) => {
         if (useCache || (isPersistentCacheEnabled && (isNetworkDisabled || isOffline))) {
@@ -5097,6 +5120,13 @@ const HomePage = () => {
         return () => unsubscribe();
     }, [db, userId, t]);
 
+    // Effect to handle changelog
+    useEffect(() => {
+        if (userId && config && Object.keys(config).length > 0 && appVersion !== config.lastSeenVersion) {
+            changelogModal.open();
+        }
+    }, [userId, config, appVersion]);
+
     // Effect to handle clicks outside the menu
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -5129,6 +5159,15 @@ const HomePage = () => {
             window.history.replaceState({}, document.title, newUrl.toString());
         }
     }, []);
+
+    const handleConfirmChangelog = async () => {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const configPath = `artifacts/${appId}/users/${userId}/config/appConfig`;
+        const docRef = doc(db, configPath);
+        await myUpdateDoc(docRef, { lastSeenVersion: appVersion });
+        setConfig({ ...config, lastSeenVersion: appVersion });
+        changelogModal.close();
+    };
 
     const handleSelectTapas = (tapasItem) => {
         setScrollPosition(window.pageYOffset);
@@ -6139,14 +6178,13 @@ const HomePage = () => {
                             {currentPage === 'diary' && !processing && !tapasEditModal.isOpen && (
                                 <Results tapas={tapas} setSelectedTapas={setSelectedTapas}
                                     modalState={modalState}
-                                    isPersistentCacheEnabled={isPersistentCacheEnabled}
+                                    myAddDoc={myAddDoc} myUpdateDoc={myUpdateDoc} myDeleteDoc={myDeleteDoc}
                                 />
                             )}
                             {tapasEditModal.isActive && !processing && (
                                 <TapasForm onTapasAddedUpdatedCancel={tapasEditModal.close}
-                                    editingTapas={editingTapas}
-                                    modalState={modalState}
-                                    isPersistentCacheEnabled={isPersistentCacheEnabled}
+                                    editingTapas={editingTapas} modalState={modalState}
+                                    myAddDoc={myAddDoc} myUpdateDoc={myUpdateDoc}
                                 />
                             )}
                             {selectedTapas && tapasDetailModal.isActive && !tapasEditModal.isOpen && !processing && (
@@ -6157,6 +6195,7 @@ const HomePage = () => {
                                     setInitMessage={setTapasDetailMessage}
                                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                                     isOffline={isPersistentCacheEnabled && (isNetworkDisabled || isOffline)}
+                                    myAddDoc={myAddDoc} myUpdateDoc={myUpdateDoc} myDeleteDoc={myDeleteDoc}
                                 />
                             )}
                             {licenseModal.isOpen && (<License onClose={licenseModal.close} />)}
@@ -6204,6 +6243,10 @@ const HomePage = () => {
                     tapas={selectedTapas} setSelectedTapas={setSelectedTapas} db={db} userId={userId} t={t}
                     isPersistentCacheEnabled={isPersistentCacheEnabled}
                 />}
+                {changelogModal.isOpen && <ChangelogOverlay lastSeenVersion={config.lastSeenVersion}
+                    onClose={handleConfirmChangelog} t={t}
+                />}
+
                 <InstallPrompt t={t} />
                 {/* Login Prompt Overlay (conditionally rendered on top) */}
             </div>
