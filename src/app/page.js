@@ -2492,8 +2492,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
         return formatDateNoTimeToISO(advancedDate) === formatDateNoTimeToISO(date);
     });
 
-    const today = getDateNow(config);
-    const tapasToday = getTapasDay(getDateNow(config), tapas, startDateObj);
+    const today = startOfDay(getDateNow(config));
+    const tapasToday = getTapasDay(today, tapas, startDateObj);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
     const beforeYesterday = startOfDay(subDays(tapasToday, 2 * daysDelta));
     const yesterday = startOfDay(subDays(tapasToday, daysDelta));
@@ -3210,9 +3210,13 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
 
     // Determine the current date/week display based on scheduleType
-    let displayDateInfo;
     const todayFormatted = getDateNow(config).toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    let displayDateInfo = `${t('todayIs')} ${todayFormatted}`;
+    if (config.dayTime !== '00:00') {
+        displayDateInfo += ' (' + t('until') + ' ' + (config.dayTime || '04:00') + ')';
+    }
 
+    let displayDateInfoPre = '';
     if (isWeeklyTapasType(tapas)) {
         const currentWeekStart = getStartOfWeekUTC(tapasToday);
         const currentWeekEnd = addDays(currentWeekStart, 6); // Sunday of the current week
@@ -3220,12 +3224,12 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
         const currentWeekStartFormatted = currentWeekStart.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
         const currentWeekEndFormatted = currentWeekEnd.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
-        displayDateInfo = t('thisWeekIs', currentWeekStartFormatted, currentWeekEndFormatted);
-    } else {
-        displayDateInfo = `${t('todayIs')} ${todayFormatted}`;
-        if (config.dayTime !== '00:00') {
-            displayDateInfo += ' (' + t('until') + ' ' + (config.dayTime || '04:00') + ')';
-        }
+        displayDateInfoPre = t('thisWeekIs', currentWeekStartFormatted, currentWeekEndFormatted);
+    } else if (isIntervalTapasType(tapas)) {
+        const start = getStartOfIntervalUTC(tapasToday, tapas);
+        const end = addDays(start, tapas.scheduleInterval - 1);
+        const intervalFormatted = reduceDateRange(getDateStr(start), getDateStr(end));
+        displayDateInfoPre = t('thisIntervalIs', intervalFormatted);
     }
 
     const { endDate, daysRemaining } = getTapasDatesInfo(tapas);
@@ -3467,9 +3471,10 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                         <p className="italic text-gray-500 dark:text-gray-400">{t('noPartsDefinedYet')}</p>
                     )}
                     {isActiveOrCryst && (<>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {displayDateInfo}
-                        </p>
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {displayDateInfoPre && (<span>{displayDateInfoPre}</span>)}
+                            <p>{displayDateInfo}</p>
+                        </div>
                         <div className="flex justify-between space-x-2"> {/* Use justify-between to push the "..." to the right */}
                             <div className="flex space-x-2">
                                 {!isTodayChecked && isTodayValid && !tapas.acknowledgeAfter && (
@@ -3503,7 +3508,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                                 onClick={() => handleRecuperateUnit(yesterday)}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {isWeeklyTapasType(tapas) ? t('lastWeekX', t('recuperatedW')) : t('yesterdayX', t('recuperatedD'))}
+                                                {getByIntervalType(tapas, t('lastWeekX', t('recuperatedW')), t('yesterdayX', t('recuperatedD')), t('lastIntervalX', t('recuperatedW')))}
                                             </button>
                                         )}
                                         {tapas.allowRecuperation && !isBeforeYesterdayChecked && !isBefore(beforeYesterday, startDateObj) && !isAfter(beforeYesterday, endDateObj) && (
@@ -3511,7 +3516,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                                 onClick={() => handleRecuperateUnit(beforeYesterday)}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {isWeeklyTapasType(tapas) ? t('beforeLastWeekX', t('recuperatedW')) : t('beforeYesterdayX', t('recuperatedD'))}
+                                                {getByIntervalType(tapas, t('beforeLastWeekX', t('recuperatedW')), t('beforeYesterdayX', t('recuperatedD')), t('beforeLastIntervalX', t('recuperatedW')))}
                                             </button>
                                         )}
                                         {!isNoTapasType(tapas) && isDailyTapasType(tapas) && (!isTodayChecked || !isTomorrowChecked) && !isBefore(tapasToday, startDateObj) && !isAfter(tapasToday, endDateObj) && (
