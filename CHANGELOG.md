@@ -1,5 +1,13 @@
 # Changelog
 
+#### = 1.6.2 (2026-04-16) =
+
+* improved several texts involving intervals/weeks/days
+* fixed delete last interval
+* fixed repeat tapas name adaption
+* fixed weekly and interval tapas ending after crystallization
+* removed advance acknowledment option for weekly and interval tapas
+
 #### = 1.6.1 (2026-04-07) =
 
 * fixed checked days overview (since 1.6.0)

@@ -307,7 +307,7 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-    const deltaName = tapas.scheduleType === 'weekly' ? t('weeks') : t('days');
+    const deltaName = t(getByIntervalType(tapas, 'weeks', 'days', 'intervals'));
 
     const [endDate, setEndDate] = useState(formatDateToISO(today));
     const [numberOfDays, setNumberOfDays] = useState(1);
@@ -818,14 +818,15 @@ const getTapasIntervalDayUTC = (date, tapas) => {
 
 const getTapasDay = (date, tapas, startDateObj) => {
     let tapasDate;
-    if (tapas.scheduleType === 'weekly') {
+    if (isWeeklyTapasType(tapas)) {
         if (!startDateObj) {
             startDateObj = startOfDay(tapas.startDate.toDate()); // Use UTC start of day
         }
         const deltaDays = getTapasWeekDiff(startDateObj);
         tapasDate = getTapasWeekDayUTC(date, deltaDays);
-    } else if (tapas.scheduleType === 'everyNthDays') {
-        tapasDate = getTapasIntervalDayUTC(date, tapas);
+    } else if (isIntervalTapasType(tapas)) {
+        //tapasDate = getTapasIntervalDayUTC(date, tapas);
+        tapasDate = getStartOfIntervalUTC(date, tapas);
     } else {
         tapasDate = startOfDay(date);
     }
@@ -927,7 +928,7 @@ const getUniqueCheckedDays = (checkedDaysArray) => {
 
 const getTotalUnits = (unit) => {
     let value;
-    if (unit === 'weeks' || unit === 'weekly') {
+    if (unit === 'weeks' || isWeeklyTapasType(unit)) {
         value = 7;
     } else {
         value = 1;
@@ -937,9 +938,9 @@ const getTotalUnits = (unit) => {
 
 const getScheduleFactor = (unit, scheduleInterval) => {
     let value;
-    if (unit === 'weeks' || unit === 'weekly') {
+    if (unit === 'weeks' || isWeeklyTapasType(unit)) {
         value = 7;
-    } else if (unit === 'everyNthDays') {
+    } else if (isIntervalTapas(unit)) {
         value = scheduleInterval;
     } else {
         value = 1;
@@ -1333,7 +1334,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
                 return;
             }
 
-            if (scheduleType === 'everyNthDays' && (isNaN(parseInt(scheduleInterval)) || parseInt(scheduleInterval) <= 0)) {
+            if (isIntervalTapas(scheduleType) && (isNaN(parseInt(scheduleInterval)) || parseInt(scheduleInterval) <= 0)) {
                 setErrorMessage(t('scheduleInterval') + ' ' + t('mustBePositiveNumber'));
                 return;
             }
@@ -1388,7 +1389,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
             results: editingTapas ? editingTapas.results || null : null, // Initialize results field
             shareReference: editingTapas ? editingTapas.shareReference || null : null, // Preserve shareReference
             scheduleType: scheduleType,
-            scheduleInterval: scheduleType === 'everyNthDays' ? parseInt(scheduleInterval) : null,
+            scheduleInterval: isIntervalTapas(scheduleType) ? parseInt(scheduleInterval) : null,
             acknowledgeAfter: isNoTapas(scheduleType) ? false : acknowledgeAfter,
             languages: otherLanguages, // Store custom languages
             version: editingTapas ? (editingTapas.version || 1) + 1 : 1, // Increment version on update, start at 1 for new
@@ -1438,7 +1439,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
     // Available languages for the selector (excluding already added ones and custom ones)
     const allKnownLanguages = { ...translations, ...otherLanguages };
     const languagesToAdd = Object.keys(allKnownLanguages).filter(lang => !availableFormLanguages.includes(lang));
-    const dayWeekCap = (scheduleType === 'weekly' ? t('weeks') : t('days'))[0];
+    const scheduleUnit = isWeeklyTapas(scheduleType) ? 'weeks' : isIntervalTapas(scheduleType) ? 'intervals' : 'days';
 
     return (
         <div ref={formContainerRef} className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
@@ -1541,7 +1542,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
                             <option value="noTapas">{t('noTapas')}</option>
                         </select>
                     </div>
-                    {scheduleType === 'everyNthDays' && (
+                    {isIntervalTapas(scheduleType) && (
                         <div className="col-span-1">
                             <label htmlFor="scheduleInterval" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('scheduleInterval')}</label>
                             <input
@@ -1590,7 +1591,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
                 )}
                 <div className="col-span-1">
                     <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {t('duration')} [{scheduleType === 'weekly' ? t('weeks').toLowerCase() : t('days').toLowerCase()}]
+                        {t('duration')} [{t(scheduleUnit)}]
                     </label>
                     <div className="flex items-center mt-1">
                         <input
@@ -1604,24 +1605,24 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, isPers
                         />
                         <button
                             type="button"
-                            onClick={() => handleSetDurationFromButton(7, scheduleType === 'weekly' ? 'weeks' : 'days')}
+                            onClick={() => handleSetDurationFromButton(7, isWeeklyTapas(scheduleType) ? 'weeks' : 'days')}
                             className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200"
                         >
-                            7{dayWeekCap}
+                            7
                         </button>
                         <button
                             type="button"
-                            onClick={() => handleSetDurationFromButton(21, scheduleType === 'weekly' ? 'weeks' : 'days')}
+                            onClick={() => handleSetDurationFromButton(21, isWeeklyTapas(scheduleType) ? 'weeks' : 'days')}
                             className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200"
                         >
-                            21{dayWeekCap}
+                            21
                         </button>
                         <button
                             type="button"
-                            onClick={() => handleSetDurationFromButton(49, scheduleType === 'weekly' ? 'weeks' : 'days')}
+                            onClick={() => handleSetDurationFromButton(49, isWeeklyTapas(scheduleType) ? 'weeks' : 'days')}
                             className="px-3 py-2 bg-indigo-500 text-white rounded-r-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
-                            49{dayWeekCap}
+                            49
                         </button>
                     </div>
                 </div>
@@ -1895,9 +1896,35 @@ const isNoTapas = (scheduleType) => {
     return scheduleType === 'noTapas';
 };
 
+const isDailyTapas = (scheduleType) => {
+    return scheduleType === 'daily';
+};
+
+const isWeeklyTapas = (scheduleType) => {
+    return scheduleType === 'weekly';
+};
+
+const isIntervalTapas = (scheduleType) => {
+    return scheduleType === 'everyNthDays';
+};
+
 const isNoTapasType = (tapasItem) => {
     return isNoTapas(tapasItem.scheduleType);
 };
+
+const isDailyTapasType = (tapasItem) => {
+    return isDailyTapas(tapasItem.scheduleType);
+};
+
+const isWeeklyTapasType = (tapasItem) => {
+    return isWeeklyTapas(tapasItem.scheduleType);
+};
+
+const isIntervalTapasType = (tapasItem) => {
+    return isIntervalTapas(tapasItem.scheduleType);
+};
+
+const getByIntervalType = (tapas, w, d, i) => isWeeklyTapasType(tapas) ? w : isIntervalTapasType(tapas) ? i : d;
 
 const getDateNow = (config) => {
     const dayTime = (config.dayTime || '04:00').split(':');
@@ -1960,7 +1987,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 
         const endDate = addDays(startDate, tapasItem.duration-1);
 
-        const isWeekly = tapasItem.scheduleType === 'weekly';
+        const isWeekly = isWeeklyTapasType(tapasItem);
 
         const daysDelta = getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval);
         const yesterday = startOfDay(subDays(today, daysDelta));
@@ -2163,7 +2190,7 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                                 </svg>
                                             </span>
                                         )}
-                                        {isActive(tapasItem) && !isNoTapasType(tapasItem) && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (tapasItem.scheduleType === 'weekly' ? dayOfWeek : '')}</span>)}
+                                        {isActive(tapasItem) && !isNoTapasType(tapasItem) && (<span className="text-sm text-red-700">&nbsp;&nbsp;&nbsp;{daysOver < 0 ? '['+t('expired')+']' : (isWeeklyTapasType(tapasItem) ? dayOfWeek : '')}</span>)}
                                     </h3>
                                     {tapasItem.startTime && (
                                         <span className="ml-3 font-semibold text-indigo-700 dark:text-indigo-500">{tapasItem.startTime}</span>
@@ -2189,15 +2216,15 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                         <div className="hidden lg:block flex justify-between items-center">
                                             {!statusText.length && isNoTapasType(tapasItem) && checkedUnitsCount==0 ? (
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {t('duration')}: {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
+                                                    {t('duration')}: {totalUnits} {t(isWeeklyTapasType(tapasItem) ? 'weeks' : 'days')}
                                                 </p>
                                             ) : (
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(tapasItem.scheduleType === 'weekly' ? 'weeks' : 'days')}
+                                                    {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(isWeeklyTapasType(tapasItem) ? 'weeks' : 'days')}
                                                 </p>
                                             )}
                                         </div>
-                                        {tapasItem.scheduleType === 'everyNthDays' && (<p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
+                                        {isIntervalTapasType(tapasItem) && (<p className="hidden lg:block text-sm text-gray-600 dark:text-gray-400">
                                             {t('schedule')}: {t('Ntimes', Math.ceil(tapasItem.duration / tapasItem.scheduleInterval))} {t('everyNthDays', tapasItem.scheduleInterval).toLowerCase()} {t('days')}</p>
                                         )}
                                         {isActive(tapasItem) && daysOver >= 0 && (
@@ -2297,7 +2324,7 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     }
     parts.unshift(t('finished'));
 
-    const isWeekly = tapas.scheduleType === 'weekly';
+    const isWeekly = isWeeklyTapasType(tapas);
     const dates = [];
     const checked = [];
     for (let day=0; day < totalUnits; day++) {
@@ -2465,13 +2492,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
         return formatDateNoTimeToISO(advancedDate) === formatDateNoTimeToISO(date);
     });
 
-    const today = getTapasDay(getDateNow(config), tapas, startDateObj);
+    const today = getDateNow(config);
+    const tapasToday = getTapasDay(getDateNow(config), tapas, startDateObj);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-    const beforeYesterday = startOfDay(subDays(today, 2 * daysDelta));
-    const yesterday = startOfDay(subDays(today, daysDelta));
-    const tomorrow = startOfDay(addDays(today, daysDelta));
+    const beforeYesterday = startOfDay(subDays(tapasToday, 2 * daysDelta));
+    const yesterday = startOfDay(subDays(tapasToday, daysDelta));
+    const tomorrow = startOfDay(addDays(tapasToday, daysDelta));
 
-    const isTodayChecked = isDateChecked(today);
+    const isTodayChecked = isDateChecked(tapasToday);
     const isBeforeYesterdayChecked = isDateChecked(beforeYesterday);
     const isYesterdayChecked = isDateChecked(yesterday);
     const isTomorrowChecked = isDateChecked(tomorrow);
@@ -2584,14 +2612,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
     const handleMarkUnitFinished = async (dateToMark) => {
         setInitMessage('');
-        let successMessageKey;
 
         const dateForCheckedDays = startOfDay(dateToMark);
-        if (tapas.scheduleType === 'weekly') {
-            successMessageKey = 'weekCheckedSuccessfully';
-        } else {
-            successMessageKey = 'dayCheckedSuccessfully';
-        }
 
         if (isTapasDateChecked(tapas.checkedDays, dateForCheckedDays)) {
             setMessage(t('dayAlreadyChecked')); // Re-using dayAlreadyChecked for now
@@ -2602,7 +2624,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
         try {
             await myUpdateDoc(tapasRef, { checkedDays: updatedCheckedDays, });
-            setMessage(t(successMessageKey));
+            setMessage(t(getByIntervalType(tapas, 'week', 'day', 'interval') + 'CheckedSuccessfully'));
             /*if (formatDateToISO(dateForCheckedDays) === todayDateString) {
                  setCheckedPartsSelection({}); // Clear the UI selection state for parts for next day/interaction
             }*/
@@ -2655,7 +2677,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
         const datesToMark = [];
         const advancedDates = [];
 
-        const thisUnit = getTapasDay(today, tapas, startDateObj);
+        const thisUnit = getTapasDay(tapasToday, tapas, startDateObj);
         const nextUnit = addDays(thisUnit, getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval));
 
         if (!isDateChecked(thisUnit) && isWithinInterval(thisUnit, { start: startDateObj, end: endDateObj })) {
@@ -2704,7 +2726,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
         const lastCheckedDayTimestamp = sortedCheckedDays[0];
         const lastCheckedUnitDate = getTapasDay(lastCheckedDayTimestamp.toDate(), tapas, startDateObj);
 
-        const dateFunc = tapas.scheduleType === 'weekly' ? formatStartOfWeekNoTimeToISO : formatDateNoTimeToISO;
+        const dateFunc = isWeeklyTapasType(tapas) ? formatStartOfWeekNoTimeToISO : formatDateNoTimeToISO;
 
         const newCheckedDays = tapas.checkedDays.filter(
             ts => dateFunc(ts.toDate()) !== dateFunc(lastCheckedUnitDate)
@@ -2862,7 +2884,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             repDate = new Date();
             dateRet = startDateRet;
         } else if (endDateRet) {
-            repDate = addDays(new Date(), newDurationDays - 1);
+            repDate = addDays(startOfDay(new Date()), newDurationDays - 1);
             dateRet = endDateRet;
         }
 
@@ -2876,7 +2898,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             currentName = currentName.replace(dateRet.date, newDate);
         } else {
             const repStr = t('theRepeat');
-            const repeatRegex = `/\(${repStr}(?: (\d+))?\)/`;
+            const repeatRegex = `\\(${repStr}(?: (\\d+))?\\)`;
             const match = currentName.match(repeatRegex);
             if (match) {
                 if (match[1]) {
@@ -2903,7 +2925,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                 return;
             }
             newDurationDays = parseInt(newRepeatDuration);
-            if (tapas.scheduleType === 'weekly') {
+            if (isWeeklyTapasType(tapas)) {
                 newDurationDays *= 7; // Convert weeks to days for storage
             }
         } else if (repeatOption === 'untilEndDate') {
@@ -3014,7 +3036,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             const crystallizationDate = addDays(endDateObj, tapas.crystallizationTime);
             if (today > crystallizationDate) {
                 await myUpdateDoc(tapasRef, { status: 'successful' });
-                setMessage(t('tapasAutoMarkedSuccessful'));
+                setMessage(t('tapasAutoMarkedSuccessful', t('crystallization')));
                 setSelectedTapas(prev => ({ ...prev, status: 'successful' })); // Immediately update local state for status
             }
             return;
@@ -3028,7 +3050,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                 setSelectedTapas(prev => ({ ...prev, status: 'crystallization' })); // Immediately update local state for status
             } else {
                 await myUpdateDoc(tapasRef, { status: 'successful' });
-                setMessage(t('tapasAutoMarkedSuccessful'));
+                setMessage(t('tapasAutoMarkedSuccessful', t('confirmation')));
                 setSelectedTapas(prev => ({ ...prev, status: 'successful' })); // Immediately update local state for status
             }
         } else if (isPeriodOver) {
@@ -3191,8 +3213,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
     let displayDateInfo;
     const todayFormatted = getDateNow(config).toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    if (tapas.scheduleType === 'weekly') {
-        const currentWeekStart = getStartOfWeekUTC(today);
+    if (isWeeklyTapasType(tapas)) {
+        const currentWeekStart = getStartOfWeekUTC(tapasToday);
         const currentWeekEnd = addDays(currentWeekStart, 6); // Sunday of the current week
 
         const currentWeekStartFormatted = currentWeekStart.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
@@ -3248,7 +3270,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             ranges.push({ start: currentRangeStart, end: currentRangeEnd, type: currentType });
         }
 
-        const isWeekly = tapas.scheduleType === 'weekly';
+        const isWeekly = isWeeklyTapasType(tapas);
 
         return ranges.map(range => {
             let startStr = getDateStr(range.start);
@@ -3389,7 +3411,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                             </p>
                             {tapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {tapas.startTime}</p>}
                             <p>
-                                <strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(tapas.duration / getTotalUnits(tapas.scheduleType))} {t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}
+                                <strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(tapas.duration / getTotalUnits(tapas.scheduleType))} {t(isWeeklyTapasType(tapas) ? 'weeks' : 'days').toLowerCase()}
                             </p>
                         </>
                     )}
@@ -3397,7 +3419,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                         <p><strong className="font-semibold">{t('schedule')}:</strong> {t(tapas.scheduleType)}</p>
                     ) : (
                         <>
-                            {tapas.scheduleType === 'everyNthDays' && (
+                            {isIntervalTapasType(tapas) && (
                             <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(tapas.duration / tapas.scheduleInterval))} {t('everyNthDays', tapas.scheduleInterval).toLowerCase()} {t('days')}</p>
                             )}
                             {tapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
@@ -3452,10 +3474,10 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                             <div className="flex space-x-2">
                                 {!isTodayChecked && isTodayValid && !tapas.acknowledgeAfter && (
                                     <button
-                                        onClick={() => handleMarkUnitFinished(today)}
+                                        onClick={() => handleMarkUnitFinished(tapasToday)}
                                         className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
                                     >
-                                        {t('confirmX', tapas.scheduleType === 'weekly' ? t('thisWeekX', '') : t('todayX', ''))}
+                                        {t('confirmX', t(getByIntervalType(tapas, 'thisWeekX', 'todayX', 'thisIntervalX'), ''))}
                                     </button>
                                 )}
                                 {!isYesterdayChecked && isYesterdayValid && (
@@ -3463,7 +3485,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                         onClick={() => handleMarkUnitFinished(yesterday)}
                                         className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
                                     >
-                                        {t('confirmX', tapas.scheduleType === 'weekly' ? t('lastWeekX', '') : t('yesterdayX', ''))}
+                                        {t('confirmX', t(getByIntervalType(tapas, 'lastWeekX', 'yesterdayX', 'lastIntervalX'), ''))}
                                     </button>
                                 )}
                             </div>
@@ -3481,7 +3503,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                                 onClick={() => handleRecuperateUnit(yesterday)}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {tapas.scheduleType === 'weekly' ? t('lastWeekX', t('recuperatedW')) : t('yesterdayX', t('recuperatedD'))}
+                                                {isWeeklyTapasType(tapas) ? t('lastWeekX', t('recuperatedW')) : t('yesterdayX', t('recuperatedD'))}
                                             </button>
                                         )}
                                         {tapas.allowRecuperation && !isBeforeYesterdayChecked && !isBefore(beforeYesterday, startDateObj) && !isAfter(beforeYesterday, endDateObj) && (
@@ -3489,29 +3511,29 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                                 onClick={() => handleRecuperateUnit(beforeYesterday)}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {tapas.scheduleType === 'weekly' ? t('beforeLastWeekX', t('recuperatedW')) : t('beforeYesterdayX', t('recuperatedD'))}
+                                                {isWeeklyTapasType(tapas) ? t('beforeLastWeekX', t('recuperatedW')) : t('beforeYesterdayX', t('recuperatedD'))}
                                             </button>
                                         )}
-                                        {!isNoTapasType(tapas) && (!isTodayChecked || !isTomorrowChecked) && !isBefore(today, startDateObj) && !isAfter(today, endDateObj) && (
+                                        {!isNoTapasType(tapas) && isDailyTapasType(tapas) && (!isTodayChecked || !isTomorrowChecked) && !isBefore(tapasToday, startDateObj) && !isAfter(tapasToday, endDateObj) && (
                                             <button
                                                 onClick={handleAdvanceUnits}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {t((tapas.scheduleType === 'weekly' ? 'thisNextWeek' : 'todayTomorrow') + 'FinishedInAdvance')}
+                                                {t((isWeeklyTapasType(tapas) ? 'thisNextWeek' : 'todayTomorrow') + 'FinishedInAdvance')}
                                             </button>
                                         )}
                                         <button
                                             onClick={showAcknowledgeDateRangeMenu}
                                             className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                         >
-                                            {t('acknowledgeN', t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days'))}
+                                            {t('acknowledgeN', t(getByIntervalType(tapas, 'weeks', 'days', 'intervals')))}
                                         </button>
                                         {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                                             <button
                                                 onClick={handleClearLastUnit}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {t('clearX', t('last' + (tapas.scheduleType === 'weekly' ? 'Week': 'Day')))}
+                                                {t('clearX', t('last' + (getByIntervalType(tapas, 'Week', 'Day', 'Interval'))))}
                                             </button>
                                         )}
                                     </div>
@@ -3522,7 +3544,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days')}</p>}
                     <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessfulOrFinished(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
                     {!isNoTapasType(tapas) && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
-                        <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t(tapas.scheduleType === 'weekly' ? 'weeksChecked' : 'daysChecked')}
+                        <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t(isWeeklyTapasType(tapas) ? 'weeksChecked' : 'daysChecked')}
                     </p>)}
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
                     <ResultHistoryView
@@ -3677,7 +3699,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                         className="form-radio text-indigo-600"
                                     />
                                     <span className="ml-2 text-gray-700 dark:text-gray-300">
-                                        {t('repeatSameDuration', tapas.scheduleType === 'weekly' ? Math.ceil(tapas.duration / 7) : tapas.duration, t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase())}
+                                        {t('repeatSameDuration', isWeeklyTapasType(tapas) ? Math.ceil(tapas.duration / 7)
+                                         : tapas.duration, t(isWeeklyTapasType(tapas) ? 'weeks' : 'days').toLowerCase())}
                                     </span>
                                 </label>
                                 <label className="flex items-center">
@@ -3700,7 +3723,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                         />
                                     )}
                                     <span className="ml-1 text-gray-700 dark:text-gray-300">
-                                        {t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days')}
+                                        {t(isWeeklyTapasType(tapas) ? 'weeks' : 'days')}
                                     </span>
                                 </label>
                                 {endDateObj > today && (
@@ -3763,7 +3786,8 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                         className="form-radio text-indigo-600"
                                     />
                                     <span className="ml-2 text-gray-700 dark:text-gray-300">
-                                        {t('repeatSameDuration', tapas.scheduleType === 'weekly' ? Math.ceil(tapas.duration / 7) : tapas.duration, t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase())}
+                                        {t('repeatSameDuration', isWeeklyTapasType(tapas) ? Math.ceil(tapas.duration / 7)
+                                         : tapas.duration, t(isWeeklyTapasType(tapas) ? 'weeks' : 'days').toLowerCase())}
                                     </span>
                                 </label>
                                 <label className="flex items-center">
@@ -3786,7 +3810,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                         />
                                     )}
                                     <span className="ml-1 text-gray-700 dark:text-gray-300">
-                                        {t(tapas.scheduleType === 'weekly' ? 'weeks' : 'days')}
+                                        {t(isWeeklyTapasType(tapas) ? 'weeks' : 'days')}
                                     </span>
                                 </label>
                                 {endDateObj > today && ( // Conditionally render if original end date is in the future
@@ -4634,7 +4658,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                 <div className="space-y-4 text-gray-700 dark:text-gray-300">
                     {sharedTapas.startDate && (<p><strong className="font-semibold">{t('timeframe')}:</strong> {sharedTapas.startDate?.toDate().toLocaleDateString()} - {endDate?.toLocaleDateString()}</p>)}
                     {sharedTapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {sharedTapas.startTime}</p>}
-                    <p><strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(sharedTapas.duration / getTotalUnits(sharedTapas.scheduleType))} {t(sharedTapas.scheduleType === 'weekly' ? 'weeks' : 'days').toLowerCase()}</p>
+                    <p><strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(sharedTapas.duration / getTotalUnits(sharedTapas.scheduleType))} {t(isWeeklyTapasType(sharedTapas) ? 'weeks' : 'days').toLowerCase()}</p>
                     {sharedTapas.scheduleType === 'everyNthDays' && (
                     <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(sharedTapas.duration / sharedTapas.scheduleInterval))} {t('everyNthDays', sharedTapas.scheduleInterval).toLowerCase()} {t('days')}</p>
                     )}
