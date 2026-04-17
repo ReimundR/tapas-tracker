@@ -18,7 +18,8 @@ import { Tabs, TabList, Tab, TabPanel } from 'react-tabs';
 import { Tooltip } from 'react-tooltip';
 import * as Switch from "@radix-ui/react-switch";
 import Head from 'next/head'; // Import Head from next/head for meta tags
-import { startOfDay, startOfWeek, addDays, subDays, subMonths, subYears, differenceInCalendarDays, getISOWeek,
+import { startOfDay, differenceInMonths, getDaysInMonth, isLastDayOfMonth, getDate, setDate, startOfWeek, addDays, subDays,
+    addMonths, subMonths, subYears, differenceInCalendarDays, getISOWeek,
     isToday, isYesterday, isTomorrow, isBefore, isAfter, isSameDay, isWithinInterval, format } from 'date-fns';
 import GdprEN from "../content/privacy-policy-en.mdx";
 import GdprDE from "../content/privacy-policy-de.mdx";
@@ -314,7 +315,7 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-    const deltaName = t(getByIntervalType(tapas, 'weeks', 'days', 'intervals'));
+    const deltaName = t(getTypeUnit(tapas));
 
     const [endDate, setEndDate] = useState(formatDateToISO(today));
     const [numberOfDays, setNumberOfDays] = useState(1);
@@ -792,6 +793,8 @@ const getTapasWeekDiff = (startDateObj) => {
     return daysIntoWeek;
 };
 
+const getTapasMonthDiff = getDate;
+
 const getTapasWeekDayUTC = (date, deltaDays) => {
     return addDays(getStartOfWeekUTC(date), deltaDays);
 };
@@ -802,13 +805,27 @@ const getTapasIntervalDayUTC = (date, tapas) => {
 };
 
 const getTapasDay = (date, tapas, startDateObj) => {
+    if (!startDateObj) {
+        startDateObj = startOfDay(tapas.startDate.toDate());
+    }
+
     let tapasDate;
     if (isWeeklyTapasType(tapas)) {
-        if (!startDateObj) {
-            startDateObj = startOfDay(tapas.startDate.toDate()); // Use UTC start of day
-        }
         const deltaDays = getTapasWeekDiff(startDateObj);
         tapasDate = getTapasWeekDayUTC(date, deltaDays);
+    } else if (isMonthlyTapasType(tapas)) {
+        const startDayNum = getTapasMonthDiff(startDateObj);
+        const dayNum = getTapasMonthDiff(date);
+        if (dayNum < startDayNum) {
+            tapasDate = subMonths(date, 1);
+        } else {
+            tapasDate = date;
+        }
+        const monthDays = getDaysInMonth(tapasDate);
+        if (monthDays < startDayNum) {
+            startDayNum = monthDays;
+        }
+        tapasDate = setDate(tapasDate, startDayNum);
     } else if (isIntervalTapasType(tapas)) {
         //tapasDate = getTapasIntervalDayUTC(date, tapas);
         tapasDate = getStartOfIntervalUTC(date, tapas);
@@ -921,6 +938,48 @@ const getTotalUnits = (unit) => {
     return value;
 };
 
+const getTapasEndDate = (startDate, duration, scheduleType, scheduleInterval) => {
+    const start = startOfDay(startDate);
+    let end = start;
+    if (isMonthlyTapas(scheduleType)) {
+        if (!isLastDayOfMonth(start)) {
+            end = subDays(start, 1);
+        }
+        end = addMonths(end, duration);
+    } else {
+        const actualDays = duration * getScheduleFactor(scheduleType, scheduleInterval);
+        end = addDays(start, actualDays-1);
+    }
+    return end;
+};
+
+const getTapasDurationInDays = (startDate, duration, scheduleType, scheduleInterval) => {
+    let durationDays;
+    if (isMonthlyTapas(scheduleType)) {
+        const end = getTapasEndDate(startDate, duration, scheduleType, scheduleInterval);
+        durationDays = differenceInCalendarDays(end, startDate) + 1;
+    } else {
+        durationDays = duration * getScheduleFactor(scheduleType, scheduleInterval);
+    }
+    return durationDays;
+};
+
+const getTapasDurationByType = (startDate, endDate, scheduleType, scheduleInterval) => {
+    const start = startOfDay(startDate);
+    const end = startOfDay(endDate);
+    let duration;
+    if (isMonthlyTapas(scheduleType)) {
+        duration = Math.max(1, differenceInMonths(addDays(end, 15), start));
+    } else {
+        const durationDays = differenceInCalendarDays(end, start) + 1;
+        duration = Math.ceil(durationDays / getScheduleFactor(scheduleType, scheduleInterval));
+    }
+    return duration;
+};
+
+const getTypeUnitNoInterval = (tapas) => getByTapasIntervalType(tapas, 'months', 'weeks', 'days', 'days');
+const getTypeUnit = (tapas) => getByTapasIntervalType(tapas, 'months', 'weeks', 'days', 'intervals');
+
 const getScheduleFactor = (unit, scheduleInterval) => {
     let value;
     if (unit === 'weeks' || isWeeklyTapas(unit)) {
@@ -1025,23 +1084,24 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
             setStartDate(editingTapas.startDate ? formatDateToISO(editingTapas.startDate.toDate()) : '');
             setStartTime(editingTapas.startTime || '');
             
-            let loadedScheduleType = editingTapas.scheduleType || 'daily';
-            const loadedDuration = Math.ceil(editingTapas.duration / getScheduleFactor(loadedScheduleType, editingTapas.scheduleInterval));
-            setDuration(loadedDuration || '');
-
             setCrystallizationTime(editingTapas.crystallizationTime || '');
             setAllowRecuperation(editingTapas.allowRecuperation || false);
-            setScheduleType(loadedScheduleType);
             setScheduleInterval(editingTapas.scheduleInterval || '');
             setAcknowledgeAfter(editingTapas.acknowledgeAfter || false);
 
             // Calculate endDate from startDate and loadedDuration, ensuring validity
+            const loadedScheduleType = editingTapas.scheduleType || 'daily';
+            setScheduleType(loadedScheduleType);
+            const loadedDuration = editingTapas.duration || '';
             if (editingTapas.startDate && loadedDuration && !isNaN(parseInt(loadedDuration)) && parseInt(loadedDuration) > 0) {
                 const start = startOfDay(editingTapas.startDate.toDate());
-                const end = addDays(start, editingTapas.duration);
+                const end = addDays(start, parseInt(loadedDuration) - 1);
+                const duration = getTapasDurationByType(start, end, loadedScheduleType, editingTapas.scheduleInterval);
                 setEndDate(formatDateToISO(end));
+                setDuration(duration);
             } else {
                 setEndDate('');
+                setDuration('');
             }
             setTapasDataInitialized(true);
         } else {
@@ -1091,26 +1151,22 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
             setScheduleInterval('');
             setAllowRecuperation(false);
             setAcknowledgeAfter(false);
-            return;
         }
 
         if (startDate) {
             if (duration && !isNaN(parseInt(duration)) && parseInt(duration) > 0) {
                 // If duration is already set, recalculate endDate
-                const start = startOfDay(startDate);
-                const actualDays = parseInt(duration) * getScheduleFactor(scheduleType, scheduleInterval);
-                const end = addDays(start, actualDays);
+                const end = getTapasEndDate(startDate, parseInt(duration), scheduleType, scheduleInterval);
                 setEndDate(formatDateToISO(end));
             } else if (endDate) {
                 // If endDate is already set, recalculate duration
                 const start = startOfDay(startDate);
                 const end = startOfDay(endDate);
                 if (!isBefore(end, start)) { // end >= start
-                    const diffDaysRaw = differenceInCalendarDays(end, start) + 1;
-                    const diffDays = Math.ceil(diffDaysRaw / getScheduleFactor(scheduleType, scheduleInterval));
-                    setDuration(diffDays.toString());
+                    const diff = getTapasDurationByType(start, end, scheduleType, scheduleInterval);
+                    setDuration(diff.toString());
                 } else {
-                    setDuration(''); // Invalid end date relative to start
+                    setDuration(1); // Invalid end date relative to start
                 }
             }
         } else {
@@ -1123,55 +1179,21 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
     const handleChangeDuration = (e) => {
         const newDuration = e.target.value;
         setDuration(newDuration);
-        if (startDate && newDuration && !isNaN(parseInt(newDuration)) && parseInt(newDuration) > 0) {
-            const start = startOfDay(startDate);
-            const actualDays = (parseInt(newDuration)-1) * getScheduleFactor(scheduleType, scheduleInterval);
-            const end = addDays(start, actualDays);
-            setEndDate(formatDateToISO(end));
-        } else {
-            setEndDate('');
-        }
     };
 
     const handleChangeInterval = (e) => {
         const newInterval = e.target.value;
         setScheduleInterval(newInterval);
-        if (startDate && duration && newInterval && !isNaN(parseInt(newInterval)) && parseInt(newInterval) > 0) {
-            const start = startOfDay(startDate);
-            const actualDays = duration * parseInt(newInterval);
-            const end = addDays(start, actualDays);
-            setEndDate(formatDateToISO(end));
-        } else {
-            setEndDate('');
-        }
     };
 
     const handleChangeEndDate = (e) => {
         const newEndDate = e.target.value;
+        setDuration('');
         setEndDate(newEndDate);
-        if (startDate && newEndDate) {
-            const start = startOfDay(startDate);
-            const end = startOfDay(newEndDate);
-            if (!isBefore(end, start)) { // end >= start
-                const diffDaysRaw = differenceInCalendarDays(end, start) + 1;
-                const diffDays = Math.ceil(diffDaysRaw / getScheduleFactor(scheduleType, scheduleInterval));
-                setDuration(diffDays.toString());
-            } else {
-                setDuration(''); // Invalid end date relative to start
-            }
-        } else {
-            setDuration('');
-        }
     };
 
-    const handleSetDurationFromButton = (value, unit) => {
+    const handleSetDurationFromButton = (value, scheduleType) => {
         setDuration(value.toString()); // Set duration state as weeks or days for display
-        if (startDate) {
-            const actualDays = value * getScheduleFactor(unit, scheduleInterval);
-            const start = startOfDay(startDate);
-            const end = addDays(start, actualDays);
-            setEndDate(formatDateToISO(end));
-        }
     };
 
     const handleDescriptionChange = (editorState, editor) => {
@@ -1312,7 +1334,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
             return;
         }
 
-        const durationToSave = !duration ? 0 : parseInt(duration) * getScheduleFactor(scheduleType, scheduleInterval);
+        const durationToSave = !duration ? 0 : getTapasDurationInDays(startDate, parseInt(duration), scheduleType, scheduleInterval);
 
         // Prepare multi-language data for saving
         let names = {};
@@ -1408,7 +1430,9 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
     // Available languages for the selector (excluding already added ones and custom ones)
     const allKnownLanguages = { ...translations, ...otherLanguages };
     const languagesToAdd = Object.keys(allKnownLanguages).filter(lang => !availableFormLanguages.includes(lang));
-    const scheduleUnit = isWeeklyTapas(scheduleType) ? 'weeks' : isIntervalTapas(scheduleType) ? 'intervals' : 'days';
+    const scheduleUnit = getTypeUnit(scheduleType);
+
+    const fixedCounts = isMonthlyTapas(scheduleType) ? [3, 7, 12] : [7, 21, 49];
 
     return (
         <div ref={formContainerRef} className="p-4 rounded-lg shadow-md mb-6 bg-white dark:bg-gray-800">
@@ -1507,6 +1531,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
                         >
                             <option value="daily">{t('daily')}</option>
                             <option value="weekly">{t('weekly')}</option>
+                            <option value="monthly">{t('monthly')}</option>
                             <option value="everyNthDays">{t('everyNthDays', t('nth'))} {t('days')}</option>
                             <option value="noTapas">{t('noTapas')}</option>
                         </select>
@@ -1572,27 +1597,15 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
                             required={!isNoTapas(scheduleType)}
                             min="1"
                         />
-                        <button
-                            type="button"
-                            onClick={() => handleSetDurationFromButton(7, isWeeklyTapas(scheduleType) ? 'weeks' : 'days')}
-                            className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200"
-                        >
-                            7
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleSetDurationFromButton(21, isWeeklyTapas(scheduleType) ? 'weeks' : 'days')}
-                            className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200"
-                        >
-                            21
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleSetDurationFromButton(49, isWeeklyTapas(scheduleType) ? 'weeks' : 'days')}
-                            className="px-3 py-2 bg-indigo-500 text-white rounded-r-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                            49
-                        </button>
+                        {fixedCounts.map((count) => (
+                            <button
+                                key={count}
+                                type="button"
+                                onClick={() => handleSetDurationFromButton(count, scheduleType)}
+                                className="px-3 py-2 bg-indigo-500 text-white hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200 last:rounded-r-md"
+                            >
+                                {count}
+                            </button>))}
                     </div>
                 </div>
                 <div className="col-span-1">
@@ -1873,6 +1886,10 @@ const isWeeklyTapas = (scheduleType) => {
     return scheduleType === 'weekly';
 };
 
+const isMonthlyTapas = (scheduleType) => {
+    return scheduleType === 'monthly';
+};
+
 const isIntervalTapas = (scheduleType) => {
     return scheduleType === 'everyNthDays';
 };
@@ -1889,11 +1906,22 @@ const isWeeklyTapasType = (tapasItem) => {
     return isWeeklyTapas(tapasItem.scheduleType);
 };
 
+const isMonthlyTapasType = (tapasItem) => {
+    return isMonthlyTapas(tapasItem.scheduleType);
+};
+
 const isIntervalTapasType = (tapasItem) => {
     return isIntervalTapas(tapasItem.scheduleType);
 };
 
-const getByIntervalType = (tapas, w, d, i) => isWeeklyTapasType(tapas) ? w : isIntervalTapasType(tapas) ? i : d;
+const getByTapasIntervalType = (tapas, m, w, d, i) => {
+    let scheduleType = tapas;
+    if (typeof tapas !== 'string') {
+        scheduleType = tapas.scheduleType;
+    }
+    return isMonthlyTapas(scheduleType) ? m : isWeeklyTapas(scheduleType) ? w
+        : isIntervalTapas(scheduleType) ? i : d;
+}
 
 const getDateNow = (config) => {
     const dayTime = (config.dayTime || '04:00').split(':');
@@ -1956,11 +1984,20 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 
         const endDate = addDays(startDate, tapasItem.duration-1);
 
+        const isDaily = isDailyTapasType(tapasItem);
         const isWeekly = isWeeklyTapasType(tapasItem);
+        const isMonthly = isMonthlyTapasType(tapasItem);
 
         const daysDelta = getScheduleFactor(tapasItem.scheduleType, tapasItem.scheduleInterval);
-        const yesterday = startOfDay(subDays(today, daysDelta));
-        const tomorrow = startOfDay(addDays(today, daysDelta));
+        let yesterday;
+        let tomorrow;
+        if (isMonthly) {
+            yesterday = startOfDay(subMonths(today, 1));
+            tomorrow = startOfDay(addMonths(today, 1));
+        } else {
+            yesterday = startOfDay(subDays(today, daysDelta));
+            tomorrow = startOfDay(addDays(today, daysDelta));
+        }
 
         const isTodayWithinDuration = isWithinInterval(today, { start: startDate, end: endDate });
         const isTodayChecked = isTapasDateChecked(tapasItem.checkedDays, today);
@@ -1971,27 +2008,30 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
         const yesterdayPending = isYesterdayWithinDuration && !isYesterdayChecked;
 
         if (yesterdayPending) {
-            const statusText = t((isWeekly ? 'lastWeekX' : 'yesterdayX'), t('pending')).toLowerCase();
+            const statusText = t(getByTapasIntervalType(tapasItem, 'lastMonthX', 'lastWeekX', 'yesterdayX', 'lastIntervalX'), t('pending')).toLowerCase();
             pendingStatus = { statusText: [[statusText]], statusClass: 'text-red-600' };
         } else if (todayPending && !tapasItem.acknowledgeAfter) {
-            const isTodayPending = !isWeekly || isSameDay(today, getDateNow(config));
-            const pendingDay = isTodayPending ? 'todayX' : 'thisWeekX';
+            const isTodayPending = isDaily || (isWeekly && isSameDay(today, getDateNow(config)));
+            const pendingDay = isTodayPending ? 'todayX' : getByTapasIntervalType(tapasItem, 'thisMonthX', 'thisWeekX', 'todayX', 'thisIntervalX');
             const pendingColor = isTodayPending ? 'text-orange-600' : 'text-gray-600';
             const statusText = t(pendingDay, t('pending')).toLowerCase();
             pendingStatus = { statusText: [[statusText]], statusClass: pendingColor };
         }
 
         let leftOutDaysCount = 0;
-        let loopDate = startOfDay(startDate);
-        const loopEnd = tapasItem.acknowledgeAfter ? yesterday : today;
-        while (!isAfter(loopDate, loopEnd) && !isAfter(loopDate, endDate)) { // Iterate up to yesterday
-            if (!isTapasDateChecked(tapasItem.checkedDays, loopDate)) {
-                leftOutDaysCount++;
+        if (!isMonthly) {
+            let loopDate = startOfDay(startDate);
+            const loopEnd = tapasItem.acknowledgeAfter ? yesterday : today;
+            while (!isAfter(loopDate, loopEnd) && !isAfter(loopDate, endDate)) { // Iterate up to yesterday
+                if (!isTapasDateChecked(tapasItem.checkedDays, loopDate)) {
+                    leftOutDaysCount++;
+                }
+                loopDate = addDays(loopDate, daysDelta);
             }
-            loopDate = addDays(loopDate, daysDelta);
         }
+
         if (!pendingStatus.statusText.length && leftOutDaysCount > 0) {
-            const statusText = `${leftOutDaysCount} ${t((isWeekly ? 'weeks' : 'days') + 'LeftOut')}`;
+            const statusText = `${leftOutDaysCount} ${t('xLeftOut', t(getTypeUnitNoInterval(tapasItem)))}`;
             pendingStatus = { statusText: [[statusText]], statusClass: 'text-gray-600' };
         }
 
@@ -2140,7 +2180,9 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
 
                         const dayOfWeek = tapasItem.startDate?.toDate().toLocaleDateString(locale, { weekday: "long" });
                         const checkedUnitsCount = tapasItem.checkedDays ? getUniqueCheckedDays(tapasItem.checkedDays).length : 0;
-                        const totalUnits = Math.ceil(tapasItem.duration / getTotalUnits(tapasItem.scheduleType));
+                        const totalUnits =  getTapasDurationByType(tapasItem.startDate?.toDate(), endDate, tapasItem.scheduleType, tapasItem.scheduleInterval);
+                        const unitNoInt = getTypeUnitNoInterval(tapasItem);
+                        const unit = getTypeUnit(tapasItem);
                         const daysToStart = daysRemaining - (tapasItem.duration-1);
 
                         return (
@@ -2185,11 +2227,11 @@ const TapasList = ({ tapas, config={}, onSelectTapas, showFilters = false, histo
                                         <div className="hidden lg:block flex justify-between items-center">
                                             {!statusText.length && isNoTapasType(tapasItem) && checkedUnitsCount==0 ? (
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {t('duration')}: {totalUnits} {t(isWeeklyTapasType(tapasItem) ? 'weeks' : 'days')}
+                                                    {t('duration')}: {totalUnits} {t(unitNoInt)}
                                                 </p>
                                             ) : (
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(isWeeklyTapasType(tapasItem) ? 'weeks' : 'days')}
+                                                    {t('overallProgress')}: {checkedUnitsCount} / {totalUnits} {t(unit)}
                                                 </p>
                                             )}
                                         </div>
@@ -2257,7 +2299,14 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     const displayTapasName = getLocalizedContent(tapas.name, locale, selectedTapasLanguage);
 
     let startDateObj = startOfDay(tapas.startDate.toDate());
-    const today = getTapasDay(getDateNow(config), tapas, startDateObj);
+    let today = getTapasDay(getDateNow(config), tapas, startDateObj);
+
+    const isWeekly = isWeeklyTapasType(tapas);
+    const isMonthly = isMonthlyTapasType(tapas);
+
+    if (isMonthly) {
+        today = addDays(today, 15);
+    }
 
     let endDateObj;
     if (!startDateObj || !tapas.duration) {
@@ -2277,8 +2326,8 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     }
 
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-    const daysDiff = differenceInCalendarDays(endDateObj, startDateObj);
-    const totalUnits = Math.ceil(daysDiff / daysDelta) + 1;
+    //const daysDiff = differenceInCalendarDays(endDateObj, startDateObj);
+    const totalUnits = getTapasDurationByType(startDateObj, endDateObj, tapas.scheduleType, tapas.scheduleInterval); //Math.ceil(daysDiff / daysDelta) + 1;
     const isDateChecked = (date) => isTapasDateChecked(tapas.checkedDays, date);
 
     const showParts = !isNoTapasType(tapas) && tapas.parts.length > 0 && Object.keys(tapas.checkedPartsByDate).length > 0;
@@ -2293,16 +2342,24 @@ const CheckedDetails = ({ tapas, config, onClose, t, selectedTapasLanguage }) =>
     }
     parts.unshift(t('finished'));
 
-    const isWeekly = isWeeklyTapasType(tapas);
     const dates = [];
     const checked = [];
     for (let day=0; day < totalUnits; day++) {
-        const date = addDays(startDateObj, daysDelta * day);
-        if (isWeekly) {
-            dates.push(t('cw') + getDateWeek(date));
+        let date;
+        if (isMonthly) {
+            date = addMonths(startDateObj, day);
+            const monthName = date.toLocaleString(undefined, { month: 'long' });
+            const yearShort = date.toLocaleString(undefined, { year: '2-digit' });
+            dates.push(monthName + " '" + yearShort);
         } else {
-            dates.push(date.toLocaleDateString());
+            date = addDays(startDateObj, daysDelta * day);
+            if (isWeekly) {
+                dates.push(t('cw') + getDateWeek(date));
+            } else {
+                dates.push(date.toLocaleDateString());
+            }
         }
+
         if (isDateChecked(date)) {
             checked.push([0,day,1]);
         }
@@ -2397,6 +2454,125 @@ function getLocaleDateFormat() {
     .join('');
 }
 
+const RepeatTapas = ({ title, question, confirm, onCancel, onConfirm, isFailed, t,
+        initRepeatOption, tapas, locale, intervalUnit, totalUnitsSchedule, unit, endDate, today,
+        failureCause, setFailureCause, setRepeatOption, setNewRepeatDuration }) => {
+    const [repeatOption, setRepeatOptionInt] = useState(initRepeatOption);
+    const [newRepeatDuration, setNewRepeatDurationInt] = useState('');
+
+    const setRepeatOptionInternal = (value) => {
+        setRepeatOptionInt(value);
+        setRepeatOption(value);
+    };
+
+    const setNewRepeatDurationInternal = (value) => {
+        setNewRepeatDurationInt(value);
+        setNewRepeatDuration(value);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                <h3 className="text-xl font-bold mb-4">{t(title)}</h3>
+                <p className="mb-4 text-gray-700 dark:text-gray-300">{t(question, getLocalizedContent(tapas.name, locale))}</p>
+
+                {isFailed && (<>
+                    <label htmlFor="failureCause" className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('causeOptional')}</label>
+                    <textarea
+                        id="failureCause"
+                        maxLength="4000"
+                        value={failureCause}
+                        onChange={(e) => setFailureCause(e.target.value)}
+                        rows="2"
+                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
+                    ></textarea>
+                </>)}
+
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('repeatTapas')}</label>
+                <div className="mb-4 space-y-2">
+                    {isFailed && (
+                        <label className="flex items-center">
+                            <input
+                                type="radio"
+                                name="repeatOption"
+                                value="none"
+                                checked={repeatOption === 'none'}
+                                onChange={(e) => setRepeatOptionInternal(e.target.value)}
+                                className="form-radio text-indigo-600"
+                            />
+                            <span className="ml-2 text-gray-700 dark:text-gray-300">{t('noDoNotRepeat')}</span>
+                        </label>
+                    )}
+                    <label className="flex items-center">
+                        <input
+                            type="radio"
+                            name="repeatOption"
+                            value="sameDuration"
+                            checked={repeatOption === 'sameDuration'}
+                            onChange={(e) => setRepeatOptionInternal(e.target.value)}
+                            className="form-radio text-indigo-600"
+                        />
+                        <span className="ml-2 text-gray-700 dark:text-gray-300">
+                            {t('repeatSameDuration', totalUnitsSchedule, t(unit))}
+                        </span>
+                    </label>
+                    <label className="flex items-center">
+                        <input
+                            type="radio"
+                            name="repeatOption"
+                            value="newDuration"
+                            checked={repeatOption === 'newDuration'}
+                            onChange={(e) => setRepeatOptionInternal(e.target.value)}
+                            className="form-radio text-indigo-600"
+                        />
+                        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatNewDuration')}</span>
+                        {repeatOption === 'newDuration' && (
+                            <input
+                                type="number"
+                                value={newRepeatDuration}
+                                onChange={(e) => setNewRepeatDurationInternal(e.target.value)}
+                                className="ml-2 w-16 px-2 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
+                                min="1"
+                            />
+                        )}
+                        <span className="ml-1 text-gray-700 dark:text-gray-300">
+                            {intervalUnit} {t(unit)}
+                        </span>
+                    </label>
+                    {endDate > today && !isMonthlyTapasType(tapas) && (
+                        <label className="flex items-center">
+                            <input
+                                type="radio"
+                                name="repeatOption"
+                                value="untilEndDate"
+                                checked={repeatOption === 'untilEndDate'}
+                                onChange={(e) => setRepeatOptionInternal(e.target.value)}
+                                className="form-radio text-indigo-600"
+                            />
+                            <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatUntilOriginalEndDate', endDate.toLocaleDateString())}</span>
+                        </label>
+                    )}
+                </div>
+
+                <div className="flex justify-around space-x-4">
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
+                    >
+                        {t('cancel')}
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className={`flex-1 ${isFailed ? 'bg-red-500' : 'bg-purple-600'} text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors duration-200`}
+                    >
+                        {t(confirm)}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Component for a single Tapas detail view
 const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalState, openDateRangeModal,
         initMessage, setInitMessage, selectedTapasLanguage, isPersistentCacheEnabled, isOffline,
@@ -2444,8 +2620,15 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
     const endDateObj = startDateObj && tapas.duration ? addDays(startDateObj, tapas.duration - 1) : null;
 
     const noTapas = isNoTapasType(tapas);
+    const isInterval = isIntervalTapasType(tapas);
     const noDuration = tapas.duration === null || tapas.duration <= 0;
-    const totalUnits = noDuration ? 0 : Math.ceil(tapas.duration / getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval));
+    const totalUnits = noDuration ? 0 : getTapasDurationByType(startDateObj, endDateObj, tapas.scheduleType, tapas.scheduleInterval);
+    const totalUnitsInt = isInterval ? tapas.duration : totalUnits;
+    const intervalUnit = isInterval ? t('Ntimes', '') + ' ' + t('everyNthDays', tapas.scheduleInterval).toLowerCase() : '';
+    const totalUnitsSchedule = isInterval ? t('Ntimes', Math.ceil(tapas.duration / tapas.scheduleInterval)) + ' '
+        + t('everyNthDays', tapas.scheduleInterval).toLowerCase() : totalUnits;
+    const unitNoInt = getTypeUnitNoInterval(tapas);
+    const unit = getTypeUnit(tapas);
     const checkedUnitsCount = tapas.checkedDays ? getUniqueCheckedDays(tapas.checkedDays).length : 0; // Use unique count
 
     // Check if a specific date has been checked
@@ -2466,16 +2649,25 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
     const today = startOfDay(getDateNow(config));
     const tapasToday = getTapasDay(today, tapas, startDateObj);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
-    const beforeYesterday = startOfDay(subDays(tapasToday, 2 * daysDelta));
-    const yesterday = startOfDay(subDays(tapasToday, daysDelta));
-    const tomorrow = startOfDay(addDays(tapasToday, daysDelta));
+    let beforeYesterday;
+    let yesterday;
+    let tomorrow;
+    if (isMonthlyTapasType(tapas)) {
+        beforeYesterday = startOfDay(subMonths(tapasToday, 2));
+        yesterday = startOfDay(subMonths(tapasToday, 1));
+        tomorrow = startOfDay(addMonths(tapasToday, 1));
+    } else {
+        beforeYesterday = startOfDay(subDays(tapasToday, 2 * daysDelta));
+        yesterday = startOfDay(subDays(tapasToday, daysDelta));
+        tomorrow = startOfDay(addDays(tapasToday, daysDelta));
+    }
 
     const isTodayChecked = isDateChecked(tapasToday);
     const isBeforeYesterdayChecked = isDateChecked(beforeYesterday);
     const isYesterdayChecked = isDateChecked(yesterday);
     const isTomorrowChecked = isDateChecked(tomorrow);
 
-    const todayDateString = formatDateToISO(today);
+    const todayDateString = formatDateToISO(tapasToday);
 
     // Check if the tapas period is over
     const isTodayValid = !isAfter(startDateObj, today) && (noDuration || !isAfter(today, endDateObj));
@@ -2570,7 +2762,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
         try {
             await myUpdateDoc(tapasRef, { checkedDays: updatedCheckedDays, });
-            setMessage(t(getByIntervalType(tapas, 'week', 'day', 'interval') + 'CheckedSuccessfully'));
+            setMessage(t(getByTapasIntervalType(tapas, 'month', 'week', 'day', 'interval') + 'CheckedSuccessfully'));
             /*if (formatDateToISO(dateForCheckedDays) === todayDateString) {
                  setCheckedPartsSelection({}); // Clear the UI selection state for parts for next day/interaction
             }*/
@@ -2607,7 +2799,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                 checkedDays: updatedCheckedDays,
                 recuperatedDays: updatedRecuperatedDays,
             });
-            setMessage(t('dayRecuperatedSuccessfully')); // Re-using dayRecuperatedSuccessfully
+            setMessage(t('xRecuperatedSuccessfully', t(unit)));
             setSelectedTapas(prev => ({ ...prev, checkedDays: updatedCheckedDays, recuperatedDays: updatedRecuperatedDays })); // Immediately update local state
             setShowRecuperationAdvanceMenu(false); // Close dropdown
         } catch (error) {
@@ -2670,7 +2862,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
 
         const sortedCheckedDays = [...tapas.checkedDays].sort((a, b) => b.toDate().getTime() - a.toDate().getTime());
         const lastCheckedDayTimestamp = sortedCheckedDays[0];
-        const lastCheckedUnitDate = getTapasDay(lastCheckedDayTimestamp.toDate(), tapas, startDateObj);
+        const lastCheckedUnitDate = startOfDay(lastCheckedDayTimestamp.toDate());
 
         const dateFunc = isWeeklyTapasType(tapas) ? formatStartOfWeekNoTimeToISO : formatDateNoTimeToISO;
 
@@ -2774,17 +2966,11 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
     const handleMarkFailed = async () => {
         setInitMessage('');
         failedModal.open();
-        // Ensure repeatOption is reset when opening the fail dialog
-        setRepeatOption('none');
-        setNewRepeatDuration('');
     };
 
     const handleRepeat = () => {
         setInitMessage('');
         repeatModal.open();
-        // Set a sensible default for the repeat dialog
-        setRepeatOption('sameDuration');
-        setNewRepeatDuration('');
     };
 
     const getRepeatDateOptions = (date) => {
@@ -2862,18 +3048,19 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
     };
 
     const repeatTapas = () => {
-        let newDurationDays = tapas.duration; // Default to original duration in days
         let newStartDate = startOfDay(new Date()); // New tapas starts today in UTC
+        let newDurationDays = tapas.duration; // Default to original duration in days
+        if (isMonthlyTapasType(tapas)) {
+            newDurationDays = getTapasDurationInDays(newStartDate, totalUnits, tapas.scheduleType, tapas.scheduleInterval);
+        }
 
         if (repeatOption === 'newDuration') {
             if (isNaN(parseInt(newRepeatDuration)) || parseInt(newRepeatDuration) <= 0) {
                 setMessage(t('invalidNewDuration'));
                 return;
             }
-            newDurationDays = parseInt(newRepeatDuration);
-            if (isWeeklyTapasType(tapas)) {
-                newDurationDays *= 7; // Convert weeks to days for storage
-            }
+            const units = parseInt(newRepeatDuration);
+            newDurationDays = getTapasDurationInDays(newStartDate, units, tapas.scheduleType, tapas.scheduleInterval);
         } else if (repeatOption === 'untilEndDate') {
             const diffDays = differenceInCalendarDays(endDateObj, newStartDate);
             if (diffDays > 0) {
@@ -3361,7 +3548,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                             </p>
                             {tapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {tapas.startTime}</p>}
                             <p>
-                                <strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(tapas.duration / getTotalUnits(tapas.scheduleType))} {t(isWeeklyTapasType(tapas) ? 'weeks' : 'days').toLowerCase()}
+                                <strong className="font-semibold">{t('duration')}:</strong> {totalUnitsInt} {t(unitNoInt)}
                             </p>
                         </>
                     )}
@@ -3370,7 +3557,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     ) : (
                         <>
                             {isIntervalTapasType(tapas) && (
-                            <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(tapas.duration / tapas.scheduleInterval))} {t('everyNthDays', tapas.scheduleInterval).toLowerCase()} {t('days')}</p>
+                            <p><strong className="font-semibold">{t('schedule')}:</strong> {totalUnitsSchedule} {t('days')}</p>
                             )}
                             {tapas.acknowledgeAfter && <p><strong className="font-semibold">{t('acknowledgeAfter')}:</strong> {t('yes')}</p>}
                         </>
@@ -3428,7 +3615,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                         onClick={() => handleMarkUnitFinished(tapasToday)}
                                         className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
                                     >
-                                        {t('confirmX', t(getByIntervalType(tapas, 'thisWeekX', 'todayX', 'thisIntervalX'), ''))}
+                                        {t('confirmX', t(getByTapasIntervalType(tapas, 'thisMonthX', 'thisWeekX', 'todayX', 'thisIntervalX'), ''))}
                                     </button>
                                 )}
                                 {!isYesterdayChecked && isYesterdayValid && (
@@ -3436,7 +3623,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                         onClick={() => handleMarkUnitFinished(yesterday)}
                                         className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
                                     >
-                                        {t('confirmX', t(getByIntervalType(tapas, 'lastWeekX', 'yesterdayX', 'lastIntervalX'), ''))}
+                                        {t('confirmX', t(getByTapasIntervalType(tapas, 'lastMonthX', 'lastWeekX', 'yesterdayX', 'lastIntervalX'), ''))}
                                     </button>
                                 )}
                             </div>
@@ -3454,15 +3641,17 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                                 onClick={() => handleRecuperateUnit(yesterday)}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {getByIntervalType(tapas, t('lastWeekX', t('recuperatedW')), t('yesterdayX', t('recuperatedD')), t('lastIntervalX', t('recuperatedW')))}
+                                                {getByTapasIntervalType(tapas, t('lastMonthX', t('recuperatedW')), t('lastWeekX', t('recuperatedW')),
+                                                    t('yesterdayX', t('recuperatedD')), t('lastIntervalX', t('recuperatedW')))}
                                             </button>
                                         )}
-                                        {tapas.allowRecuperation && !isBeforeYesterdayChecked && !isBefore(beforeYesterday, startDateObj) && !isAfter(beforeYesterday, endDateObj) && (
+                                        {tapas.allowRecuperation && !isMonthlyTapasType(tapas) && !isBeforeYesterdayChecked && !isBefore(beforeYesterday, startDateObj) && !isAfter(beforeYesterday, endDateObj) && (
                                             <button
                                                 onClick={() => handleRecuperateUnit(beforeYesterday)}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {getByIntervalType(tapas, t('beforeLastWeekX', t('recuperatedW')), t('beforeYesterdayX', t('recuperatedD')), t('beforeLastIntervalX', t('recuperatedW')))}
+                                                {getByTapasIntervalType(tapas, t('beforeLastMonthX', t('recuperatedW')), t('beforeLastWeekX', t('recuperatedW')),
+                                                    t('beforeYesterdayX', t('recuperatedD')), t('beforeLastIntervalX', t('recuperatedW')))}
                                             </button>
                                         )}
                                         {!isNoTapasType(tapas) && isDailyTapasType(tapas) && (!isTodayChecked || !isTomorrowChecked) && !isBefore(tapasToday, startDateObj) && !isAfter(tapasToday, endDateObj) && (
@@ -3477,14 +3666,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                                             onClick={showAcknowledgeDateRangeMenu}
                                             className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                         >
-                                            {t('acknowledgeN', t(getByIntervalType(tapas, 'weeks', 'days', 'intervals')))}
+                                            {t('acknowledgeN', t(getTypeUnit(tapas)))}
                                         </button>
                                         {tapas.checkedDays && tapas.checkedDays.length > 0 && (
                                             <button
                                                 onClick={handleClearLastUnit}
                                                 className="block w-full text-left px-4 py-5 md:py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
                                             >
-                                                {t('clearX', t('last' + (getByIntervalType(tapas, 'Week', 'Day', 'Interval'))))}
+                                                {t('clearX', t('last' + (getByTapasIntervalType(tapas, 'Month', 'Week', 'Day', 'Interval'))))}
                                             </button>
                                         )}
                                     </div>
@@ -3495,7 +3684,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     {tapas.crystallizationTime && <p><strong className="font-semibold">{t('crystallizationTime')}:</strong> {tapas.crystallizationTime} {t('days')}</p>}
                     <p><strong className="font-semibold">{t('status')}:</strong> <span className={`font-bold ${isActive(tapas) ? 'text-blue-600' : isCrystallization(tapas) ? 'text-indigo-600' : isSuccessfulOrFinished(tapas) ? 'text-green-600' : 'text-red-600'}`}>{t(tapas.status)}</span></p>
                     {!isNoTapasType(tapas) && (<p className="text-lg mt-4 text-gray-700 dark:text-gray-200">
-                        <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t(isWeeklyTapasType(tapas) ? 'weeksChecked' : 'daysChecked')}
+                        <strong className="font-semibold">{t('overallProgress')}:</strong> {checkedUnitsCount} / {totalUnits} {t('xChecked', t(unit))}
                     </p>)}
                     {tapas.failureCause && <p><strong className="font-semibold">{t('causeOfFailure')}:</strong> {tapas.failureCause}</p>}
                     <ResultHistoryView
@@ -3611,104 +3800,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     </div>
                 )}
 
-                {failedModal.isOpen && (
-                    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-                        <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                            <h3 className="text-xl font-bold mb-4">{t('markTapasAsFailed')}</h3>
-                            <p className="mb-4 text-gray-700 dark:text-gray-300">{t('sureMarkFailed', getLocalizedContent(tapas.name, locale))}</p>
-                            <label htmlFor="failureCause" className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('causeOptional')}</label>
-                            <textarea
-                                id="failureCause"
-                                maxLength="4000"
-                                value={failureCause}
-                                onChange={(e) => setFailureCause(e.target.value)}
-                                rows="2"
-                                className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500 mb-4"
-                            ></textarea>
-
-                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('repeatTapas')}</label>
-                            <div className="mb-4 space-y-2">
-                                {/* This option is for the FAIL dialog, where 'none' is relevant */}
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="repeatOption"
-                                        value="none"
-                                        checked={repeatOption === 'none'}
-                                        onChange={(e) => setRepeatOption(e.target.value)}
-                                        className="form-radio text-indigo-600"
-                                    />
-                                    <span className="ml-2 text-gray-700 dark:text-gray-300">{t('noDoNotRepeat')}</span>
-                                </label>
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="repeatOption"
-                                        value="sameDuration"
-                                        checked={repeatOption === 'sameDuration'}
-                                        onChange={(e) => setRepeatOption(e.target.value)}
-                                        className="form-radio text-indigo-600"
-                                    />
-                                    <span className="ml-2 text-gray-700 dark:text-gray-300">
-                                        {t('repeatSameDuration', isWeeklyTapasType(tapas) ? Math.ceil(tapas.duration / 7)
-                                         : tapas.duration, t(isWeeklyTapasType(tapas) ? 'weeks' : 'days').toLowerCase())}
-                                    </span>
-                                </label>
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="repeatOption"
-                                        value="newDuration"
-                                        checked={repeatOption === 'newDuration'}
-                                        onChange={(e) => setNewRepeatDuration(e.target.value)}
-                                        className="form-radio text-indigo-600"
-                                    />
-                                    <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatNewDuration')}</span>
-                                    {repeatOption === 'newDuration' && (
-                                        <input
-                                            type="number"
-                                            value={newRepeatDuration}
-                                            onChange={(e) => setNewRepeatDuration(e.target.value)}
-                                            className="ml-2 w-24 px-2 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                                            min="1"
-                                        />
-                                    )}
-                                    <span className="ml-1 text-gray-700 dark:text-gray-300">
-                                        {t(isWeeklyTapasType(tapas) ? 'weeks' : 'days')}
-                                    </span>
-                                </label>
-                                {endDateObj > today && (
-                                    <label className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="repeatOption"
-                                            value="untilEndDate"
-                                            checked={repeatOption === 'untilEndDate'}
-                                            onChange={(e) => setRepeatOption(e.target.value)}
-                                            className="form-radio text-indigo-600"
-                                        />
-                                        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatUntilOriginalEndDate', endDateObj.toLocaleDateString())}</span>
-                                    </label>
-                                )}
-                            </div>
-
-                            <div className="flex justify-around space-x-4">
-                                <button
-                                    onClick={failedModal.close}
-                                    className="flex-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
-                                >
-                                    {t('cancel')}
-                                </button>
-                                <button
-                                    onClick={confirmFail}
-                                    className="flex-1 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors duration-200"
-                                >
-                                    {t('confirmFail')}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {failedModal.isOpen && (<RepeatTapas title='markTapasAsFailed' question='sureMarkFailed'
+                    failureCause={failureCause} setFailureCause={setFailureCause} t={t}
+                    initRepeatOption='none' tapas={tapas} locale={locale}
+                    intervalUnit={intervalUnit} totalUnitsSchedule={totalUnitsSchedule} unit={unitNoInt}
+                    endDate={endDateObj} today={today}
+                    setRepeatOption={setRepeatOption} setNewRepeatDuration={setNewRepeatDuration}
+                    confirm='confirmFail' onCancel={failedModal.close} onConfirm={confirmFail} isFailed={true}
+                />)}
 
                 {showCheckedDetails && (<CheckedDetails
                     tapas={tapas}
@@ -3718,84 +3817,14 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     t={t}
                 />)}
 
-                {repeatModal.isOpen && (
-                    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-                        <div className="p-6 rounded-lg shadow-xl max-w-md w-full mx-auto bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                            <h3 className="text-xl font-bold mb-4">{t('repeatTapas')}</h3>
-                            <p className="mb-4 text-gray-700 dark:text-gray-300">{t('sureRepeat', getLocalizedContent(tapas.name, locale))}</p>
-
-                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">{t('repeatOptionLabel')}</label>
-                            <div className="mb-4 space-y-2">
-                                {/* Hidden "noDoNotRepeat" option as per request */}
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="repeatOption"
-                                        value="sameDuration"
-                                        checked={repeatOption === 'sameDuration'}
-                                        onChange={(e) => setRepeatOption(e.target.value)}
-                                        className="form-radio text-indigo-600"
-                                    />
-                                    <span className="ml-2 text-gray-700 dark:text-gray-300">
-                                        {t('repeatSameDuration', isWeeklyTapasType(tapas) ? Math.ceil(tapas.duration / 7)
-                                         : tapas.duration, t(isWeeklyTapasType(tapas) ? 'weeks' : 'days').toLowerCase())}
-                                    </span>
-                                </label>
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="repeatOption"
-                                        value="newDuration"
-                                        checked={repeatOption === 'newDuration'}
-                                        onChange={(e) => setRepeatOption(e.target.value)}
-                                        className="form-radio text-indigo-600"
-                                    />
-                                    <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatNewDuration')}</span>
-                                    {repeatOption === 'newDuration' && (
-                                        <input
-                                            type="number"
-                                            value={newRepeatDuration}
-                                            onChange={(e) => setNewRepeatDuration(e.target.value)}
-                                            className="ml-2 w-24 px-2 py-1 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                                            min="1"
-                                        />
-                                    )}
-                                    <span className="ml-1 text-gray-700 dark:text-gray-300">
-                                        {t(isWeeklyTapasType(tapas) ? 'weeks' : 'days')}
-                                    </span>
-                                </label>
-                                {endDateObj > today && ( // Conditionally render if original end date is in the future
-                                    <label className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="repeatOption"
-                                            value="untilEndDate"
-                                            checked={repeatOption === 'untilEndDate'}
-                                            onChange={(e) => setRepeatOption(e.target.value)}
-                                            className="form-radio text-indigo-600"
-                                        />
-                                        <span className="ml-2 text-gray-700 dark:text-gray-300">{t('repeatUntilOriginalEndDate', endDateObj.toLocaleDateString())}</span>
-                                    </label>
-                                )}
-                            </div>
-
-                            <div className="flex justify-around space-x-4">
-                                <button
-                                    onClick={repeatModal.close}
-                                    className="flex-1 bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors duration-200"
-                                >
-                                    {t('cancel')}
-                                </button>
-                                <button
-                                    onClick={confirmRepeat}
-                                    className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors duration-200"
-                                >
-                                    {t('confirmRepeat')}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {repeatModal.isOpen && (<RepeatTapas title='repeatTapas' question='sureRepeat'
+                    failureCause={failureCause} setFailureCause={setFailureCause} t={t}
+                    initRepeatOption='sameDuration' tapas={tapas} locale={locale}
+                    intervalUnit={intervalUnit} totalUnitsSchedule={totalUnitsSchedule} unit={unitNoInt}
+                    endDate={endDateObj} today={today}
+                    setRepeatOption={setRepeatOption} setNewRepeatDuration={setNewRepeatDuration}
+                    confirm='confirmRepeat' onCancel={repeatModal.close} onConfirm={confirmRepeat}
+                />)}
             </div>
         </div>
     );
@@ -4585,7 +4614,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                 <div className="space-y-4 text-gray-700 dark:text-gray-300">
                     {sharedTapas.startDate && (<p><strong className="font-semibold">{t('timeframe')}:</strong> {sharedTapas.startDate?.toDate().toLocaleDateString()} - {endDate?.toLocaleDateString()}</p>)}
                     {sharedTapas.startTime && <p><strong className="font-semibold">{t('startTime')}:</strong> {sharedTapas.startTime}</p>}
-                    <p><strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(sharedTapas.duration / getTotalUnits(sharedTapas.scheduleType))} {t(isWeeklyTapasType(sharedTapas) ? 'weeks' : 'days').toLowerCase()}</p>
+                    <p><strong className="font-semibold">{t('duration')}:</strong> {Math.ceil(sharedTapas.duration / getTotalUnits(sharedTapas.scheduleType))} {t(getTypeUnitNoInterval(sharedTapas)).toLowerCase()}</p>
                     {sharedTapas.scheduleType === 'everyNthDays' && (
                     <p><strong className="font-semibold">{t('schedule')}:</strong> {t('Ntimes', Math.ceil(sharedTapas.duration / sharedTapas.scheduleInterval))} {t('everyNthDays', sharedTapas.scheduleInterval).toLowerCase()} {t('days')}</p>
                     )}
