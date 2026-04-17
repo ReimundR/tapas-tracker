@@ -8,7 +8,7 @@ __________________________________________________________
 * added monthly schedule type
 
 #### Fixed
-* fixed delete last in some cases was not working
+* fixed delete last entry in some cases was not working
 * other minor fixes
 
 __________________________________________________________

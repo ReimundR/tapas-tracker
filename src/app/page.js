@@ -312,41 +312,59 @@ const reduceDateRange = (startStr, endStr) => {
 };
 
 const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedTapas, isPersistentCacheEnabled }) => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    const isMonthly = isMonthlyTapasType(tapas);
+
+    const today = subDays(getTapasDay(new Date(), tapas), 1);
+    //today.setHours(23, 59, 59, 999);
     const daysDelta = getScheduleFactor(tapas.scheduleType, tapas.scheduleInterval);
     const deltaName = t(getTypeUnit(tapas));
 
     const [endDate, setEndDate] = useState(formatDateToISO(today));
     const [numberOfDays, setNumberOfDays] = useState(1);
-    const [startDate, setStartDate] = useState(formatDateToISO(subDays(today, numberOfDays - 1)));
+    const [startDate, setStartDate] = useState(formatDateToISO(isMonthly ? addDays(subMonths(today, numberOfDays), 1) : subDays(today, numberOfDays - 1)));
     const [status, setStatus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const calculateDates = useCallback((type, value) => {
         if (type === 'days') {
-            const days = parseInt(value, 10);
-            if (!isNaN(days)) {
-                setNumberOfDays(days);
+            const count = parseInt(value, 10);
+            if (!isNaN(count)) {
+                setNumberOfDays(count);
                 const end = startOfDay(new Date(endDate));
-                const start = subDays(end, (days - 1) * daysDelta);
+                let start;
+                if (isMonthly) {
+                    start = addDays(subMonths(end, count), 1);
+                } else {
+                    start = subDays(end, (count - 1) * daysDelta);
+                }
                 setStartDate(formatDateToISO(start));
             }
         } else if (type === 'end') {
-            const end = endOfDay(parseISO(value));
+            const end = startOfDay(new Date(value));
             setEndDate(value);
-            const start = subDays(end, (numberOfDays - 1) * daysDelta);
+            let start;
+            if (isMonthly) {
+                start = addDays(subMonths(end, numberOfDays), 1);
+            } else {
+                start = subDays(end, (numberOfDays - 1) * daysDelta);
+            }
             setStartDate(formatDateToISO(start));
         } else if (type === 'start') {
             const start = startOfDay(new Date(value));
             setStartDate(value);
-            const end = addDays(start, (numberOfDays - 1) * daysDelta);
+            let end;
+            if (isMonthly) {
+                end = subDays(addMonths(start, numberOfDays), 1);
+            } else {
+                end = addDays(start, (numberOfDays - 1) * daysDelta);
+            }
             setEndDate(formatDateToISO(end));
         }
     }, [endDate, numberOfDays]);
 
     const handleAcknowledge = async () => {
         setIsLoading(true);
+        let done = 0;
         try {
             const startDateObj = startOfDay(tapas.startDate.toDate());
             const endDateObj = tapas.duration > 0 ? addDays(startDateObj, tapas.duration - 1) : null;
@@ -356,7 +374,12 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
 
             //for (let i = numberOfDays - 1; i >= 2; i--) {
             for (let i = 0; i < numberOfDays; i++) {
-                const dateToAcknowledge = startOfDay(addDays(currentRefDate, i * daysDelta));
+                let dateToAcknowledge;
+                if (isMonthly) {
+                    dateToAcknowledge = startOfDay(addMonths(currentRefDate, i));
+                } else {
+                    dateToAcknowledge = startOfDay(addDays(currentRefDate, i * daysDelta));
+                }
 
                 // Ensure the date is within the tapas duration
                 if (isBefore(dateToAcknowledge, startDateObj) || (endDateObj && isAfter(dateToAcknowledge, endDateObj))) {
@@ -365,6 +388,7 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
 
                 if (!isTapasDateChecked(tapas.checkedDays, dateToAcknowledge)) {
                     unitsToAcknowledge.push(Timestamp.fromDate(dateToAcknowledge));
+                    done += 1;
                 }
             }
 
@@ -390,7 +414,7 @@ const AcknowledgeDateRangeModal = ({ onClose, tapas, db, userId, t, setSelectedT
             }
 
             setSelectedTapas(prev => ({ ...prev, ...update }));
-            onClose(`${t('acknowledgedSuccessfully')} ${numberOfDays} ${deltaName.toLowerCase()}.`);
+            onClose(`${t('acknowledgedSuccessfully')} ${done} ${deltaName}.`);
         } catch (e) {
             console.error("Error acknowledging tapas: ", e);
             alert("Failed to acknowledge tapas.");
