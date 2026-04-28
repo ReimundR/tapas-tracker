@@ -29,22 +29,22 @@ Ensure you have [Node.js](https://nodejs.org/) (version 18+) installed on your s
 1. **Clone the repository:**
    ```bash
    git clone [https://github.com/ReimundR/tapas-tracker.git](https://github.com/ReimundR/tapas-tracker.git)
-   cd tapas-tracker```
+   cd tapas-tracker
 
 2. **Install dependencies:**
     ```npm install
     # or
     yarn install
     # or
-    pnpm install```
+    pnpm install
 
 3. **Run the development server:**
-    ```npm run dev```
+    ```npm run dev
 
 4. **View the app:**
     Open http://localhost:3000 in your browser.
 
-📄 **License**
+## 📄 License
 
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 
@@ -56,11 +56,11 @@ This project is licensed under the **GNU Affero General Public License v3.0 (AGP
 
 For more details, please see the ``LICENSE`` file.
 
-🤝 **Contributing**
+## 🤝 Contributing
 
-Contributions are welcome! Whether it's bug reporting, documentation, or new features, please feel free to open an [Issue](https://www.google.com/search?q=https://github.com/ReimundR/tapas-tracker/issues) or submit a Pull Request.
+Contributions are welcome! Whether it's bug reporting, documentation, or new features, please feel free to open an [Issue](https://github.com/ReimundR/tapas-tracker/issues) or submit a Pull Request.
 
-📧 **Contact & Credits**
+## 📧 Contact & Credits
 
 Developed by Reimund Renner / https://github.com/ReimundR/.
 
