@@ -1,6 +1,7 @@
 {
   "name": "tapas",
-  "version": "1.6.3",
+  "version": "1.7.0",
+  "license": "AGPL-3.0-or-later",
   "private": false,
   "scripts": {
     "dev": "next dev --webpack",
