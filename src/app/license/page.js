@@ -21,22 +21,9 @@
 
 import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react'
+import License from "../../content/LICENSE.md";
 
 export default function Page() {
-    const [data, setData] = useState(null)
-    const [isLoading, setLoading] = useState(true)
-
-    useEffect(() => {
-        fetch('LICENSE')
-        .then(response => {
-            return response.text()
-        })
-        .then((data) => {
-            setData(data)
-            setLoading(false)
-        })
-    }, [])
-
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="bg-white dark:bg-gray-800 dark:text-gray-100 p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
@@ -45,13 +32,9 @@ export default function Page() {
                         &times;
                     </button>
                 </Link>
-                <div className="flex justify-between items-center mb-6">
-                    <div className="text-gray-700 dark:text-gray-100 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
-                        <Suspense fallback={<div>Loading...</div>}>
-                        {data}
-                        </Suspense>
-                    </div>
-                </div>
+                <article className="prose prose-neutral max-w-3xl lg:prose-lg mx-auto p-4 sm:p-6 md:p-8 rounded-xl shadow-lg dark:text-gray-100">
+                    <License />
+                </article>
           </div>
         </div>
     )

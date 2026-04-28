@@ -40,8 +40,6 @@ import Head from 'next/head'; // Import Head from next/head for meta tags
 import { startOfDay, differenceInMonths, getDaysInMonth, isLastDayOfMonth, getDate, setDate, startOfWeek, addDays, subDays,
     addMonths, subMonths, subYears, differenceInCalendarDays, getISOWeek,
     isToday, isYesterday, isTomorrow, isBefore, isAfter, isSameDay, isWithinInterval, format } from 'date-fns';
-import GdprEN from "../content/privacy-policy-en.mdx";
-import GdprDE from "../content/privacy-policy-de.mdx";
 import { translations } from "./translations";
 import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt, useModalState } from "./helpers";
 import ReactECharts from 'echarts-for-react';
@@ -4709,34 +4707,25 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
     );
 };
 
+const LazyLicenseContent = dynamic(
+  () => import('../content/LICENSE.md').then((mod) => mod.default), 
+  {
+    loading: () => <p>Loading license...</p>,
+    ssr: false
+  }
+);
+
 const License = ({ onClose }) => {
     const { t } = useContext(AppContext);
-    const [data, setData] = useState(null)
-    const [isLoading, setLoading] = useState(true)
 
-    useEffect(() => {
-        fetch('LICENSE')
-        .then(response => {
-            return response.text()
-        })
-        .then((data) => {
-            setData(data)
-            setLoading(false)
-        })
-    }, [])
- 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-40 overflow-y-auto">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-2xl mx-auto my-auto">
                 <button onClick={onClose} className="float-right text-gray-500 hover:text-gray-700 text-5xl font-bold">
                     &times;
                 </button>
-                <div className="flex justify-between items-center mb-6">
-                    <div className="text-gray-700 dark:text-gray-100 text-sm font-medium mb-6" style={{ whiteSpace: 'pre-wrap' }}>
-                        <Suspense fallback={<div>Loading...</div>}>
-                        {data}
-                        </Suspense>
-                    </div>
+                <div className="prose lg:prose-lg mx-auto p-4 sm:p-6 md:p-8 dark:text-gray-100">
+                    <LazyLicenseContent />
                 </div>
                 <button onClick={onClose} className="w-full text-white shadow-lg border-2 border-blue-800 bg-blue-600 px-4 py-2 rounded-md font-medium transition-colors duration-200 hover:bg-blue-500 text-xl font-bold">
                     {t('close')}
@@ -4774,6 +4763,20 @@ const LegalNotice = ({ onClose }) => {
     );
 };
 
+const PrivacyPolicyEN = dynamic(() => import('../content/privacy-policy-en.mdx'), { ssr: false });
+const PrivacyPolicyDE = dynamic(() => import('../content/privacy-policy-de.mdx'), { ssr: false });
+const privacyPolicy = {
+  en: PrivacyPolicyEN,
+  de: PrivacyPolicyDE,
+};
+
+const LazyGDPRContent = ({ lang, t }) => {
+    const SelectedComponent = privacyPolicy[lang] || PrivacyPolicyEN;
+    return (<SelectedComponent />);
+//    loading: () => <p>{t('loadingX', 'GDPR')}...</p>,
+//    ssr: false
+};
+
 const GDPR = ({ onClose }) => {
     const { locale, setLocale, t } = useContext(LocaleContext);
     return (
@@ -4783,12 +4786,7 @@ const GDPR = ({ onClose }) => {
                     &times;
                 </button>
                 <div className="prose lg:prose-lg mx-auto p-4 sm:p-6 md:p-8 dark:text-gray-100">
-                    {(locale=='de') && (
-                        <GdprDE />
-                    )}
-                    {(locale!='de') && (
-                        <GdprEN />
-                    )}
+                    <LazyGDPRContent lang={locale} t={t}/>
                 </div>                        
                 <button onClick={onClose} className="w-full text-white shadow-lg border-2 border-blue-800 bg-blue-600 px-4 py-2 rounded-md font-medium transition-colors duration-200 hover:bg-blue-500 text-xl font-bold">
                     {t('close')}
