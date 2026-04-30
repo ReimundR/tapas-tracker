@@ -20,7 +20,7 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CAN_REDO_COMMAND, CAN_UNDO_COMMAND, REDO_COMMAND, UNDO_COMMAND, SELECTION_CHANGE_COMMAND,
-  FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, $getSelection, $isRangeSelection, $createParagraphNode, $getNodeByKey } from "lexical";
+  FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, $getSelection, $setSelection, $isRangeSelection, $createParagraphNode, $getNodeByKey } from "lexical";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { $getSelectionStyleValueForProperty, $isParentElementRTL, $patchStyleText, $wrapNodes, $isAtNodeEnd } from "@lexical/selection";
 import { $getNearestNodeOfType, mergeRegister } from "@lexical/utils";
@@ -401,15 +401,23 @@ export default function ToolbarPlugin() {
   const [canRedo, setCanRedo] = useState(false);
   const [blockType, setBlockType] = useState("paragraph");
   const [selectedElementKey, setSelectedElementKey] = useState(null);
-  const [showBlockOptionsDropDown, setShowBlockOptionsDropDown] = useState(
-    false
-  );
+  const [showBlockOptionsDropDown, setShowBlockOptionsDropDown] = useState(false);
   const [isRTL, setIsRTL] = useState(false);
   const [isLink, setIsLink] = useState(false);
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [fontSize, setFontSize] = useState('15px');
+  const [lastSelection, setLastSelection] = useState(null);
+
+  const updateLastSelection = useCallback(() => {
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        setLastSelection(selection);
+      }
+    });
+  }, [editor]);
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -496,6 +504,12 @@ export default function ToolbarPlugin() {
     (styles) => {
       activeEditor.update(() => {
         const selection = $getSelection();
+        if (selection === null && lastSelection !== null) {
+          selection = lastSelection;
+          // reactivate selection
+          $setSelection(selection);
+        }
+
         if ($isRangeSelection(selection)) {
           $patchStyleText(selection, styles);
         }
@@ -576,7 +590,6 @@ export default function ToolbarPlugin() {
         <Select
           className="toolbar-item font-size"
           onChange={onFontSizeSelect}
-          onMouseDown={(e) => e.preventDefault()}
           options={['10px', '11px', '12px', '15px', '16px', '18px', '21px', '28px', '32px', '38px']}
           value={fontSize}
         />
