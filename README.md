@@ -65,5 +65,6 @@ Contributions are welcome! Whether it's bug reporting, documentation, or new fea
 Developed by Reimund Renner / https://github.com/ReimundR/.
 
 * **Third-Party Credits:** This project utilizes code from Lexical (Meta Platforms, Inc.), which is licensed under the MIT License.
+* **Icons:** This project uses [Lucide Icons](https://lucide.dev/), which are licensed under the [ISC License](https://github.com/lucide-icons/lucide/blob/main/LICENSE).
 
 *README built with ❤️ for open-source transparency.*

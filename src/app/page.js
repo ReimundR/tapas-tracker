@@ -42,6 +42,7 @@ import { startOfDay, differenceInMonths, getDaysInMonth, isLastDayOfMonth, getDa
     isToday, isYesterday, isTomorrow, isBefore, isAfter, isSameDay, isWithinInterval, format } from 'date-fns';
 import { translations } from "./translations";
 import { firebaseConfig, LocaleProvider, ThemeContext, ThemeProvider, InstallPrompt, useModalState } from "./helpers";
+import PartsSection from './components/PartsSection';
 import ReactECharts from 'echarts-for-react';
 import 'react-tabs/style/react-tabs.css';
 //import ChangelogContent from '../../CHANGELOG.md';
@@ -1048,6 +1049,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
     const { db, userId, t, locale } = useContext(AppContext);
 
     const [tapasMultiLanguageData, setTapasMultiLanguageData] = useState({}); // Stores { lang: { name, description, goals, parts } }
+    const [partsSchedules, setPartsSchedules] = useState(null);
     const [tapasDataInitialized, setTapasDataInitialized] = useState(false);
     const [currentFormLanguage, setCurrentFormLanguage] = useState(locale); // Language currently being edited in the form
     const [availableFormLanguages, setAvailableFormLanguages] = useState([locale]); // Languages for which data exists in the form
@@ -1124,6 +1126,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
 
             setStartDate(editingTapas.startDate ? formatDateToISO(editingTapas.startDate.toDate()) : '');
             setStartTime(editingTapas.startTime || '');
+            setPartsSchedules(editingTapas.partsSchedules || null);
             
             setCrystallizationTime(editingTapas.crystallizationTime || '');
             setAllowRecuperation(editingTapas.allowRecuperation || false);
@@ -1262,6 +1265,29 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
                 [field]: value
             }
         }));
+    };
+
+    const movePart = (from, to) => {
+        //currentFormLanguage availableFormLanguages
+        setTasks(prev => {
+            const newState = { ...prev };
+            availableFormLanguages.forEach(lang => {
+                const arr = [...prev[lang]];
+                const [movedItem] = arr.splice(from, 1);
+                arr.splice(to, 0, movedItem);
+                newState[lang] = arr;
+            });
+            return newState;
+        });
+    };
+
+    const addPart = (name) => {
+    };
+
+    const deletePart = (index) => {
+    };
+
+    const changePart = (index, value) => {
     };
 
     const handleAddLanguage = (selectedLang) => {
@@ -1442,6 +1468,7 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
                 setAvailableFormLanguages([locale]);
                 setCurrentFormLanguage(locale);
                 setOtherLanguages({}); // Reset custom languages
+                setPartsSchedules(null);
                 setStartDate('');
                 setStartTime('');
                 setDuration('');
@@ -1701,15 +1728,9 @@ const TapasForm = ({ onTapasAddedUpdatedCancel, editingTapas, modalState, myAddD
                 </div>
                 <div className="col-span-full">
                     <label htmlFor="parts" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('parts0n')}</label>
-                    <textarea
-                        id="parts"
-                        maxLength="1000"
-                        value={currentTapasDataForForm.parts}
-                        placeholder={t('enterParts')}
-                        onChange={(e) => handleMultiLanguageInputChange('parts', e.target.value)}
-                        rows="3"
-                        className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:border-indigo-500"
-                    ></textarea>
+                    <PartsSection parts={currentTapasDataForForm.parts} partsSchedules={partsSchedules}
+                        onChange={changePart} onMove={movePart} onAdd={addPart} onDelete={deletePart} onChangeSchedule={setPartsSchedules}
+                    />
                 </div>
                 {!isNoTapas(scheduleType) && (
                     <>
@@ -3131,6 +3152,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             description: tapas.description, // Carry over multi-language description
             goals: tapas.goals, // Carry over multi-language goals
             parts: tapas.parts, // Carry over multi-language parts
+            partsSchedules: tapas.partsSchedules || null,
             crystallizationTime: tapas.crystallizationTime || '',
             allowRecuperation: tapas.allowRecuperation || false,
             status: 'active',
@@ -3274,6 +3296,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                     description: tapas.description || null, // Save multi-language description
                     goals: tapas.goals || [], // Save multi-language goals
                     parts: tapas.parts || [], // Save multi-language parts
+                    partsSchedules: tapas.partsSchedules || null,
                     scheduleType: tapas.scheduleType,
                     scheduleInterval: tapas.scheduleInterval,
                     crystallizationTime: tapas.crystallizationTime || null,
@@ -3331,6 +3354,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                 description: tapas.description || null, // Update multi-language description
                 goals: tapas.goals || [], // Update multi-language goals
                 parts: tapas.parts || [], // Update multi-language parts
+                partsSchedules: tapas.partsSchedules || null,
                 scheduleType: tapas.scheduleType,
                 scheduleInterval: tapas.scheduleInterval,
                 crystallizationTime: tapas.crystallizationTime || null,
@@ -3364,6 +3388,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
                 description: publicSharedTapas.description || null, // Update multi-language description
                 goals: publicSharedTapas.goals || [], // Update multi-language goals
                 parts: publicSharedTapas.parts || [], // Update multi-language parts
+                partsSchedules: publicSharedTapas.partsSchedules || null,
                 scheduleType: publicSharedTapas.scheduleType,
                 scheduleInterval: publicSharedTapas.scheduleInterval,
                 crystallizationTime: publicSharedTapas.crystallizationTime || null,
@@ -4558,6 +4583,7 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
                 description: sharedTapas.description || null, // Adopt multi-language description
                 goals: sharedTapas.goals || [], // Adopt multi-language goals
                 parts: sharedTapas.parts || [], // Adopt multi-language parts
+                partsSchedules: sharedTapas.partsSchedules || null,
                 crystallizationTime: sharedTapas.crystallizationTime || null,
                 allowRecuperation: sharedTapas.allowRecuperation || false,
                 acknowledgeAfter: sharedTapas.acknowledgeAfter || false,
@@ -4622,7 +4648,6 @@ const ShareView = ({ shareReference, onClose, onAdoptTapas, setStatusMessage }) 
     const displayDescription = getLocalizedContent(sharedTapas.description, locale);
     const displayGoals = getLocalizedContent(sharedTapas.goals, locale);
     const displayParts = getLocalizedContent(sharedTapas.parts, locale);
-
 
     const pageTitle = `${displayTapasName} - ${t('appName')}`;
     const pageDescription = displayDescription || `${t('appName')}: ${t('trackPersonalGoals')}`;
