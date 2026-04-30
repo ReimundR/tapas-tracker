@@ -1,6 +1,15 @@
 # Changelog
 
 __________________________________________________________
+### 1.7.1 (2026-04-30)
+__________________________________________________________
+
+#### Fixed
+* fixed failed Tapas initial don't repeat selection
+* fixed repeat tapas repaet index > 2 was not incrementing
+* fix for editor font size change on Android
+
+__________________________________________________________
 ### 1.7.0 (2026-04-28)
 __________________________________________________________
 

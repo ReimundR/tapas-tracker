@@ -576,6 +576,7 @@ export default function ToolbarPlugin() {
         <Select
           className="toolbar-item font-size"
           onChange={onFontSizeSelect}
+          onMouseDown={(e) => e.preventDefault()}
           options={['10px', '11px', '12px', '15px', '16px', '18px', '21px', '28px', '32px', '38px']}
           value={fontSize}
         />
