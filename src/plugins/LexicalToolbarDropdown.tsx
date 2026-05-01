@@ -20,6 +20,7 @@
 import React, { useState, useRef, useCallback } from "react";
 
 export function LexicalToolbarDropdown({ id, label, options, activeValue, onSelect }: {
+  id: string;
   label: string;
   options: string[];
   activeValue: string;
