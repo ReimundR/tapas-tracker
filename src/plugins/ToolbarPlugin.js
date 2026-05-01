@@ -27,6 +27,7 @@ import { $getNearestNodeOfType, mergeRegister } from "@lexical/utils";
 import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND, REMOVE_LIST_COMMAND, $isListNode, ListNode } from "@lexical/list";
 import { createPortal } from "react-dom";
 import { $createHeadingNode, $createQuoteNode, $isHeadingNode } from "@lexical/rich-text";
+import { LexicalToolbarDropdown } from './LexicalToolbarDropdown';
 
 const LowPriority = 1;
 
@@ -408,16 +409,6 @@ export default function ToolbarPlugin() {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [fontSize, setFontSize] = useState('15px');
-  const [lastSelection, setLastSelection] = useState(null);
-
-  const updateLastSelection = useCallback(() => {
-    editor.getEditorState().read(() => {
-      const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        setLastSelection(selection);
-      }
-    });
-  }, [editor]);
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -457,9 +448,8 @@ export default function ToolbarPlugin() {
         setIsLink(false);
       }
       // Hande buttons
-      setFontSize(
-        $getSelectionStyleValueForProperty(selection, 'font-size', '15px'),
-      );
+      const fontSize = $getSelectionStyleValueForProperty(selection, 'font-size', '15px');
+      setFontSize((fontSize === "" || fontSize === undefined) ? "..." : fontSize);
     }
   }, [activeEditor]);
 
@@ -518,13 +508,6 @@ export default function ToolbarPlugin() {
     [activeEditor],
   );
   
-  const onFontSizeSelect = useCallback(
-    (e) => {
-      applyStyleText({'font-size': e.target.value});
-    },
-    [applyStyleText],
-  );
-
   const insertLink = useCallback(() => {
     if (!isLink) {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://");
@@ -587,11 +570,19 @@ export default function ToolbarPlugin() {
         </>
       )}
       <>
-        <Select
-          className="toolbar-item font-size"
-          onChange={onFontSizeSelect}
+        <LexicalToolbarDropdown
+          id="font-size" 
+          label={fontSize}
           options={['10px', '11px', '12px', '15px', '16px', '18px', '21px', '28px', '32px', '38px']}
-          value={fontSize}
+          activeValue={fontSize}
+          onSelect={(val) => {
+            editor.update(() => {
+              const selection = $getSelection();
+              if ($isRangeSelection(selection)) {
+                $patchStyleText(selection, { "font-size": val });
+              }
+            });
+          }}
         />
         <i className="chevron-down inside" />
       </>

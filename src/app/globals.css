@@ -326,7 +326,7 @@ i.chevron-down {
   background-color: #fff;
   border-radius: 8px;
   border: 0;
-  min-width: 268px;
+  min-width: 230px;
 }
 
 .dark .dropdown .item {
@@ -361,7 +361,7 @@ i.chevron-down {
   display: flex;
   line-height: 20px;
   flex-grow: 1;
-  width: 200px;
+  width: 160px;
 }
 
 .dropdown .item .icon {
@@ -864,4 +864,22 @@ i.redo {
   &:where(.dark, .dark *) {
     color: var(--color-yellow-200);
   }
+}
+
+.dropdown .checkmark-container {
+  width: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 8px;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.dropdown .item-text {
+  flex-grow: 1;
+}
+
+#font-size .dropdown .item {
+  min-width: 100px;
 }
