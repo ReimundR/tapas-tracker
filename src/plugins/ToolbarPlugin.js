@@ -20,13 +20,14 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CAN_REDO_COMMAND, CAN_UNDO_COMMAND, REDO_COMMAND, UNDO_COMMAND, SELECTION_CHANGE_COMMAND,
-  FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, $getSelection, $isRangeSelection, $createParagraphNode, $getNodeByKey } from "lexical";
+  FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, $getSelection, $setSelection, $isRangeSelection, $createParagraphNode, $getNodeByKey } from "lexical";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { $getSelectionStyleValueForProperty, $isParentElementRTL, $patchStyleText, $wrapNodes, $isAtNodeEnd } from "@lexical/selection";
 import { $getNearestNodeOfType, mergeRegister } from "@lexical/utils";
 import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND, REMOVE_LIST_COMMAND, $isListNode, ListNode } from "@lexical/list";
 import { createPortal } from "react-dom";
 import { $createHeadingNode, $createQuoteNode, $isHeadingNode } from "@lexical/rich-text";
+import { LexicalToolbarDropdown } from './LexicalToolbarDropdown';
 
 const LowPriority = 1;
 
@@ -401,9 +402,7 @@ export default function ToolbarPlugin() {
   const [canRedo, setCanRedo] = useState(false);
   const [blockType, setBlockType] = useState("paragraph");
   const [selectedElementKey, setSelectedElementKey] = useState(null);
-  const [showBlockOptionsDropDown, setShowBlockOptionsDropDown] = useState(
-    false
-  );
+  const [showBlockOptionsDropDown, setShowBlockOptionsDropDown] = useState(false);
   const [isRTL, setIsRTL] = useState(false);
   const [isLink, setIsLink] = useState(false);
   const [isBold, setIsBold] = useState(false);
@@ -449,9 +448,8 @@ export default function ToolbarPlugin() {
         setIsLink(false);
       }
       // Hande buttons
-      setFontSize(
-        $getSelectionStyleValueForProperty(selection, 'font-size', '15px'),
-      );
+      const fontSize = $getSelectionStyleValueForProperty(selection, 'font-size', '15px');
+      setFontSize((fontSize === "" || fontSize === undefined) ? "..." : fontSize);
     }
   }, [activeEditor]);
 
@@ -496,6 +494,12 @@ export default function ToolbarPlugin() {
     (styles) => {
       activeEditor.update(() => {
         const selection = $getSelection();
+        if (selection === null && lastSelection !== null) {
+          selection = lastSelection;
+          // reactivate selection
+          $setSelection(selection);
+        }
+
         if ($isRangeSelection(selection)) {
           $patchStyleText(selection, styles);
         }
@@ -504,13 +508,6 @@ export default function ToolbarPlugin() {
     [activeEditor],
   );
   
-  const onFontSizeSelect = useCallback(
-    (e) => {
-      applyStyleText({'font-size': e.target.value});
-    },
-    [applyStyleText],
-  );
-
   const insertLink = useCallback(() => {
     if (!isLink) {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://");
@@ -573,11 +570,19 @@ export default function ToolbarPlugin() {
         </>
       )}
       <>
-        <Select
-          className="toolbar-item font-size"
-          onChange={onFontSizeSelect}
+        <LexicalToolbarDropdown
+          id="font-size" 
+          label={fontSize}
           options={['10px', '11px', '12px', '15px', '16px', '18px', '21px', '28px', '32px', '38px']}
-          value={fontSize}
+          activeValue={fontSize}
+          onSelect={(val) => {
+            editor.update(() => {
+              const selection = $getSelection();
+              if ($isRangeSelection(selection)) {
+                $patchStyleText(selection, { "font-size": val });
+              }
+            });
+          }}
         />
         <i className="chevron-down inside" />
       </>

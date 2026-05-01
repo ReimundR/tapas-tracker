@@ -951,7 +951,16 @@ const getUniqueCheckedDays = (checkedDaysArray) => {
     if (!checkedDaysArray || checkedDaysArray.length === 0) {
         return [];
     }
-    return checkedDaysArray;
+    const convertedDates = checkedDaysArray.map(timestamp => {
+        if (typeof timestamp === 'string') {
+            // Convert string date to Firestore Timestamp
+            const dateObj = new Date(timestamp);
+            return Timestamp.fromDate(dateObj);
+        } else {
+            return timestamp;
+        }
+    });
+    return convertedDates;
     const uniqueDateStrings = new Set();
     const uniqueTimestamps = [];
 
@@ -2519,13 +2528,15 @@ function getLocaleDateFormat() {
 const RepeatTapas = ({ title, question, confirm, onCancel, onConfirm, isFailed, t,
         initRepeatOption, tapas, locale, intervalUnit, totalUnitsSchedule, unit, endDate, today,
         failureCause, setFailureCause, setRepeatOption, setNewRepeatDuration }) => {
-    const [repeatOption, setRepeatOptionInt] = useState(initRepeatOption);
+    const [repeatOption, setRepeatOptionInt] = useState('');
     const [newRepeatDuration, setNewRepeatDurationInt] = useState('');
 
-    const setRepeatOptionInternal = (value) => {
-        setRepeatOptionInt(value);
-        setRepeatOption(value);
-    };
+    useEffect(() => {
+        if (initRepeatOption !== repeatOption) {
+            setRepeatOptionInt(initRepeatOption);
+            setRepeatOption(initRepeatOption);
+        }
+    }, [initRepeatOption, repeatOption, setRepeatOption]);
 
     const setNewRepeatDurationInternal = (value) => {
         setNewRepeatDurationInt(value);
@@ -3097,7 +3108,7 @@ const TapasDetail = ({ tapas, config, onClose, onEdit, setSelectedTapas, modalSt
             if (match) {
                 if (match[1]) {
                     const currentRepeatNum = parseInt(match[1]);
-                    currentName = currentName.replace(repeatRegex, `(${repStr} ${currentRepeatNum + 1})`);
+                    currentName = currentName.replace(match[0], `(${repStr} ${currentRepeatNum + 1})`);
                 } else {
                     currentName = currentName.replace(`(${repStr})`, `(${repStr} 2)`);
                 }
